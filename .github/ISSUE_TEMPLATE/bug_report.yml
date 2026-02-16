@@ -1,0 +1,34 @@
+name: Bug Report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug. Include the command you ran and what you expected to happen.
+      placeholder: |
+        I ran `tldr "https://..."` and got...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to trigger the bug.
+      placeholder: |
+        1. Run `tldr ...`
+        2. See error
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node/Bun version, tldr version
+      placeholder: |
+        - OS: macOS 15.2
+        - Bun: 1.3.9
+        - Provider: cli
+    validations:
+      required: false
