@@ -1,6 +1,6 @@
 {
   "name": "tldr-cli",
-  "version": "0.1.0",
+  "version": "0.8.0",
   "description": "CLI summarization tool optimized for dyslexia and ADHD",
   "type": "module",
   "exports": {
