@@ -6,12 +6,18 @@
 
 A CLI tool that turns articles, PDFs, videos, and more into short, clear summaries designed for how your brain actually works.
 
-Built for people with dyslexia, ADHD, and anyone who learns better with structure.
-
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Powered by Claude](https://img.shields.io/badge/powered%20by-Claude-blueviolet.svg)](https://claude.ai)
 
 </div>
+
+---
+
+## Why this exists
+
+Some of us have always been able to understand complex ideas — we just need them presented differently. Walls of text, dense paragraphs, and buried key points aren't a reading problem, they're a format problem.
+
+tldr exists because neurodivergent developers, students, and professionals deserve tools that work with their brains, not against them. Whether you have dyslexia, ADHD, are on the spectrum, or are reading in a second language — you shouldn't have to fight the format to get to the meaning.
 
 ---
 
