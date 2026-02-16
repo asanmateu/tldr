@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChatView } from "./components/ChatView.js";
 import { ConfigSetup } from "./components/ConfigSetup.js";
 import { ErrorView } from "./components/ErrorView.js";
+import { HelpView } from "./components/HelpView.js";
 import { InputPrompt } from "./components/InputPrompt.js";
 import { ProcessingView } from "./components/ProcessingView.js";
 import { SummaryView } from "./components/SummaryView.js";
@@ -56,6 +57,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [currentSession, setCurrentSession] = useState<SessionPaths | undefined>(undefined);
   const [themePalette, setThemePalette] = useState<ThemePalette>(resolveTheme());
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | undefined>(undefined);
+  const [configMode, setConfigMode] = useState<"setup" | "edit">("setup");
 
   // Load config and history on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
@@ -87,7 +89,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
 
       setConfig(cfg);
 
-      if (!cfg.apiKey && cfg.provider !== "cli" && !showConfig) {
+      if (!settings.setupCompleted && !showConfig && !initialInput) {
+        setConfigMode("setup");
         setState("config");
       } else if (initialInput) {
         processInput(initialInput, cfg);
@@ -195,15 +198,44 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
       await saveConfig(newConfig);
       setConfig(newConfig);
 
-      if (editProfile) {
+      if (editProfile && configMode !== "edit") {
         exit();
+      } else if (configMode === "edit") {
+        setState("idle");
       } else if (initialInput) {
         processInput(initialInput, newConfig);
       } else {
         setState("idle");
       }
     },
-    [initialInput, editProfile, processInput, exit],
+    [initialInput, editProfile, configMode, processInput, exit],
+  );
+
+  const handleSlashCommand = useCallback(
+    (command: string) => {
+      switch (command) {
+        case "setup":
+          setConfigMode("setup");
+          setState("config");
+          break;
+        case "config":
+          setConfigMode("edit");
+          setState("config");
+          break;
+        case "theme":
+          setConfigMode("edit");
+          setState("config");
+          break;
+        case "help":
+          setState("help");
+          break;
+        case "quit":
+          if (audioProcess) stopAudio(audioProcess);
+          exit();
+          break;
+      }
+    },
+    [audioProcess, exit],
   );
 
   // Key bindings for result state
@@ -276,7 +308,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         }
       }
 
-      if (ch === "q" && state !== "config" && state !== "chat") {
+      if (ch === "q" && state !== "config" && state !== "chat" && state !== "help") {
         if (audioProcess) stopAudio(audioProcess);
         exit();
       }
@@ -300,12 +332,14 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         {state === "config" && (
           <ConfigSetup
             currentConfig={config}
-            editProfile={editProfile}
+            editProfile={configMode === "edit" || editProfile}
             themeConfig={themeConfig}
             onThemeChange={handleThemeChange}
             onSave={handleConfigSave}
             onCancel={() => {
-              if (config?.apiKey || config?.provider === "cli") {
+              if (configMode === "edit") {
+                setState("idle");
+              } else if (config?.apiKey || config?.provider === "cli") {
                 if (editProfile) {
                   exit();
                 } else {
@@ -324,6 +358,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
               if (config) processInput(value, config);
             }}
             onQuit={() => exit()}
+            onSlashCommand={handleSlashCommand}
           />
         )}
         {(state === "extracting" || state === "summarizing") && (
@@ -343,6 +378,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         {state === "chat" && config && (
           <ChatView config={config} summaryContent={summary} onExit={() => setState("result")} />
         )}
+        {state === "help" && <HelpView onClose={() => setState("idle")} />}
         {state === "error" && <ErrorView message={error.message} hint={error.hint} />}
       </Box>
     </ThemeProvider>

@@ -1,15 +1,18 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTheme } from "../lib/ThemeContext.js";
 import { readClipboard } from "../lib/clipboard.js";
+import { matchCommands, parseCommand } from "../lib/commands.js";
 import type { TldrResult } from "../lib/types.js";
 import { Banner } from "./Banner.js";
+import { SlashCommandMenu } from "./SlashCommandMenu.js";
 
 interface InputPromptProps {
   history: TldrResult[];
   onSubmit: (input: string) => void;
   onQuit: () => void;
+  onSlashCommand: (command: string) => void;
 }
 
 function formatTimeAgo(timestamp: number): string {
@@ -22,11 +25,15 @@ function formatTimeAgo(timestamp: number): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function InputPrompt({ history, onSubmit, onQuit }: InputPromptProps) {
+export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: InputPromptProps) {
   const theme = useTheme();
   const [input, setInput] = useState("");
   const [clipboardHint, setClipboardHint] = useState<string | undefined>(undefined);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [slashMenuIndex, setSlashMenuIndex] = useState(0);
+
+  const filteredCommands = useMemo(() => matchCommands(input), [input]);
+  const slashMenuVisible = input.startsWith("/") && filteredCommands.length > 0;
 
   useEffect(() => {
     const clip = readClipboard();
@@ -40,17 +47,71 @@ export function InputPrompt({ history, onSubmit, onQuit }: InputPromptProps) {
     }
   }, []);
 
+  // Reset menu index when filtered commands change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset on command count change
+  useEffect(() => {
+    setSlashMenuIndex(0);
+  }, [filteredCommands.length]);
+
+  const handleChange = useCallback((value: string) => {
+    setInput(value);
+    setHistoryIndex(-1);
+  }, []);
+
   const handleSubmit = useCallback(
     (value: string) => {
       const trimmed = value.trim();
-      if (trimmed) {
-        onSubmit(trimmed);
+      if (!trimmed) return;
+
+      // Check if it's a slash command
+      if (trimmed.startsWith("/")) {
+        if (slashMenuVisible) {
+          const selected = filteredCommands[slashMenuIndex];
+          if (selected) {
+            setInput("");
+            onSlashCommand(selected.name);
+            return;
+          }
+        }
+        const parsed = parseCommand(trimmed);
+        if (parsed) {
+          setInput("");
+          onSlashCommand(parsed.command);
+          return;
+        }
+        // Unknown slash command — ignore
+        return;
       }
+
+      onSubmit(trimmed);
     },
-    [onSubmit],
+    [onSubmit, onSlashCommand, slashMenuVisible, filteredCommands, slashMenuIndex],
   );
 
   useInput((ch, key) => {
+    if (slashMenuVisible) {
+      if (key.upArrow) {
+        setSlashMenuIndex((i) => Math.max(0, i - 1));
+        return;
+      }
+      if (key.downArrow) {
+        setSlashMenuIndex((i) => Math.min(filteredCommands.length - 1, i + 1));
+        return;
+      }
+      if (key.tab) {
+        const selected = filteredCommands[slashMenuIndex];
+        if (selected) {
+          setInput(`/${selected.name}`);
+        }
+        return;
+      }
+      if (key.escape) {
+        setInput("");
+        return;
+      }
+      return;
+    }
+
     if (ch === "q" && !input) {
       onQuit();
       return;
@@ -85,17 +146,23 @@ export function InputPrompt({ history, onSubmit, onQuit }: InputPromptProps) {
         </Text>
         <TextInput
           value={input}
-          onChange={setInput}
+          onChange={handleChange}
           onSubmit={handleSubmit}
-          placeholder="Paste a URL, file path, or text..."
+          placeholder="Paste a URL, file path, or text... (/ for commands)"
         />
       </Box>
-      {clipboardHint && !input && <Text dimColor>Clipboard: {clipboardHint}</Text>}
-      {history.slice(0, 3).map((entry) => (
-        <Text key={entry.timestamp} dimColor>
-          {formatTimeAgo(entry.timestamp)} · {entry.extraction.source}
-        </Text>
-      ))}
+      {slashMenuVisible && (
+        <SlashCommandMenu commands={filteredCommands} selectedIndex={slashMenuIndex} />
+      )}
+      {!slashMenuVisible && clipboardHint && !input && (
+        <Text dimColor>Clipboard: {clipboardHint}</Text>
+      )}
+      {!slashMenuVisible &&
+        history.slice(0, 3).map((entry) => (
+          <Text key={entry.timestamp} dimColor>
+            {formatTimeAgo(entry.timestamp)} · {entry.extraction.source}
+          </Text>
+        ))}
     </Box>
   );
 }
