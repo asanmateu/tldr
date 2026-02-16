@@ -69,7 +69,7 @@ const ALL_TTS_MODES: { value: TtsMode; label: string; hint: string }[] = [
 
 const ALL_PROVIDERS: { value: SummarizationProvider; label: string; hint: string }[] = [
   { value: "api", label: "API", hint: "per-token, ~2s, needs API key" },
-  { value: "cli", label: "CLI", hint: "free with Claude Code sub, ~5s" },
+  { value: "cli", label: "CLI", hint: "requires Claude Code sub, ~5s" },
 ];
 
 const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string }[] = [

@@ -35,7 +35,7 @@ No setup required if you have [Claude Code](https://docs.anthropic.com/en/docs/c
 | What | Cost | Need API Key? |
 |------|------|---------------|
 | **Audio (TTS)** | **FREE** | No |
-| **Summaries (CLI provider)** | **FREE** | No (needs Claude Code subscription) |
+| **Summaries (CLI provider)** | Included with Claude Code subscription | No |
 | **Summaries (API provider)** | ~$0.005/summary | Yes |
 
 Audio uses [edge-tts](https://github.com/nickclaw/edge-tts-universal) (Microsoft's free public TTS). No API key, no limits.

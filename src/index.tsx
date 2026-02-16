@@ -35,7 +35,7 @@ if (args.includes("--help") || args.includes("-h")) {
     tldr --style quick <url>          Override style for this run
     tldr --model sonnet <url>         Override model for this run
     tldr --profile work <url>         Use specific profile for this run
-    tldr --provider cli <url>         Use Claude CLI (free with subscription)
+    tldr --provider cli <url>         Use Claude CLI (requires subscription)
     tldr                              Interactive mode
 
   ${fmt.label("Configuration:")}
@@ -71,7 +71,7 @@ if (args.includes("--help") || args.includes("-h")) {
 
   ${fmt.label("Costs:")}
     Audio (TTS)          FREE    (edge-tts, no API key needed)
-    Summaries (cli)      FREE    (uses Claude Code subscription)
+    Summaries (cli)      Included with Claude Code subscription
     Summaries (api)      ~$0.005/summary (needs ANTHROPIC_API_KEY)
 `);
   process.exit(0);
