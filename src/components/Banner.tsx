@@ -1,5 +1,9 @@
+import { createRequire } from "node:module";
 import { Box, Text } from "ink";
 import { useTheme } from "../lib/ThemeContext.js";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../../package.json");
 
 export function Banner() {
   const theme = useTheme();
@@ -13,7 +17,7 @@ export function Banner() {
         <Text color={theme.brand} bold>
           {"tl;dr"}
         </Text>
-        <Text dimColor>{"                   v0.1.0 "}</Text>
+        <Text dimColor>{`v${version}`.padStart(25, " ")} </Text>
         <Text color={theme.brandBorder}>{"│"}</Text>
       </Box>
       <Text color={theme.brandBorder}>{"╰──────────────────────────────────╯"}</Text>
