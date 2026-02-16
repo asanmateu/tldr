@@ -15,6 +15,21 @@ URLs · PDFs · Images · YouTube · Slack · Notion · arXiv · Raw Text
 
 ---
 
+## Installation
+
+Requires [Bun](https://bun.sh) (v1.0+).
+
+```bash
+git clone https://github.com/asanmateu/tldr.git
+cd tldr
+bun install
+bun link
+```
+
+This makes the `tldr` command available globally.
+
+---
+
 ## Quick Start
 
 ```bash
