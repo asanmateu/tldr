@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - target: bun-darwin-arm64
+            artifact: tldr-darwin-arm64
+          - target: bun-darwin-x64
+            artifact: tldr-darwin-x64
+          - target: bun-linux-x64
+            artifact: tldr-linux-x64
+          - target: bun-linux-arm64
+            artifact: tldr-linux-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+
+      - name: Build binary
+        run: bun build src/index.tsx --compile --target=${{ matrix.target }} --outfile dist/${{ matrix.artifact }}
+
+      - name: Create tarball and checksum
+        run: |
+          cd dist
+          tar -czf ${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }}
+          shasum -a 256 ${{ matrix.artifact }}.tar.gz > ${{ matrix.artifact }}.tar.gz.sha256
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            dist/${{ matrix.artifact }}.tar.gz
+            dist/${{ matrix.artifact }}.tar.gz.sha256
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.sha256
+
+  update-homebrew:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: asanmateu/homebrew-tldr
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Download checksums
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Update formula
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          DARWIN_ARM64_SHA=$(cut -d ' ' -f 1 artifacts/tldr-darwin-arm64.tar.gz.sha256)
+          DARWIN_X64_SHA=$(cut -d ' ' -f 1 artifacts/tldr-darwin-x64.tar.gz.sha256)
+          LINUX_X64_SHA=$(cut -d ' ' -f 1 artifacts/tldr-linux-x64.tar.gz.sha256)
+          LINUX_ARM64_SHA=$(cut -d ' ' -f 1 artifacts/tldr-linux-arm64.tar.gz.sha256)
+
+          BASE_URL="https://github.com/asanmateu/tldr/releases/download/v${VERSION}"
+
+          mkdir -p homebrew-tap/Formula
+          cat > homebrew-tap/Formula/tldr-cli.rb <<FORMULA
+          class TldrCli < Formula
+            desc "CLI summarization tool optimized for dyslexia and ADHD"
+            homepage "https://github.com/asanmateu/tldr"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "${BASE_URL}/tldr-darwin-arm64.tar.gz"
+                sha256 "${DARWIN_ARM64_SHA}"
+              else
+                url "${BASE_URL}/tldr-darwin-x64.tar.gz"
+                sha256 "${DARWIN_X64_SHA}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "${BASE_URL}/tldr-linux-arm64.tar.gz"
+                sha256 "${LINUX_ARM64_SHA}"
+              else
+                url "${BASE_URL}/tldr-linux-x64.tar.gz"
+                sha256 "${LINUX_X64_SHA}"
+              end
+            end
+
+            def install
+              bin_name = Dir.glob("tldr-*").first
+              bin.install bin_name => "tldr"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("\#{bin}/tldr --version")
+            end
+          end
+          FORMULA
+          sed -i 's/^          //' homebrew-tap/Formula/tldr-cli.rb
+
+      - name: Commit and push
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/tldr-cli.rb
+          git commit -m "Update tldr-cli to ${GITHUB_REF_NAME#v}"
+          git push

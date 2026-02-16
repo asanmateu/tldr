@@ -33,6 +33,12 @@ function hasFlag(name: string): boolean {
   fmt.initTheme(resolveTheme(settings.theme));
 }
 
+if (args.includes("--version") || args.includes("-v")) {
+  const { version } = await import("../package.json");
+  console.log(version);
+  process.exit(0);
+}
+
 if (args.includes("--help") || args.includes("-h")) {
   console.log(`
   ${fmt.brand("tldr")} — Summarize anything, fast.

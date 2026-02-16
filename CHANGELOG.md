@@ -7,8 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--version` / `-v` flag for standard CLI version output
+- Cross-platform build scripts (`build:darwin-arm64`, `build:darwin-x64`, `build:linux-x64`, `build:linux-arm64`, `build:all`)
+- GitHub Release workflow that builds standalone binaries on `v*` tag push and updates Homebrew tap
+- Homebrew tap distribution via `brew install asanmateu/tldr/tldr-cli`
+- Standalone binary download instructions in README
+
 ### Changed
 
+- Version import in `Banner.tsx` switched from `createRequire` to static JSON import for compiled binary compatibility
+- README installation section now lists Homebrew, standalone binary, and from-source options
+- Added `resolveJsonModule` to `tsconfig.json`
+- Added npm metadata fields (`files`, `engines`, `repository`, `keywords`, `author`, `license`) to `package.json`
 - Refactored `config set` handler from if-else chain to data-driven dispatch (`configSetter.ts`)
 - Extracted `<SelectionList>` component and `useListNavigation` hook from ConfigSetup
 - Replaced nested ternary in speech rewriter with `TONE_HINTS` Record lookup

@@ -1,9 +1,8 @@
-import { createRequire } from "node:module";
 import { Box, Text } from "ink";
+import pkg from "../../package.json";
 import { useTheme } from "../lib/ThemeContext.js";
 
-const require = createRequire(import.meta.url);
-const { version } = require("../../package.json");
+const version = pkg.version;
 
 export function Banner() {
   const theme = useTheme();

@@ -17,7 +17,37 @@ Built for people with dyslexia, ADHD, and anyone who learns better with structur
 
 ## Installation
 
-Requires [Bun](https://bun.sh) (v1.0+) and [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+### Homebrew (recommended)
+
+```bash
+brew install asanmateu/tldr/tldr-cli
+```
+
+### Standalone binary
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/asanmateu/tldr/releases):
+
+```bash
+# macOS Apple Silicon
+curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-darwin-arm64.tar.gz | tar xz
+mv tldr-darwin-arm64 /usr/local/bin/tldr
+
+# macOS Intel
+curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-darwin-x64.tar.gz | tar xz
+mv tldr-darwin-x64 /usr/local/bin/tldr
+
+# Linux x64
+curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-x64.tar.gz | tar xz
+mv tldr-linux-x64 /usr/local/bin/tldr
+
+# Linux ARM64
+curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-arm64.tar.gz | tar xz
+mv tldr-linux-arm64 /usr/local/bin/tldr
+```
+
+### From source
+
+Requires [Bun](https://bun.sh) (v1.0+).
 
 ```bash
 git clone https://github.com/asanmateu/tldr.git
@@ -26,7 +56,7 @@ bun install
 bun link
 ```
 
-That's it. If Claude Code is installed and authenticated, `tldr` works immediately.
+Once installed, if [Claude Code](https://docs.anthropic.com/en/docs/claude-code) is authenticated, `tldr` works immediately.
 
 ---
 
