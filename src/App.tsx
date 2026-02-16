@@ -5,13 +5,14 @@ import { ChatView } from "./components/ChatView.js";
 import { ConfigSetup } from "./components/ConfigSetup.js";
 import { ErrorView } from "./components/ErrorView.js";
 import { HelpView } from "./components/HelpView.js";
+import { HistoryView } from "./components/HistoryView.js";
 import { InputPrompt } from "./components/InputPrompt.js";
 import { ProcessingView } from "./components/ProcessingView.js";
 import { SummaryView } from "./components/SummaryView.js";
 import { ThemeProvider } from "./lib/ThemeContext.js";
 import { writeClipboard } from "./lib/clipboard.js";
 import { loadConfig, loadSettings, saveConfig, saveSettings } from "./lib/config.js";
-import { addEntry, getRecent } from "./lib/history.js";
+import { addEntry, deduplicateBySource, getRecent } from "./lib/history.js";
 import { isCliAvailable } from "./lib/providers/cli.js";
 import { getSessionPaths, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
@@ -68,7 +69,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
       setThemePalette(resolveTheme(settings.theme));
 
       let cfg = await loadConfig(overrides);
-      const recent = await getRecent(10);
+      const recent = await getRecent(100);
       setHistory(recent);
 
       // Graceful CLI fallback: if CLI provider selected but not available,
@@ -175,7 +176,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
 
       // Save to history
       await addEntry(tldrResult);
-      const updated = await getRecent(10);
+      const updated = await getRecent(100);
       setHistory(updated);
     } catch (err) {
       setIsStreaming(false);
@@ -214,6 +215,9 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const handleSlashCommand = useCallback(
     (command: string) => {
       switch (command) {
+        case "history":
+          setState("history");
+          break;
         case "setup":
           setConfigMode("setup");
           setState("config");
@@ -237,6 +241,14 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
     },
     [audioProcess, exit],
   );
+
+  const handleHistorySelect = useCallback((entry: TldrResult) => {
+    setExtraction(entry.extraction);
+    setSummary(entry.summary);
+    setInput(entry.extraction.source);
+    setCurrentSession(undefined);
+    setState("result");
+  }, []);
 
   // Key bindings for result state
   useInput(
@@ -308,7 +320,13 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         }
       }
 
-      if (ch === "q" && state !== "config" && state !== "chat" && state !== "help") {
+      if (
+        ch === "q" &&
+        state !== "config" &&
+        state !== "chat" &&
+        state !== "help" &&
+        state !== "history"
+      ) {
         if (audioProcess) stopAudio(audioProcess);
         exit();
       }
@@ -377,6 +395,13 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         )}
         {state === "chat" && config && (
           <ChatView config={config} summaryContent={summary} onExit={() => setState("result")} />
+        )}
+        {state === "history" && (
+          <HistoryView
+            entries={deduplicateBySource(history)}
+            onSelect={handleHistorySelect}
+            onClose={() => setState("idle")}
+          />
         )}
         {state === "help" && <HelpView onClose={() => setState("idle")} />}
         {state === "error" && <ErrorView message={error.message} hint={error.hint} />}

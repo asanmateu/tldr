@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `/history` slash command to browse and resume past sessions with navigable list, deduplication, and time-ago labels
 - Interactive slash commands (`/setup`, `/config`, `/theme`, `/help`, `/quit`) with autocomplete in interactive mode
 - `CLAUDE.md` with project conventions for AI assistants
 - MIT license
@@ -27,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Always-visible history entries below the input prompt (replaced by `/history` command)
 - Obsolete `tts-mode` references in `docs/configuration.md`
 - Broken Pipeline and Coverage badges pointing to previous remote
 

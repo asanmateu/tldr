@@ -139,7 +139,8 @@ export type AppState =
   | "error"
   | "config"
   | "chat"
-  | "help";
+  | "help"
+  | "history";
 
 export interface ChatMessage {
   role: "user" | "assistant";

@@ -32,6 +32,16 @@ export async function addEntry(result: TldrResult): Promise<void> {
   await writeFile(getHistoryPath(), JSON.stringify(entries, null, 2), "utf-8");
 }
 
+export function deduplicateBySource(entries: TldrResult[]): TldrResult[] {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const source = entry.extraction.source;
+    if (seen.has(source)) return false;
+    seen.add(source);
+    return true;
+  });
+}
+
 export async function getRecent(n: number): Promise<TldrResult[]> {
   try {
     const raw = await readFile(getHistoryPath(), "utf-8");

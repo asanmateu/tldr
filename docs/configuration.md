@@ -74,6 +74,7 @@ In interactive mode, type `/` to access commands with autocomplete:
 
 | Command | Description |
 |---------|-------------|
+| `/history` | Browse and resume past sessions |
 | `/setup` | Re-run the first-time setup wizard |
 | `/config` | Edit current profile settings |
 | `/theme` | Change color theme |

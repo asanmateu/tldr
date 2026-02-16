@@ -14,7 +14,7 @@ vi.mock("node:os", async () => {
   };
 });
 
-const { addEntry, getRecent } = await import("../lib/history.js");
+const { addEntry, deduplicateBySource, getRecent } = await import("../lib/history.js");
 
 function makeEntry(i: number): TldrResult {
   return {
@@ -76,5 +76,30 @@ describe("history", () => {
 
     const entries = await getRecent(3);
     expect(entries).toHaveLength(3);
+  });
+});
+
+describe("deduplicateBySource", () => {
+  it("returns empty array for empty input", () => {
+    expect(deduplicateBySource([])).toEqual([]);
+  });
+
+  it("returns all entries when no duplicates", () => {
+    const entries = [makeEntry(1), makeEntry(2), makeEntry(3)];
+    expect(deduplicateBySource(entries)).toHaveLength(3);
+  });
+
+  it("keeps first occurrence and removes duplicates", () => {
+    const a = makeEntry(1); // source: https://example.com/1
+    const b = makeEntry(2); // source: https://example.com/2
+    const aDup: TldrResult = {
+      extraction: { content: "Dup", wordCount: 50, source: "https://example.com/1" },
+      summary: "Dup summary",
+      timestamp: Date.now() + 10,
+    };
+    const result = deduplicateBySource([a, b, aDup]);
+    expect(result).toHaveLength(2);
+    expect(result[0]?.summary).toBe("Summary 1");
+    expect(result[1]?.summary).toBe("Summary 2");
   });
 });

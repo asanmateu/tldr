@@ -44,7 +44,7 @@ YouTube, Slack threads, and Notion pages also work — just paste the URL.
 
 After a summary, use the keyboard shortcuts shown at the bottom: copy, listen to audio, chat about it, or start a new one.
 
-Type `/` in interactive mode to access commands like `/setup`, `/config`, `/theme`, and `/help`.
+Type `/` in interactive mode to access commands like `/history`, `/setup`, `/config`, `/theme`, and `/help`.
 
 ---
 

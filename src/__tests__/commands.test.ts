@@ -27,6 +27,20 @@ describe("matchCommands", () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.name).toBe("config");
   });
+
+  it("matches /history command", () => {
+    const result = matchCommands("/hi");
+    expect(result).toHaveLength(1);
+    expect(result[0]?.name).toBe("history");
+  });
+
+  it("matches both /history and /help for /h prefix", () => {
+    const result = matchCommands("/h");
+    expect(result).toHaveLength(2);
+    const names = result.map((c) => c.name);
+    expect(names).toContain("history");
+    expect(names).toContain("help");
+  });
 });
 
 describe("parseCommand", () => {

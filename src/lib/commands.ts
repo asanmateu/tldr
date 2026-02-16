@@ -4,6 +4,7 @@ export interface SlashCommand {
 }
 
 export const SLASH_COMMANDS: SlashCommand[] = [
+  { name: "history", description: "Browse and resume past sessions" },
   { name: "setup", description: "Re-run first-time setup wizard" },
   { name: "config", description: "Edit current profile settings" },
   { name: "theme", description: "Change color theme" },
