@@ -22,6 +22,7 @@ export const MODEL_IDS: Record<ModelTier, string> = {
 
 const SUMMARY_STYLE_DEFAULTS: Record<SummaryStyle, ModelTier> = {
   quick: "opus",
+  standard: "opus",
   detailed: "opus",
   "study-notes": "opus",
 };
@@ -29,7 +30,7 @@ const SUMMARY_STYLE_DEFAULTS: Record<SummaryStyle, ModelTier> = {
 const DEFAULT_PROFILE: Profile = {
   cognitiveTraits: ["dyslexia"],
   tone: "casual",
-  summaryStyle: "study-notes",
+  summaryStyle: "standard",
 };
 
 const DEFAULT_SETTINGS: TldrSettings = {
@@ -58,7 +59,7 @@ function isOldFlatConfig(obj: Record<string, unknown>): boolean {
 }
 
 function migrateFromFlat(obj: Record<string, unknown>): TldrSettings {
-  const summaryStyle: SummaryStyle = obj.summaryDepth === "detailed" ? "detailed" : "study-notes";
+  const summaryStyle: SummaryStyle = obj.summaryDepth === "detailed" ? "detailed" : "standard";
 
   const profile: Profile = {
     cognitiveTraits: ["dyslexia", "adhd"],
@@ -106,7 +107,7 @@ function parseSettings(parsed: unknown): TldrSettings {
 }
 
 const VALID_TONES = new Set(["casual", "professional", "academic", "eli5"]);
-const VALID_STYLES = new Set(["quick", "detailed", "study-notes"]);
+const VALID_STYLES = new Set(["quick", "standard", "detailed", "study-notes"]);
 const VALID_TRAITS = new Set(["dyslexia", "adhd", "autism", "esl", "visual-thinker"]);
 const VALID_TTS_MODES = new Set(["strip", "rewrite"]);
 const VALID_PROVIDERS = new Set(["api", "cli"]);
@@ -141,7 +142,7 @@ function parseProfile(raw: unknown): Profile {
     tone: (typeof obj.tone === "string" && VALID_TONES.has(obj.tone) ? obj.tone : "casual") as Tone,
     summaryStyle: (typeof obj.summaryStyle === "string" && VALID_STYLES.has(obj.summaryStyle)
       ? obj.summaryStyle
-      : "study-notes") as SummaryStyle,
+      : "standard") as SummaryStyle,
     customInstructions:
       typeof obj.customInstructions === "string" ? obj.customInstructions : undefined,
     model: typeof obj.model === "string" && obj.model.length > 0 ? obj.model : undefined,

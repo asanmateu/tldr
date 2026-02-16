@@ -50,8 +50,9 @@ const ALL_TONES: { value: Tone; label: string }[] = [
 
 const ALL_STYLES: { value: SummaryStyle; label: string; hint: string }[] = [
   { value: "quick", label: "Quick", hint: "TL;DR + key points" },
+  { value: "standard", label: "Standard", hint: "key points + why it matters + connections" },
   { value: "detailed", label: "Detailed", hint: "context + analogy + details" },
-  { value: "study-notes", label: "Study Notes", hint: "concepts + connections + review" },
+  { value: "study-notes", label: "Study Notes", hint: "concepts + review questions" },
 ];
 
 const VOICES = [
@@ -92,7 +93,7 @@ function buildDefaultConfig(): Config {
       default: {
         cognitiveTraits: ["dyslexia"],
         tone: "casual",
-        summaryStyle: "study-notes",
+        summaryStyle: "standard",
       },
     },
   };

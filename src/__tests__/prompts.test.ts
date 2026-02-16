@@ -88,7 +88,7 @@ describe("buildSystemPrompt", () => {
   });
 
   describe("summary style", () => {
-    it.each(["quick", "detailed", "study-notes"] as const)(
+    it.each(["quick", "standard", "detailed", "study-notes"] as const)(
       "includes %s style template",
       (summaryStyle) => {
         const prompt = buildSystemPrompt(makeTestConfig({ summaryStyle }));
@@ -106,6 +106,13 @@ describe("buildSystemPrompt", () => {
     it("quick style includes Why It Matters", () => {
       const prompt = buildSystemPrompt(makeTestConfig({ summaryStyle: "quick" }));
       expect(prompt).toContain("## Why It Matters");
+    });
+
+    it("standard style includes Connections", () => {
+      const prompt = buildSystemPrompt(makeTestConfig({ summaryStyle: "standard" }));
+      expect(prompt).toContain("## Key Points");
+      expect(prompt).toContain("## Why It Matters");
+      expect(prompt).toContain("## Connections");
     });
 
     it("detailed style includes Analogy", () => {

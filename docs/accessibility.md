@@ -44,8 +44,9 @@ Traits stack — you can enable multiple traits at once. Their rules are combine
 | Style | Best For | Sections |
 |-------|----------|----------|
 | **quick** | Fast overview | TL;DR, Key Points, Why It Matters, Action Items |
+| **standard** (default) | Understanding | TL;DR, Key Points, Why It Matters, Connections, Action Items |
 | **detailed** | Deep understanding | TL;DR, Context, Key Points, Analogy, Notable Details, Action Items |
-| **study-notes** (default) | Learning & review | TL;DR, Core Concepts, How They Connect, Key Facts, Visual Map, Review Questions |
+| **study-notes** | Learning & review | TL;DR, Core Concepts, How They Connect, Key Facts, Visual Map, Review Questions |
 
 All styles default to Opus. You can configure a different model per style — see [Configuration](configuration.md#per-style-model-configuration).
 

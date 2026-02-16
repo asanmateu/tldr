@@ -45,7 +45,7 @@ export interface TldrResult {
 
 export type CognitiveTrait = "dyslexia" | "adhd" | "autism" | "esl" | "visual-thinker";
 export type Tone = "casual" | "professional" | "academic" | "eli5";
-export type SummaryStyle = "quick" | "detailed" | "study-notes";
+export type SummaryStyle = "quick" | "standard" | "detailed" | "study-notes";
 export type ModelTier = "haiku" | "sonnet" | "opus";
 export type TtsMode = "strip" | "rewrite";
 export type SummarizationProvider = "api" | "cli";

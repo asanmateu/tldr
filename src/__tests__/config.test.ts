@@ -38,7 +38,7 @@ function makeTestConfig(overrides?: Partial<import("../lib/types.js").ResolvedCo
     profileName: "default",
     cognitiveTraits: [] as import("../lib/types.js").CognitiveTrait[],
     tone: "casual" as const,
-    summaryStyle: "study-notes" as const,
+    summaryStyle: "standard" as const,
     model: MODEL_IDS.opus,
     customInstructions: undefined,
     voice: "en-US-JennyNeural",
@@ -67,7 +67,7 @@ describe("config", () => {
     expect(config.voice).toBe("en-US-JennyNeural");
     expect(config.profileName).toBe("default");
     expect(config.tone).toBe("casual");
-    expect(config.summaryStyle).toBe("study-notes");
+    expect(config.summaryStyle).toBe("standard");
     expect(config.model).toBe(MODEL_IDS.opus);
     expect(config.provider).toBe("cli");
   });
@@ -116,7 +116,7 @@ describe("config", () => {
 
     const config = await loadConfig();
     expect(config.apiKey).toBe("");
-    expect(config.summaryStyle).toBe("study-notes");
+    expect(config.summaryStyle).toBe("standard");
   });
 
   it("fills missing fields with defaults", async () => {
@@ -131,7 +131,7 @@ describe("config", () => {
     const config = await loadConfig();
     expect(config.apiKey).toBe("my-key");
     expect(config.voice).toBe("en-US-JennyNeural");
-    expect(config.summaryStyle).toBe("study-notes");
+    expect(config.summaryStyle).toBe("standard");
   });
 
   describe("migration from flat config.json", () => {
