@@ -383,6 +383,20 @@ describe("summarize", () => {
   });
 });
 
+describe("summarize abort", () => {
+  it("rejects with AbortError when signal is pre-aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const error = await summarize(TEST_EXTRACTION, TEST_CONFIG, () => {}, controller.signal).catch(
+      (e: unknown) => e,
+    );
+
+    expect(error).toBeInstanceOf(DOMException);
+    expect((error as DOMException).name).toBe("AbortError");
+  });
+});
+
 describe("chatViaApi", () => {
   beforeEach(() => {
     vi.clearAllMocks();

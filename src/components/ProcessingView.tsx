@@ -41,6 +41,9 @@ export function ProcessingView({ phase, source, extraction }: ProcessingViewProp
           )}
         </Box>
       )}
+      <Box marginTop={1}>
+        <Text dimColor>[Esc] cancel</Text>
+      </Box>
     </Box>
   );
 }

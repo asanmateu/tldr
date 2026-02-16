@@ -154,6 +154,7 @@ export interface Provider {
     userPrompt: string,
     onChunk: (text: string) => void,
     image?: ImageData,
+    signal?: AbortSignal,
   ): Promise<string>;
 
   rewrite(markdown: string, config: Config, systemPrompt: string): Promise<string>;

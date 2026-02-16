@@ -7,17 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-02-17
+
 ### Added
 
+- Press Esc during extraction or summarization to cancel and return to the input prompt
+- Processing view shows `[Esc] cancel` hint
 - Non-intrusive "update available" notification — checks GitHub Releases once per 24h, shown in idle prompt
 - `--version` / `-v` flag for standard CLI version output
 - Cross-platform build scripts (`build:darwin-arm64`, `build:darwin-x64`, `build:linux-x64`, `build:linux-arm64`, `build:all`)
 - GitHub Release workflow that builds standalone binaries on `v*` tag push and updates Homebrew tap
 - Homebrew tap distribution via `brew install asanmateu/tldr/tldr-cli`
 - Standalone binary download instructions in README
+- `config set` support for 6 profile settings previously only editable via `/config` UI: `tone`, `style`, `voice`, `tts-speed`, `traits`, `custom-instructions`
+- Model picker in `/config` profile editor (replaces display-only view with haiku/sonnet/opus selector)
+- `/history` slash command to browse and resume past sessions with navigable list, deduplication, and time-ago labels
+- Interactive slash commands (`/setup`, `/config`, `/theme`, `/help`, `/quit`) with autocomplete in interactive mode
+- `CLAUDE.md` with project conventions for AI assistants
+- MIT license
+- `tldr import <file.md>` command to import existing markdown as a session
+- Chat mode (`t` key in result view) for multi-turn Q&A about any summary
+- `ChatMessage` type and `chat` method on Provider interface
+- `chatWithSession` and `buildChatSystemPrompt` helpers
+- `importMarkdown` function in core library
 
 ### Changed
 
+- Summaries are only saved when pressing Enter in the result view; quitting with `q` discards the session
+- Result view footer updated to reflect save/discard semantics (`[Enter] save` / `[q] discard`)
 - Docs now separate user installation (Homebrew/binary) from developer setup (clone + Bun)
 - CONTRIBUTING.md includes "Getting started" section with development setup steps
 - Version import in `Banner.tsx` switched from `createRequire` to static JSON import for compiled binary compatibility
@@ -31,27 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Merged duplicate PDF switch cases in pipeline
 - Exported validation sets from `config.ts` as single source of truth (added `VALID_VOICES`)
 
-### Added
-
-- `config set` support for 6 profile settings previously only editable via `/config` UI: `tone`, `style`, `voice`, `tts-speed`, `traits`, `custom-instructions`
-- Model picker in `/config` profile editor (replaces display-only view with haiku/sonnet/opus selector)
-- `/history` slash command to browse and resume past sessions with navigable list, deduplication, and time-ago labels
-- Interactive slash commands (`/setup`, `/config`, `/theme`, `/help`, `/quit`) with autocomplete in interactive mode
-- `CLAUDE.md` with project conventions for AI assistants
-- MIT license
-- `tldr import <file.md>` command to import existing markdown as a session
-- Chat mode (`t` key in result view) for multi-turn Q&A about any summary
-- `ChatMessage` type and `chat` method on Provider interface
-- `chatWithSession` and `buildChatSystemPrompt` helpers
-- `importMarkdown` function in core library
-
 ### Fixed
 
 - Coral theme accent color changed from cyan (#00d4ff/#0984e3) to warm gold/amber (#f9ca24/#b45309) to match its warm identity
 - Forest theme accent color changed from cyan (#81ecec/#00838f) to earthy wheat/olive (#e6c57b/#5d6d1e) to match its natural identity
 - Hardcoded `color="red"` in command error text now uses `theme.error` for consistency
 - Added top spacing (blank line) between shell prompt and app output
-
 - Graceful error messages for invalid file paths (e.g. `/clear` no longer shows raw ENOENT stack trace)
 - Unknown slash commands now show "Unknown command" feedback instead of being silently ignored
 - First-run setup wizard now correctly shows on fresh install (was skipped when provider defaulted to `cli`)

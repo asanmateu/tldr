@@ -59,4 +59,13 @@ describe("pipeline integration", () => {
     expect(error).toBeInstanceOf(Error);
     expect(error.message).toBe("File not found: /clear");
   });
+
+  it("throws AbortError when signal is pre-aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const error = await extract("some text", controller.signal).catch((e) => e);
+    expect(error).toBeInstanceOf(DOMException);
+    expect(error.name).toBe("AbortError");
+  });
 });

@@ -1,5 +1,16 @@
 # CLAUDE.md — Project Conventions
 
+## Versioning (SemVer)
+
+This project follows [Semantic Versioning](https://semver.org/). Commit prefixes map to version bumps:
+
+- **`feat:`** — new user-facing functionality → **minor** bump (0.x.0)
+- **`fix:`** — bug fix → **patch** bump (0.0.x)
+- **`refactor:`** / **`perf:`** / **`chore:`** / **`docs:`** / **`test:`** / **`ci:`** — no version bump on their own; group with the next release
+- **Breaking changes** (removing or changing existing behavior in a non-backward-compatible way) → **major** bump (x.0.0). Prefix the commit with `feat!:` or `fix!:` or add `BREAKING CHANGE:` in the commit body.
+
+When cutting a release, collect all `[Unreleased]` entries into a new version heading (e.g. `## [0.9.0] - 2026-02-17`). The version number is determined by the highest-impact change since the last release: any `feat` → minor, only `fix` → patch, breaking → major.
+
 ## After Every Task
 
 1. **Update CHANGELOG.md** — Add entries under `[Unreleased]` for any user-facing change (Added, Fixed, Changed, Removed)

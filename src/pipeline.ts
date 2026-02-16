@@ -2,7 +2,9 @@ import { classify } from "./extractors/router.js";
 import { expandHome } from "./lib/paths.js";
 import type { ExtractionResult } from "./lib/types.js";
 
-export async function extract(input: string): Promise<ExtractionResult> {
+export async function extract(input: string, signal?: AbortSignal): Promise<ExtractionResult> {
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
   const classified = classify(input);
 
   switch (classified.type) {

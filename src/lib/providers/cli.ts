@@ -26,18 +26,42 @@ function runClaude(
   combinedPrompt: string,
   model: string,
   onChunk?: (text: string) => void,
+  signal?: AbortSignal,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+
     const child = spawn("claude", ["-p", "--model", model], {
       stdio: ["pipe", "pipe", "pipe"],
     });
 
     let stdout = "";
     let stderr = "";
+    let settled = false;
+
+    const onAbort = () => {
+      child.kill();
+      if (!settled) {
+        settled = true;
+        reject(new DOMException("Aborted", "AbortError"));
+      }
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    const cleanup = () => {
+      signal?.removeEventListener("abort", onAbort);
+    };
 
     const timer = setTimeout(() => {
       child.kill();
-      reject(new CliProviderError("Claude CLI timed out after 120s.", "TIMEOUT"));
+      if (!settled) {
+        settled = true;
+        cleanup();
+        reject(new CliProviderError("Claude CLI timed out after 120s.", "TIMEOUT"));
+      }
     }, CLI_TIMEOUT_MS);
 
     child.stdout.on("data", (data: Buffer) => {
@@ -52,6 +76,9 @@ function runClaude(
 
     child.on("error", (err) => {
       clearTimeout(timer);
+      cleanup();
+      if (settled) return;
+      settled = true;
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
         reject(
           new CliProviderError(
@@ -66,6 +93,9 @@ function runClaude(
 
     child.on("close", (code) => {
       clearTimeout(timer);
+      cleanup();
+      if (settled) return;
+      settled = true;
       if (code === 0) {
         resolve(stdout);
       } else {
@@ -89,12 +119,13 @@ export async function summarizeViaCli(
   userPrompt: string,
   onChunk: (text: string) => void,
   image?: ImageData,
+  signal?: AbortSignal,
 ): Promise<string> {
   const effectivePrompt = image?.filePath
     ? `Please read the image at this path: ${image.filePath}\n\nThen follow these instructions:\n\n${userPrompt}`
     : userPrompt;
   const combinedPrompt = `${systemPrompt}\n\n---\n\n${effectivePrompt}`;
-  return runClaude(combinedPrompt, config.model, onChunk);
+  return runClaude(combinedPrompt, config.model, onChunk, signal);
 }
 
 export async function rewriteViaCli(

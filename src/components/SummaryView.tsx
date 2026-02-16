@@ -66,7 +66,7 @@ export function SummaryView({
           <Text color={theme.success}>Playing audio... [s] stop</Text>
         ) : (
           <Text dimColor>
-            [Enter] new · [c] copy · [a] audio · [t] talk · [r] re-summarize · [q] quit
+            [Enter] save · [c] copy · [a] audio · [t] talk · [r] re-summarize · [q] discard
           </Text>
         )}
       </Box>

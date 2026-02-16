@@ -1,6 +1,6 @@
 import type { ChildProcess } from "node:child_process";
 import { Box, Text, useApp, useInput } from "ink";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatView } from "./components/ChatView.js";
 import { ConfigSetup } from "./components/ConfigSetup.js";
 import { ErrorView } from "./components/ErrorView.js";
@@ -59,6 +59,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [themePalette, setThemePalette] = useState<ThemePalette>(resolveTheme());
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | undefined>(undefined);
   const [configMode, setConfigMode] = useState<"setup" | "edit">("setup");
+  const [pendingResult, setPendingResult] = useState<TldrResult | undefined>(undefined);
+  const abortRef = useRef<AbortController | null>(null);
 
   // Load config and history on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
@@ -101,14 +103,19 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
 
   const processInput = useCallback(async (rawInput: string, cfg: Config) => {
     const activeConfig = cfg;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+
     try {
       // Extraction phase
       setState("extracting");
       setInput(rawInput);
       setSummary("");
       setExtraction(undefined);
+      setPendingResult(undefined);
 
-      const result = await extract(rawInput);
+      const result = await extract(rawInput, signal);
 
       if (!result.content && !result.image) {
         setError({
@@ -146,43 +153,41 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
       setState("summarizing");
       setIsStreaming(true);
 
-      const tldrResult = await summarize(result, effectiveConfig, (chunk) =>
-        setSummary((prev) => prev + chunk),
+      const tldrResult = await summarize(
+        result,
+        effectiveConfig,
+        (chunk) => setSummary((prev) => prev + chunk),
+        signal,
       );
 
       setIsStreaming(false);
 
       // Compute session paths BEFORE transitioning to result state
       // so that currentSession.audioPath is available if user presses 'a' quickly
-      let sessionPaths: SessionPaths | undefined;
       try {
-        sessionPaths = getSessionPaths(activeConfig.outputDir, result, tldrResult.summary);
+        const sessionPaths = getSessionPaths(activeConfig.outputDir, result, tldrResult.summary);
         setCurrentSession(sessionPaths);
       } catch {
         // Non-fatal
       }
 
+      // Defer persistence — store result for saving on Enter
+      setPendingResult(tldrResult);
       setState("result");
-
-      // Persist summary to disk async
-      if (sessionPaths) {
-        try {
-          const saved = await saveSummary(sessionPaths, tldrResult.summary);
-          setCurrentSession(saved);
-        } catch {
-          // Non-fatal — session save failure shouldn't block the user
-        }
-      }
-
-      // Save to history
-      await addEntry(tldrResult);
-      const updated = await getRecent(100);
-      setHistory(updated);
     } catch (err) {
       setIsStreaming(false);
+      // Silently return to idle on abort (ESC pressed)
+      if (signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
+        setState("idle");
+        setSummary("");
+        setExtraction(undefined);
+        return;
+      }
       const message = err instanceof Error ? err.message : "An unexpected error occurred.";
       setError({ message });
       setState("error");
+    } finally {
+      abortRef.current = null;
     }
   }, []);
 
@@ -247,8 +252,19 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
     setSummary(entry.summary);
     setInput(entry.extraction.source);
     setCurrentSession(undefined);
+    setPendingResult(undefined);
     setState("result");
   }, []);
+
+  // ESC to cancel during extraction/summarization
+  useInput(
+    (_ch, key) => {
+      if (key.escape) {
+        abortRef.current?.abort();
+      }
+    },
+    { isActive: state === "extracting" || state === "summarizing" },
+  );
 
   // Key bindings for result state
   useInput(
@@ -311,6 +327,21 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           return;
         }
         if (key.return) {
+          // Persist session on Enter before resetting
+          if (pendingResult && currentSession) {
+            (async () => {
+              try {
+                const saved = await saveSummary(currentSession, pendingResult.summary);
+                setCurrentSession(saved);
+              } catch {
+                // Non-fatal
+              }
+              await addEntry(pendingResult);
+              const updated = await getRecent(100);
+              setHistory(updated);
+            })();
+          }
+          setPendingResult(undefined);
           setState("idle");
           setSummary("");
           setExtraction(undefined);
@@ -390,7 +421,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             isGeneratingAudio={isGeneratingAudio}
             isPlaying={!!audioProcess}
             audioError={audioError}
-            sessionDir={currentSession?.sessionDir}
+            sessionDir={pendingResult ? undefined : currentSession?.sessionDir}
           />
         )}
         {state === "chat" && config && (

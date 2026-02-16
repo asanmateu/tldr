@@ -20,7 +20,10 @@ export async function summarizeViaApi(
   userPrompt: string,
   onChunk: (text: string) => void,
   image?: ImageData,
+  signal?: AbortSignal,
 ): Promise<string> {
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
   const client = new Anthropic({
     apiKey: config.apiKey,
     baseURL: config.baseUrl ?? undefined,
@@ -39,6 +42,8 @@ export async function summarizeViaApi(
   let lastError: Error | undefined;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
     try {
       const chunks: string[] = [];
 
@@ -49,6 +54,8 @@ export async function summarizeViaApi(
         messages: [{ role: "user", content: messageContent }],
       });
 
+      signal?.addEventListener("abort", () => stream.abort(), { once: true });
+
       stream.on("text", (text) => {
         chunks.push(text);
         onChunk(text);
@@ -58,6 +65,8 @@ export async function summarizeViaApi(
 
       return chunks.join("");
     } catch (error) {
+      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
       lastError = error instanceof Error ? error : new Error(String(error));
 
       if (error instanceof Anthropic.AuthenticationError) {

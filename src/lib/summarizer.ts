@@ -64,11 +64,13 @@ async function callProvider(
   userPrompt: string,
   onChunk: (text: string) => void,
   image?: ImageData,
+  signal?: AbortSignal,
 ): Promise<string> {
   try {
     const provider = await getProvider(config.provider);
-    return await provider.summarize(config, systemPrompt, userPrompt, onChunk, image);
+    return await provider.summarize(config, systemPrompt, userPrompt, onChunk, image, signal);
   } catch (error) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     throw toSummarizerError(error);
   }
 }
@@ -77,6 +79,7 @@ export async function summarize(
   extraction: ExtractionResult,
   config: Config,
   onChunk: (text: string) => void,
+  signal?: AbortSignal,
 ): Promise<TldrResult> {
   const isImage = !!extraction.image;
 
@@ -92,7 +95,14 @@ export async function summarize(
 
   const systemPrompt = buildSystemPrompt(config);
 
-  const summary = await callProvider(config, systemPrompt, userPrompt, onChunk, extraction.image);
+  const summary = await callProvider(
+    config,
+    systemPrompt,
+    userPrompt,
+    onChunk,
+    extraction.image,
+    signal,
+  );
 
   return {
     extraction,
