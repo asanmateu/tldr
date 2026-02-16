@@ -337,7 +337,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   if (!config && state !== "config") {
     return (
       <ThemeProvider palette={themePalette}>
-        <Box paddingX={1}>
+        <Box paddingX={1} marginTop={1}>
           <Text dimColor>Loading...</Text>
         </Box>
       </ThemeProvider>
@@ -346,7 +346,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
 
   return (
     <ThemeProvider palette={themePalette}>
-      <Box flexDirection="column">
+      <Box flexDirection="column" marginTop={1}>
         {state === "config" && (
           <ConfigSetup
             currentConfig={config}

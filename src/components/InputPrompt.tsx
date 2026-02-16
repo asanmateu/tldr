@@ -153,7 +153,7 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
       {slashMenuVisible && (
         <SlashCommandMenu commands={filteredCommands} selectedIndex={slashMenuIndex} />
       )}
-      {commandError && !slashMenuVisible && <Text color="red">{commandError}</Text>}
+      {commandError && !slashMenuVisible && <Text color={theme.error}>{commandError}</Text>}
       {!slashMenuVisible && !commandError && clipboardHint && !input && (
         <Text dimColor>Clipboard: {clipboardHint}</Text>
       )}

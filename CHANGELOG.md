@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Coral theme accent color changed from cyan (#00d4ff/#0984e3) to warm gold/amber (#f9ca24/#b45309) to match its warm identity
+- Forest theme accent color changed from cyan (#81ecec/#00838f) to earthy wheat/olive (#e6c57b/#5d6d1e) to match its natural identity
+- Hardcoded `color="red"` in command error text now uses `theme.error` for consistency
+- Added top spacing (blank line) between shell prompt and app output
+
 - Graceful error messages for invalid file paths (e.g. `/clear` no longer shows raw ENOENT stack trace)
 - Unknown slash commands now show "Unknown command" feedback instead of being silently ignored
 - First-run setup wizard now correctly shows on fresh install (was skipped when provider defaulted to `cli`)

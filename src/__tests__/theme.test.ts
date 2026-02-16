@@ -82,7 +82,7 @@ describe("theme", () => {
       const palette = resolveTheme({ name: "coral", appearance: "light" });
 
       expect(palette.brand).toBe("#d63031");
-      expect(palette.accent).toBe("#0984e3");
+      expect(palette.accent).toBe("#b45309");
     });
 
     it("returns ocean dark palette", () => {
@@ -102,7 +102,7 @@ describe("theme", () => {
       const palette = resolveTheme({ name: "forest", appearance: "dark" });
 
       expect(palette.brand).toBe("#a8e6cf");
-      expect(palette.accent).toBe("#81ecec");
+      expect(palette.accent).toBe("#e6c57b");
     });
 
     it("returns forest light palette", () => {
