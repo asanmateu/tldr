@@ -61,7 +61,7 @@ describe("extractFromSlack", () => {
 
   it("throws NO_TOKEN when env var missing", async () => {
     const original = process.env.SLACK_TOKEN;
-    process.env.SLACK_TOKEN = undefined;
+    process.env.SLACK_TOKEN = "";
 
     try {
       await expect(

@@ -47,7 +47,7 @@ describe("extractFromNotion", () => {
 
   it("throws NO_TOKEN when env var missing", async () => {
     const original = process.env.NOTION_TOKEN;
-    process.env.NOTION_TOKEN = undefined;
+    process.env.NOTION_TOKEN = "";
 
     try {
       await expect(extractFromNotion(baseUrl, {})).rejects.toMatchObject({
