@@ -113,7 +113,7 @@ tldr config set model gpt-4o              # Non-Claude model (with compatible AP
 | Setting | Default |
 |---------|---------|
 | Provider | `cli` (Claude Code) |
-| Summary style | `study-notes` |
+| Summary style | `standard` |
 | Model | Opus (`claude-opus-4-6`) |
 | Cognitive traits | `dyslexia` |
 | Tone | `casual` |
