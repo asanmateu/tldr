@@ -10,7 +10,6 @@ URLs · PDFs · Images · YouTube · Slack · Notion · arXiv · Raw Text
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Powered by Claude](https://img.shields.io/badge/powered%20by-Claude-blueviolet.svg)](https://claude.ai)
-[![Free with Claude Code](https://img.shields.io/badge/cost-free%20with%20Claude%20Code-brightgreen.svg)](#pricing)
 
 </div>
 
