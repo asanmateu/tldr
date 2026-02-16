@@ -42,97 +42,9 @@ vi.mock("node:os", () => ({
   homedir: () => "/mock-home",
 }));
 
-const { generateAudio, playAudio, speakFallback, stopAudio, stripMarkdownForSpeech } = await import(
-  "../lib/tts.js"
-);
+const { generateAudio, playAudio, speakFallback, stopAudio } = await import("../lib/tts.js");
 
 describe("tts", () => {
-  describe("stripMarkdownForSpeech", () => {
-    it("removes heading markers and adds pause", () => {
-      const result = stripMarkdownForSpeech("## TL;DR\nSome text");
-      expect(result).toBe("TL;DR.\n\nSome text");
-    });
-
-    it("removes bold markers", () => {
-      expect(stripMarkdownForSpeech("This is **bold** text")).toBe("This is bold text");
-    });
-
-    it("removes italic markers", () => {
-      expect(stripMarkdownForSpeech("This is *italic* text")).toBe("This is italic text");
-    });
-
-    it("removes bold+italic markers", () => {
-      expect(stripMarkdownForSpeech("This is ***bold italic*** text")).toBe(
-        "This is bold italic text",
-      );
-    });
-
-    it("converts unchecked checkboxes to 'To do:'", () => {
-      expect(stripMarkdownForSpeech("- [ ] Buy groceries")).toBe("To do: Buy groceries.");
-    });
-
-    it("converts checked checkboxes to 'Done:'", () => {
-      expect(stripMarkdownForSpeech("- [x] Buy groceries")).toBe("Done: Buy groceries.");
-    });
-
-    it("adds period to bullet items missing punctuation", () => {
-      expect(stripMarkdownForSpeech("- First item\n- Second item")).toBe(
-        "First item.\nSecond item.",
-      );
-    });
-
-    it("does not add period to bullets ending with punctuation", () => {
-      expect(stripMarkdownForSpeech("- Already has period.")).toBe("Already has period.");
-    });
-
-    it("removes horizontal rules", () => {
-      expect(stripMarkdownForSpeech("Above\n---\nBelow")).toBe("Above\n\nBelow");
-    });
-
-    it("removes inline code backticks", () => {
-      expect(stripMarkdownForSpeech("Use `console.log` here")).toBe("Use console.log here");
-    });
-
-    it("removes link syntax, keeps text", () => {
-      expect(stripMarkdownForSpeech("Visit [Google](https://google.com) now")).toBe(
-        "Visit Google now",
-      );
-    });
-
-    it("collapses multiple newlines", () => {
-      expect(stripMarkdownForSpeech("Line 1\n\n\n\nLine 2")).toBe("Line 1\n\nLine 2");
-    });
-
-    it("handles a full markdown summary", () => {
-      const markdown = `## TL;DR
-**Claude** is an AI assistant.
-
-## Key Points
-- **Speed** — very fast responses
-- **Quality** — high accuracy
-- [ ] Try it out
-
----
-
-Visit [Anthropic](https://anthropic.com) for more.`;
-
-      const result = stripMarkdownForSpeech(markdown);
-
-      expect(result).not.toContain("##");
-      expect(result).not.toContain("**");
-      expect(result).not.toContain("---");
-      expect(result).not.toContain("- [ ]");
-      expect(result).not.toContain("[Anthropic](");
-      expect(result).toContain("Claude");
-      expect(result).toContain("To do:");
-      expect(result).toContain("Anthropic");
-    });
-
-    it("converts em dashes to commas", () => {
-      expect(stripMarkdownForSpeech("Speed — very fast")).toBe("Speed, very fast");
-    });
-  });
-
   describe("generateAudio", () => {
     it("generates audio file from text", async () => {
       const path = await generateAudio("Hello world", "en-US-JennyNeural");
@@ -173,6 +85,8 @@ Visit [Anthropic](https://anthropic.com) for more.`;
         "Hello world",
         "en-US-JennyNeural",
         undefined,
+        undefined,
+        undefined,
         "/custom/dir/audio.mp3",
       );
 
@@ -186,6 +100,54 @@ Visit [Anthropic](https://anthropic.com) for more.`;
 
       expect(path).toContain("audio.mp3");
       expect(path).toContain(".tldr");
+    });
+  });
+
+  describe("pitch and volume presets", () => {
+    it("passes pitch for 'low' preset", async () => {
+      await generateAudio("Hello", "en-US-JennyNeural", 1.0, "low");
+
+      expect(mockEdgeTTSConstructor).toHaveBeenCalledWith(
+        "Hello",
+        "en-US-JennyNeural",
+        expect.objectContaining({ pitch: "-5Hz" }),
+      );
+    });
+
+    it("passes pitch for 'high' preset", async () => {
+      await generateAudio("Hello", "en-US-JennyNeural", 1.0, "high");
+
+      expect(mockEdgeTTSConstructor).toHaveBeenCalledWith(
+        "Hello",
+        "en-US-JennyNeural",
+        expect.objectContaining({ pitch: "+5Hz" }),
+      );
+    });
+
+    it("omits pitch for 'default' preset", async () => {
+      await generateAudio("Hello", "en-US-JennyNeural", 1.0, "default");
+
+      expect(mockEdgeTTSConstructor).toHaveBeenCalledWith("Hello", "en-US-JennyNeural", undefined);
+    });
+
+    it("passes volume for 'loud' preset", async () => {
+      await generateAudio("Hello", "en-US-JennyNeural", 1.0, "default", "loud");
+
+      expect(mockEdgeTTSConstructor).toHaveBeenCalledWith(
+        "Hello",
+        "en-US-JennyNeural",
+        expect.objectContaining({ volume: "+20%" }),
+      );
+    });
+
+    it("combines rate with pitch and volume presets", async () => {
+      await generateAudio("Hello", "en-US-JennyNeural", 1.5, "low", "loud");
+
+      expect(mockEdgeTTSConstructor).toHaveBeenCalledWith(
+        "Hello",
+        "en-US-JennyNeural",
+        expect.objectContaining({ rate: "+50%", pitch: "-5Hz", volume: "+20%" }),
+      );
     });
   });
 

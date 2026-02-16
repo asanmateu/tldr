@@ -112,7 +112,8 @@ async function handleConfig() {
     console.log(`  ${fmt.label("Style:")}       ${config.summaryStyle}`);
     console.log(`  ${fmt.label("Voice:")}       ${config.voice}`);
     console.log(`  ${fmt.label("TTS Speed:")}   ${config.ttsSpeed}x`);
-    console.log(`  ${fmt.label("TTS Mode:")}    ${config.ttsMode}`);
+    console.log(`  ${fmt.label("Pitch:")}       ${config.pitch}`);
+    console.log(`  ${fmt.label("Volume:")}      ${config.volume}`);
     console.log(`  ${fmt.label("Output Dir:")}  ${config.outputDir}`);
     if (config.customInstructions)
       console.log(`  ${fmt.label("Custom:")}      ${config.customInstructions}`);
@@ -148,17 +149,31 @@ async function handleConfig() {
       }
       await saveSettings(settings);
       console.log(`Set ${key} = ${key === "apiKey" ? "***" : value}`);
-    } else if (key === "tts-mode") {
-      if (value !== "strip" && value !== "rewrite") {
-        console.error('Invalid tts-mode. Use "strip" or "rewrite".');
+    } else if (key === "pitch") {
+      const valid = ["low", "default", "high"];
+      if (!valid.includes(value)) {
+        console.error(`Invalid pitch. Use one of: ${valid.join(", ")}`);
         process.exit(1);
       }
       const profileName = settings.activeProfile;
       const profile = settings.profiles[profileName];
       if (profile) {
-        profile.ttsMode = value;
+        profile.pitch = value === "default" ? undefined : (value as "low" | "high");
         await saveSettings(settings);
-        console.log(`Set tts-mode = ${value} (profile: ${profileName})`);
+        console.log(`Set pitch = ${value} (profile: ${profileName})`);
+      }
+    } else if (key === "volume") {
+      const valid = ["quiet", "normal", "loud"];
+      if (!valid.includes(value)) {
+        console.error(`Invalid volume. Use one of: ${valid.join(", ")}`);
+        process.exit(1);
+      }
+      const profileName = settings.activeProfile;
+      const profile = settings.profiles[profileName];
+      if (profile) {
+        profile.volume = value === "normal" ? undefined : (value as "quiet" | "loud");
+        await saveSettings(settings);
+        console.log(`Set volume = ${value} (profile: ${profileName})`);
       }
     } else if (key === "provider") {
       if (value !== "api" && value !== "cli") {
@@ -203,7 +218,7 @@ async function handleConfig() {
     } else {
       console.error(`Unknown key: ${key}`);
       console.error(
-        `Valid keys: ${topLevelKeys.join(", ")}, model, tts-mode, provider, output-dir, theme, appearance`,
+        `Valid keys: ${topLevelKeys.join(", ")}, model, pitch, volume, provider, output-dir, theme, appearance`,
       );
       process.exit(1);
     }

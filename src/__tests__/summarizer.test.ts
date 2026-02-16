@@ -98,7 +98,8 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): Config {
     customInstructions: undefined,
     voice: "en-US-JennyNeural",
     ttsSpeed: 1.0,
-    ttsMode: "strip",
+    pitch: "default",
+    volume: "normal",
     provider: "api",
     outputDir: "/tmp/tldr-output",
     ...overrides,
@@ -323,6 +324,62 @@ describe("summarize", () => {
     const textBlock = content.find((b) => b.type === "text");
 
     expect(textBlock?.text).toContain("Summarize the content of this image");
+  });
+
+  it("rewriteForSpeech includes cognitive trait rules in system prompt", async () => {
+    mockMessagesCreate.mockResolvedValue({
+      content: [{ type: "text", text: "Rewritten text." }],
+    });
+
+    const config = makeTestConfig({
+      cognitiveTraits: ["adhd", "dyslexia"],
+    });
+    await rewriteForSpeech("## TL;DR\nA test summary.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("Listener Accessibility");
+    expect(callArgs.system).toContain("hook attention");
+    expect(callArgs.system).toContain("short, punchy");
+  });
+
+  it("rewriteForSpeech omits trait section when no traits configured", async () => {
+    mockMessagesCreate.mockResolvedValue({
+      content: [{ type: "text", text: "Rewritten text." }],
+    });
+
+    const config = makeTestConfig({ cognitiveTraits: [] });
+    await rewriteForSpeech("## TL;DR\nA test summary.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).not.toContain("Listener Accessibility");
+  });
+
+  it("rewriteForSpeech includes correct tone hint", async () => {
+    mockMessagesCreate.mockResolvedValue({
+      content: [{ type: "text", text: "Rewritten." }],
+    });
+
+    const config = makeTestConfig({ tone: "eli5" });
+    await rewriteForSpeech("## TL;DR\nA test summary.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("super simple and fun");
+  });
+
+  it("rewriteForSpeech includes all trait types in prompt", async () => {
+    mockMessagesCreate.mockResolvedValue({
+      content: [{ type: "text", text: "Rewritten." }],
+    });
+
+    const config = makeTestConfig({
+      cognitiveTraits: ["autism", "esl", "visual-thinker"],
+    });
+    await rewriteForSpeech("## TL;DR\nA test summary.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("direct and precise");
+    expect(callArgs.system).toContain("common everyday");
+    expect(callArgs.system).toContain("word pictures");
   });
 });
 

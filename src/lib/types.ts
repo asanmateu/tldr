@@ -47,7 +47,8 @@ export type CognitiveTrait = "dyslexia" | "adhd" | "autism" | "esl" | "visual-th
 export type Tone = "casual" | "professional" | "academic" | "eli5";
 export type SummaryStyle = "quick" | "standard" | "detailed" | "study-notes";
 export type ModelTier = "haiku" | "sonnet" | "opus";
-export type TtsMode = "strip" | "rewrite";
+export type PitchPreset = "low" | "default" | "high";
+export type VolumePreset = "quiet" | "normal" | "loud";
 export type SummarizationProvider = "api" | "cli";
 
 export interface Profile {
@@ -59,7 +60,8 @@ export interface Profile {
   styleModels?: Partial<Record<SummaryStyle, string>> | undefined;
   voice?: string | undefined;
   ttsSpeed?: number | undefined;
-  ttsMode?: TtsMode | undefined;
+  pitch?: PitchPreset | undefined;
+  volume?: VolumePreset | undefined;
   provider?: SummarizationProvider | undefined;
 }
 
@@ -85,7 +87,8 @@ export interface ResolvedConfig {
   customInstructions: string | undefined;
   voice: string;
   ttsSpeed: number;
-  ttsMode: TtsMode;
+  pitch: PitchPreset;
+  volume: VolumePreset;
   provider: SummarizationProvider;
   outputDir: string;
 }

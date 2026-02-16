@@ -15,13 +15,7 @@ import { isCliAvailable } from "./lib/providers/cli.js";
 import { getSessionPaths, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
 import { resolveTheme } from "./lib/theme.js";
-import {
-  generateAudio,
-  playAudio,
-  speakFallback,
-  stopAudio,
-  stripMarkdownForSpeech,
-} from "./lib/tts.js";
+import { generateAudio, playAudio, speakFallback, stopAudio } from "./lib/tts.js";
 import type {
   AppState,
   Config,
@@ -153,15 +147,27 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
       );
 
       setIsStreaming(false);
+
+      // Compute session paths BEFORE transitioning to result state
+      // so that currentSession.audioPath is available if user presses 'a' quickly
+      let sessionPaths: SessionPaths | undefined;
+      try {
+        sessionPaths = getSessionPaths(activeConfig.outputDir, result, tldrResult.summary);
+        setCurrentSession(sessionPaths);
+      } catch {
+        // Non-fatal
+      }
+
       setState("result");
 
-      // Save session output
-      try {
-        const paths = getSessionPaths(activeConfig.outputDir, result, tldrResult.summary);
-        const saved = await saveSummary(paths, tldrResult.summary);
-        setCurrentSession(saved);
-      } catch {
-        // Non-fatal — session save failure shouldn't block the user
+      // Persist summary to disk async
+      if (sessionPaths) {
+        try {
+          const saved = await saveSummary(sessionPaths, tldrResult.summary);
+          setCurrentSession(saved);
+        } catch {
+          // Non-fatal — session save failure shouldn't block the user
+        }
       }
 
       // Save to history
@@ -213,18 +219,15 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           setIsGeneratingAudio(true);
           (async () => {
             try {
-              const ttsMode = config?.ttsMode ?? "strip";
-              let speechText: string;
-              if (ttsMode === "rewrite" && config) {
-                speechText = await rewriteForSpeech(summary, config);
-              } else {
-                speechText = stripMarkdownForSpeech(summary);
-              }
+              if (!config) throw new Error("Config not loaded");
+              const speechText = await rewriteForSpeech(summary, config);
               try {
                 const path = await generateAudio(
                   speechText,
-                  config?.voice ?? "en-US-JennyNeural",
-                  config?.ttsSpeed,
+                  config.voice,
+                  config.ttsSpeed,
+                  config.pitch,
+                  config.volume,
                   currentSession?.audioPath,
                 );
                 setIsGeneratingAudio(false);

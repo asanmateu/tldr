@@ -13,7 +13,7 @@ export {
 } from "../config.js";
 export { addEntry, getRecent } from "../history.js";
 export { getSessionPaths, saveSummary } from "../session.js";
-export { generateAudio, playAudio, stopAudio, stripMarkdownForSpeech } from "../tts.js";
+export { generateAudio, playAudio, stopAudio } from "../tts.js";
 export { buildSystemPrompt, buildUserPrompt } from "../prompts.js";
 export { isCliAvailable } from "../providers/cli.js";
 export { importMarkdown } from "../import.js";

@@ -8,28 +8,24 @@ Audio is powered by [edge-tts](https://github.com/nickclaw/edge-tts-universal), 
 
 Press `a` in the result view to generate and play audio.
 
-## TTS Modes
+When you press `a`, tldr uses your configured provider (API or CLI) to rewrite the summary as an engaging, podcast-style audio script tailored to your cognitive profile. This costs one API call (or CLI invocation) but produces natural-sounding, accessible audio.
 
-| Mode | Description |
-|------|-------------|
-| **strip** (default) | Strips markdown formatting, reads the summary as-is |
-| **rewrite** | Rewrites the summary as an engaging audio script before speaking |
-
-The `rewrite` mode uses your configured provider (API or CLI) to transform the summary into a podcast-style script. This costs one additional API call (or CLI invocation) but produces more natural-sounding audio.
-
-```bash
-tldr config set tts-mode rewrite    # Enable rewrite mode
-tldr config set tts-mode strip      # Back to default
-```
-
-## Voice & Speed
+## Voice, Speed, Pitch & Volume
 
 ```bash
 # Set via profile editor
 tldr profile edit
 
+# Or via CLI
+tldr config set pitch low          # deeper, warmer voice
+tldr config set pitch high         # brighter, more energetic
+tldr config set volume loud        # more presence
+tldr config set volume quiet       # softer
+
 # Default voice: en-US-JennyNeural
 # Default speed: 1.0x
+# Default pitch: default
+# Default volume: normal
 ```
 
 The voice setting accepts any edge-tts compatible voice name. Speed is a multiplier (e.g., `1.2` for 20% faster).

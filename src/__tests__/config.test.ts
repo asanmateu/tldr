@@ -44,7 +44,8 @@ function makeTestConfig(overrides?: Partial<import("../lib/types.js").ResolvedCo
     customInstructions: undefined,
     voice: "en-US-JennyNeural",
     ttsSpeed: 1.0,
-    ttsMode: "strip" as const,
+    pitch: "default" as const,
+    volume: "normal" as const,
     provider: "cli" as const,
     outputDir: `${tempDir}/.tldr/output`,
     ...overrides,
@@ -351,6 +352,50 @@ describe("config", () => {
       );
 
       expect(config.apiKey).toBe("override-key");
+    });
+
+    it("defaults pitch to 'default' and volume to 'normal'", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+      expect(config.pitch).toBe("default");
+      expect(config.volume).toBe("normal");
+    });
+
+    it("resolves pitch and volume from profile", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "quick",
+            pitch: "low",
+            volume: "loud",
+          },
+        },
+      });
+      expect(config.pitch).toBe("low");
+      expect(config.volume).toBe("loud");
+    });
+
+    it("ignores invalid pitch/volume and falls back to defaults", () => {
+      const profile = {
+        cognitiveTraits: [] as import("../lib/types.js").CognitiveTrait[],
+        tone: "casual" as const,
+        summaryStyle: "quick" as const,
+        pitch: "invalid",
+        volume: "invalid",
+      } as unknown as import("../lib/types.js").Profile;
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: { default: profile },
+      });
+      expect(config.pitch).toBe("default");
+      expect(config.volume).toBe("normal");
     });
   });
 
@@ -668,6 +713,43 @@ describe("config", () => {
 
       const loaded = await loadSettings();
       expect(loaded.theme).toEqual({ name: "forest", appearance: "light" });
+    });
+  });
+
+  describe("backward compatibility", () => {
+    it("ignores legacy ttsMode in settings", async () => {
+      await ensureConfigDir();
+      const settingsPath = join(getConfigDir(), "settings.json");
+      await fsWriteFile(
+        settingsPath,
+        JSON.stringify({
+          apiKey: "key",
+          activeProfile: "default",
+          profiles: {
+            default: {
+              cognitiveTraits: ["adhd"],
+              tone: "casual",
+              summaryStyle: "quick",
+              ttsMode: "strip",
+            },
+          },
+        }),
+        "utf-8",
+      );
+
+      const config = await loadConfig();
+      expect(config.tone).toBe("casual");
+      expect((config as unknown as Record<string, unknown>).ttsMode).toBeUndefined();
+    });
+  });
+
+  describe("pitch/volume round-trip", () => {
+    it("saves and loads pitch/volume round-trip", async () => {
+      const config = makeTestConfig({ pitch: "high" as const, volume: "quiet" as const });
+      await saveConfig(config);
+      const loaded = await loadConfig();
+      expect(loaded.pitch).toBe("high");
+      expect(loaded.volume).toBe("quiet");
     });
   });
 });

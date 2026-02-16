@@ -1,6 +1,17 @@
 import { buildSystemPrompt, buildUserPrompt } from "./prompts.js";
 import { getProvider } from "./providers/index.js";
-import type { Config, ExtractionResult, ImageData, TldrResult } from "./types.js";
+import type { CognitiveTrait, Config, ExtractionResult, ImageData, TldrResult } from "./types.js";
+
+const TRAIT_AUDIO_RULES: Record<CognitiveTrait, string> = {
+  dyslexia:
+    "Use short, punchy sentences. Repeat key terms naturally for reinforcement. Pause between ideas. Avoid complex multi-clause sentences.",
+  adhd: "Lead with the most surprising or actionable insight to hook attention. Keep energy high with varied pacing. Break into distinct segments with clear transitions. End each segment with a mini-takeaway.",
+  autism:
+    "Be direct and precise. Avoid idioms, sarcasm, and implied meanings. Explicitly state connections between topics. Clarify ambiguous meanings.",
+  esl: "Use common everyday vocabulary. Briefly explain specialized terms inline. Avoid phrasal verbs and culturally-specific references. Use active voice.",
+  "visual-thinker":
+    "Paint word pictures with spatial language. Describe relationships as physical arrangements. Give items a memorable spatial or narrative structure.",
+};
 
 type SummarizerErrorCode = "AUTH" | "RATE_LIMIT" | "NETWORK" | "NOT_FOUND" | "TIMEOUT" | "UNKNOWN";
 
@@ -86,6 +97,17 @@ export async function rewriteForSpeech(markdown: string, config: Config): Promis
           ? "Be clear and polished, like a well-produced briefing."
           : "Be relaxed and friendly, like chatting with a smart friend.";
 
+  let traitSection = "";
+  if (config.cognitiveTraits.length > 0) {
+    const rules = config.cognitiveTraits
+      .filter((t) => t in TRAIT_AUDIO_RULES)
+      .map((t) => `- ${t}: ${TRAIT_AUDIO_RULES[t]}`)
+      .join("\n");
+    if (rules) {
+      traitSection = `\n\nListener Accessibility:\n${rules}`;
+    }
+  }
+
   const systemPrompt = `You are a podcast host rewriting a text summary into a short, engaging audio script.
 
 Rules:
@@ -97,7 +119,10 @@ Rules:
 - Explain concepts through analogies and concrete examples. Make the listener feel like they're learning, not just listening.
 - No markdown formatting — output plain spoken text only.
 - No stage directions or sound effects.
-- ${toneHint}`;
+- Use punctuation deliberately for pacing: commas for brief pauses, periods for full stops, ellipses for dramatic pauses.
+- Vary sentence rhythm — mix short punchy sentences with longer flowing ones to maintain engagement.
+- Write out numbers and abbreviations in full (e.g. "three" not "3", "for example" not "e.g.").
+- ${toneHint}${traitSection}`;
 
   try {
     const provider = await getProvider(config.provider);

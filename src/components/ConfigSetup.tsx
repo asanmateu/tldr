@@ -7,6 +7,7 @@ import type {
   AppearanceMode,
   CognitiveTrait,
   Config,
+  PitchPreset,
   Profile,
   SummarizationProvider,
   SummaryStyle,
@@ -14,7 +15,7 @@ import type {
   ThemeName,
   TldrSettings,
   Tone,
-  TtsMode,
+  VolumePreset,
 } from "../lib/types.js";
 
 interface ConfigSetupProps {
@@ -36,7 +37,8 @@ type EditMenuItem =
   | "provider"
   | "voice"
   | "ttsSpeed"
-  | "ttsMode"
+  | "pitch"
+  | "volume"
   | "customInstructions"
   | "save";
 
@@ -63,16 +65,23 @@ const ALL_STYLES: { value: SummaryStyle; label: string; hint: string }[] = [
 ];
 
 const VOICES = [
-  "en-US-JennyNeural",
-  "en-US-GuyNeural",
-  "en-US-AriaNeural",
-  "en-GB-SoniaNeural",
-  "en-AU-NatashaNeural",
+  { value: "en-US-JennyNeural", label: "Jenny", hint: "friendly, warm" },
+  { value: "en-US-GuyNeural", label: "Guy", hint: "professional, clear" },
+  { value: "en-US-AriaNeural", label: "Aria", hint: "positive, conversational" },
+  { value: "en-GB-SoniaNeural", label: "Sonia", hint: "clear, British" },
+  { value: "en-AU-NatashaNeural", label: "Natasha", hint: "bright, Australian" },
 ];
 
-const ALL_TTS_MODES: { value: TtsMode; label: string; hint: string }[] = [
-  { value: "strip", label: "Strip", hint: "fast, regex-based cleanup" },
-  { value: "rewrite", label: "Rewrite", hint: "Claude rewrites as podcast script" },
+const ALL_PITCHES: { value: PitchPreset; label: string; hint: string }[] = [
+  { value: "low", label: "Low", hint: "deeper, warmer" },
+  { value: "default", label: "Default", hint: "standard" },
+  { value: "high", label: "High", hint: "brighter, more energetic" },
+];
+
+const ALL_VOLUMES: { value: VolumePreset; label: string; hint: string }[] = [
+  { value: "quiet", label: "Quiet", hint: "softer" },
+  { value: "normal", label: "Normal", hint: "standard" },
+  { value: "loud", label: "Loud", hint: "louder, more presence" },
 ];
 
 const ALL_PROVIDERS: { value: SummarizationProvider; label: string; hint: string }[] = [
@@ -101,7 +110,8 @@ const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string }[] = [
   { key: "provider", label: "Provider" },
   { key: "voice", label: "TTS Voice" },
   { key: "ttsSpeed", label: "TTS Speed" },
-  { key: "ttsMode", label: "TTS Mode" },
+  { key: "pitch", label: "Pitch" },
+  { key: "volume", label: "Volume" },
   { key: "customInstructions", label: "Custom instructions" },
   { key: "save", label: "Save & exit" },
 ];
@@ -154,13 +164,25 @@ export function ConfigSetup({
     ),
   );
   const [traitCursor, setTraitCursor] = useState(0);
-  const [voiceIndex, setVoiceIndex] = useState(Math.max(VOICES.indexOf(defaults.voice), 0));
+  const [voiceIndex, setVoiceIndex] = useState(
+    Math.max(
+      VOICES.findIndex((v) => v.value === defaults.voice),
+      0,
+    ),
+  );
   const [customInstructions, setCustomInstructions] = useState(defaults.customInstructions ?? "");
   const [ttsSpeedInput, setTtsSpeedInput] = useState(String(defaults.ttsSpeed));
-  const [ttsMode, setTtsMode] = useState<TtsMode>(defaults.ttsMode);
-  const [ttsModeIndex, setTtsModeIndex] = useState(
+  const [pitch, setPitch] = useState<PitchPreset>(defaults.pitch);
+  const [pitchIndex, setPitchIndex] = useState(
     Math.max(
-      ALL_TTS_MODES.findIndex((m) => m.value === defaults.ttsMode),
+      ALL_PITCHES.findIndex((p) => p.value === defaults.pitch),
+      0,
+    ),
+  );
+  const [volume, setVolume] = useState<VolumePreset>(defaults.volume);
+  const [volumeIndex, setVolumeIndex] = useState(
+    Math.max(
+      ALL_VOLUMES.findIndex((v) => v.value === defaults.volume),
       0,
     ),
   );
@@ -200,7 +222,7 @@ export function ConfigSetup({
 
   const buildConfig = useCallback((): Config => {
     const resolvedApiKey = hasEnvApiKey ? (process.env.ANTHROPIC_API_KEY ?? "") : apiKey;
-    const voice = VOICES[voiceIndex] ?? "en-US-JennyNeural";
+    const voice = VOICES[voiceIndex]?.value ?? "en-US-JennyNeural";
     const ttsSpeed = Number.parseFloat(ttsSpeedInput) || 1.0;
 
     const profile: Profile = {
@@ -210,7 +232,8 @@ export function ConfigSetup({
       customInstructions: customInstructions || undefined,
       voice: voice !== "en-US-JennyNeural" ? voice : undefined,
       ttsSpeed: ttsSpeed !== 1.0 ? ttsSpeed : undefined,
-      ttsMode: ttsMode !== "strip" ? ttsMode : undefined,
+      pitch: pitch !== "default" ? pitch : undefined,
+      volume: volume !== "normal" ? volume : undefined,
       provider: provider !== "cli" ? provider : undefined,
     };
 
@@ -226,7 +249,8 @@ export function ConfigSetup({
     apiKey,
     voiceIndex,
     ttsSpeedInput,
-    ttsMode,
+    pitch,
+    volume,
     provider,
     selectedTraits,
     tone,
@@ -429,12 +453,23 @@ export function ConfigSetup({
         return;
       }
 
-      if (editingField === "ttsMode") {
-        if (key.upArrow) setTtsModeIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setTtsModeIndex((i) => Math.min(ALL_TTS_MODES.length - 1, i + 1));
+      if (editingField === "pitch") {
+        if (key.upArrow) setPitchIndex((i) => Math.max(0, i - 1));
+        if (key.downArrow) setPitchIndex((i) => Math.min(ALL_PITCHES.length - 1, i + 1));
         if (key.return) {
-          const selected = ALL_TTS_MODES[ttsModeIndex];
-          if (selected) setTtsMode(selected.value);
+          const selected = ALL_PITCHES[pitchIndex];
+          if (selected) setPitch(selected.value);
+          setEditingField(null);
+        }
+        return;
+      }
+
+      if (editingField === "volume") {
+        if (key.upArrow) setVolumeIndex((i) => Math.max(0, i - 1));
+        if (key.downArrow) setVolumeIndex((i) => Math.min(ALL_VOLUMES.length - 1, i + 1));
+        if (key.return) {
+          const selected = ALL_VOLUMES[volumeIndex];
+          if (selected) setVolume(selected.value);
           setEditingField(null);
         }
         return;
@@ -573,9 +608,10 @@ export function ConfigSetup({
             if (item.key === "style") current = style;
             if (item.key === "model") current = defaults.model;
             if (item.key === "provider") current = provider;
-            if (item.key === "voice") current = VOICES[voiceIndex] ?? "";
+            if (item.key === "voice") current = VOICES[voiceIndex]?.label ?? "";
             if (item.key === "ttsSpeed") current = `${ttsSpeedInput}x`;
-            if (item.key === "ttsMode") current = ttsMode;
+            if (item.key === "pitch") current = pitch;
+            if (item.key === "volume") current = volume;
             if (item.key === "customInstructions")
               current = customInstructions ? `"${customInstructions.slice(0, 30)}..."` : "none";
 
@@ -650,19 +686,30 @@ export function ConfigSetup({
           <Box flexDirection="column">
             <Text>TTS Voice (Enter to confirm):</Text>
             {VOICES.map((v, i) => (
-              <Text key={v} {...(i === voiceIndex ? { color: theme.accent } : {})}>
-                {i === voiceIndex ? ">" : " "} {v}
+              <Text key={v.value} {...(i === voiceIndex ? { color: theme.accent } : {})}>
+                {i === voiceIndex ? ">" : " "} {v.label} <Text dimColor>({v.hint})</Text>
               </Text>
             ))}
           </Box>
         )}
 
-        {editingField === "ttsMode" && (
+        {editingField === "pitch" && (
           <Box flexDirection="column">
-            <Text>TTS Mode (Enter to confirm):</Text>
-            {ALL_TTS_MODES.map((m, i) => (
-              <Text key={m.value} {...(i === ttsModeIndex ? { color: theme.accent } : {})}>
-                {i === ttsModeIndex ? ">" : " "} {m.label} <Text dimColor>({m.hint})</Text>
+            <Text>Pitch (Enter to confirm):</Text>
+            {ALL_PITCHES.map((p, i) => (
+              <Text key={p.value} {...(i === pitchIndex ? { color: theme.accent } : {})}>
+                {i === pitchIndex ? ">" : " "} {p.label} <Text dimColor>({p.hint})</Text>
+              </Text>
+            ))}
+          </Box>
+        )}
+
+        {editingField === "volume" && (
+          <Box flexDirection="column">
+            <Text>Volume (Enter to confirm):</Text>
+            {ALL_VOLUMES.map((v, i) => (
+              <Text key={v.value} {...(i === volumeIndex ? { color: theme.accent } : {})}>
+                {i === volumeIndex ? ">" : " "} {v.label} <Text dimColor>({v.hint})</Text>
               </Text>
             ))}
           </Box>

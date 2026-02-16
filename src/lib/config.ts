@@ -6,6 +6,7 @@ import type {
   CognitiveTrait,
   ConfigOverrides,
   ModelTier,
+  PitchPreset,
   Profile,
   ResolvedConfig,
   SummarizationProvider,
@@ -14,7 +15,7 @@ import type {
   ThemeName,
   TldrSettings,
   Tone,
-  TtsMode,
+  VolumePreset,
 } from "./types.js";
 
 export const MODEL_IDS: Record<ModelTier, string> = {
@@ -126,7 +127,8 @@ function parseSettings(parsed: unknown): TldrSettings {
 const VALID_TONES = new Set(["casual", "professional", "academic", "eli5"]);
 const VALID_STYLES = new Set(["quick", "standard", "detailed", "study-notes"]);
 const VALID_TRAITS = new Set(["dyslexia", "adhd", "autism", "esl", "visual-thinker"]);
-const VALID_TTS_MODES = new Set(["strip", "rewrite"]);
+const VALID_PITCHES = new Set(["low", "default", "high"]);
+const VALID_VOLUMES = new Set(["quiet", "normal", "loud"]);
 const VALID_PROVIDERS = new Set(["api", "cli"]);
 const VALID_THEME_NAMES = new Set(["coral", "ocean", "forest"]);
 const VALID_APPEARANCES = new Set(["dark", "light", "auto"]);
@@ -168,9 +170,13 @@ function parseProfile(raw: unknown): Profile {
     styleModels,
     voice: typeof obj.voice === "string" ? obj.voice : undefined,
     ttsSpeed: typeof obj.ttsSpeed === "number" ? obj.ttsSpeed : undefined,
-    ttsMode:
-      typeof obj.ttsMode === "string" && VALID_TTS_MODES.has(obj.ttsMode)
-        ? (obj.ttsMode as TtsMode)
+    pitch:
+      typeof obj.pitch === "string" && VALID_PITCHES.has(obj.pitch)
+        ? (obj.pitch as PitchPreset)
+        : undefined,
+    volume:
+      typeof obj.volume === "string" && VALID_VOLUMES.has(obj.volume)
+        ? (obj.volume as VolumePreset)
         : undefined,
     provider:
       typeof obj.provider === "string" && VALID_PROVIDERS.has(obj.provider)
@@ -290,7 +296,8 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
     customInstructions: profile.customInstructions,
     voice: profile.voice ?? "en-US-JennyNeural",
     ttsSpeed: profile.ttsSpeed ?? 1.0,
-    ttsMode: profile.ttsMode ?? "strip",
+    pitch: profile.pitch && VALID_PITCHES.has(profile.pitch) ? profile.pitch : "default",
+    volume: profile.volume && VALID_VOLUMES.has(profile.volume) ? profile.volume : "normal",
     provider,
     outputDir,
   };
@@ -325,7 +332,8 @@ export async function saveConfig(config: ResolvedConfig): Promise<void> {
     styleModels: existingProfile?.styleModels,
     voice: config.voice !== "en-US-JennyNeural" ? config.voice : undefined,
     ttsSpeed: config.ttsSpeed !== 1.0 ? config.ttsSpeed : undefined,
-    ttsMode: config.ttsMode !== "strip" ? config.ttsMode : undefined,
+    pitch: config.pitch !== "default" ? config.pitch : undefined,
+    volume: config.volume !== "normal" ? config.volume : undefined,
     provider: config.provider !== "cli" ? config.provider : undefined,
   };
 
