@@ -17,6 +17,8 @@ Run `tldr config` to see the current resolved configuration.
 | `activeProfile` | Profile name | Global | `tldr config set activeProfile work` |
 | `provider` | `cli` or `api` | Profile | `tldr config set provider api` |
 | `model` | Tier alias or full model ID | Profile | `tldr config set model sonnet` |
+| `pitch` | `low`, `default`, `high` | Profile | `tldr config set pitch high` |
+| `volume` | `quiet`, `normal`, `loud` | Profile | `tldr config set volume loud` |
 | `theme` | `coral`, `ocean`, `forest` | Global | `tldr config set theme ocean` |
 | `appearance` | `auto`, `dark`, `light` | Global | `tldr config set appearance light` |
 
@@ -26,7 +28,7 @@ Profiles let you save different settings for different contexts. Each profile st
 
 - Cognitive traits (dyslexia, adhd, autism, esl, visual-thinker)
 - Tone (casual, professional, academic, eli5)
-- Summary style (quick, detailed, study-notes)
+- Summary style (quick, standard, detailed, study-notes)
 - Per-style model overrides
 - Provider (cli or api)
 - Voice, TTS speed, pitch, volume
@@ -45,7 +47,7 @@ tldr --profile work <url>         # Use a profile for one run
 
 ## Theme
 
-The color theme is selected during first-run setup (after API key, before traits). You can also change it later via `tldr profile edit` → Theme menu item, or directly with the CLI:
+The color theme is selected during first-run setup (before traits). You can also change it later via `tldr profile edit` → Theme menu item, or directly with the CLI:
 
 ```bash
 tldr config set theme <name>         # coral, ocean, forest
@@ -157,5 +159,7 @@ tldr config set model gpt-4o              # Non-Claude model (with compatible AP
 | Tone | `casual` |
 | Voice | `en-US-JennyNeural` |
 | TTS speed | `1.0x` |
+| Pitch | `default` |
+| Volume | `normal` |
 | Theme | `coral` |
 | Appearance | `auto` (detects system dark/light on macOS) |

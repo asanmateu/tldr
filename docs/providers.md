@@ -52,6 +52,6 @@ tldr --provider api "https://example.com/article"
 tldr --provider cli "https://example.com/article"
 ```
 
-## Provider for TTS Rewrite
+## Provider for Audio
 
-When TTS mode is set to `rewrite`, the same provider is used to rewrite the summary as an audio script.
+The same provider (CLI or API) is used to rewrite summaries as audio scripts when you press `a` in the result view.
