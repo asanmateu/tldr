@@ -41,6 +41,24 @@ export const STYLE_TEMPLATES: Record<SummaryStyle, string> = {
 ## Action Items
 - [ ] [Only if the content implies things the reader should do]`,
 
+  standard: `Output format (strictly follow):
+
+## TL;DR
+[1-2 sentences summarizing the core message.]
+
+## Key Points
+- **Bold term** — explanation (max 20 words per bullet)
+- [3-10 bullets depending on content length]
+
+## Why It Matters
+[1-2 sentences connecting this to the bigger picture or the reader's world.]
+
+## Connections
+[Brief explanation of how the key ideas relate to each other or to broader topics the reader might know.]
+
+## Action Items
+- [ ] [Only if the content implies things the reader should do]`,
+
   detailed: `Output format (strictly follow):
 
 ## TL;DR
@@ -102,6 +120,10 @@ export function buildSystemPrompt(config: ResolvedConfig): string {
 
   // Visual-first instruction before style template
   sections.push(`Visual Structure:\n${VISUAL_FIRST}`);
+
+  sections.push(
+    "Start your response with a single top-level heading (# Title) that is a short, descriptive title for this summary (3-7 words). Then follow the output format below.",
+  );
 
   sections.push(STYLE_TEMPLATES[config.summaryStyle]);
 

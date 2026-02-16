@@ -10,15 +10,29 @@ export function slugify(text: string): string {
     .slice(0, 60);
 }
 
-export function buildSessionName(extraction: ExtractionResult): string {
+export function parseTitleFromSummary(markdown: string): string | undefined {
+  const match = /^# +(.+)$/m.exec(markdown);
+  if (match?.[1]) {
+    const title = match[1].trim();
+    if (title.length > 0 && title.length < 100) return title;
+  }
+  return undefined;
+}
+
+export function buildSessionName(extraction: ExtractionResult, summary?: string): string {
   const date = new Date().toISOString().slice(0, 10);
-  const label = extraction.title ?? extraction.source;
+  const modelTitle = summary ? parseTitleFromSummary(summary) : undefined;
+  const label = modelTitle ?? extraction.title ?? extraction.source;
   const slug = slugify(label);
   return `${date}-${slug || "summary"}`;
 }
 
-export function getSessionPaths(outputDir: string, extraction: ExtractionResult): SessionPaths {
-  const sessionDir = join(outputDir, buildSessionName(extraction));
+export function getSessionPaths(
+  outputDir: string,
+  extraction: ExtractionResult,
+  summary?: string,
+): SessionPaths {
+  const sessionDir = join(outputDir, buildSessionName(extraction, summary));
   return {
     sessionDir,
     summaryPath: join(sessionDir, "summary.md"),

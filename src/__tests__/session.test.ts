@@ -2,7 +2,13 @@ import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { buildSessionName, getSessionPaths, saveSummary, slugify } from "../lib/session.js";
+import {
+  buildSessionName,
+  getSessionPaths,
+  parseTitleFromSummary,
+  saveSummary,
+  slugify,
+} from "../lib/session.js";
 import type { ExtractionResult } from "../lib/types.js";
 
 let tempDir: string;
@@ -34,6 +40,33 @@ describe("slugify", () => {
   });
 });
 
+describe("parseTitleFromSummary", () => {
+  it("extracts title from top-level heading", () => {
+    expect(parseTitleFromSummary("# How LLMs Work\n\n## TL;DR\nSome text")).toBe("How LLMs Work");
+  });
+
+  it("returns undefined when no heading exists", () => {
+    expect(parseTitleFromSummary("## TL;DR\nJust a summary")).toBeUndefined();
+  });
+
+  it("returns undefined for empty title", () => {
+    expect(parseTitleFromSummary("# \n\nSome text")).toBeUndefined();
+  });
+
+  it("returns undefined for very long titles", () => {
+    const longTitle = `# ${"a".repeat(150)}`;
+    expect(parseTitleFromSummary(longTitle)).toBeUndefined();
+  });
+
+  it("trims whitespace from title", () => {
+    expect(parseTitleFromSummary("#   Spaced Title   \n\n## TL;DR")).toBe("Spaced Title");
+  });
+
+  it("picks the first h1 not an h2", () => {
+    expect(parseTitleFromSummary("## TL;DR\nText\n# Real Title\nMore")).toBe("Real Title");
+  });
+});
+
 describe("buildSessionName", () => {
   it("uses title when available", () => {
     const extraction: ExtractionResult = {
@@ -54,6 +87,30 @@ describe("buildSessionName", () => {
     };
     const name = buildSessionName(extraction);
     expect(name).toContain("example-com");
+  });
+
+  it("prefers model-generated title from summary over extraction title", () => {
+    const extraction: ExtractionResult = {
+      title: "Some Page Title",
+      content: "...",
+      wordCount: 100,
+      source: "https://example.com",
+    };
+    const summary = "# How AI Changes Everything\n\n## TL;DR\nContent here";
+    const name = buildSessionName(extraction, summary);
+    expect(name).toMatch(/^\d{4}-\d{2}-\d{2}-how-ai-changes-everything$/);
+  });
+
+  it("falls back to extraction title when summary has no h1", () => {
+    const extraction: ExtractionResult = {
+      title: "Page Title",
+      content: "...",
+      wordCount: 100,
+      source: "https://example.com",
+    };
+    const summary = "## TL;DR\nNo top-level heading here";
+    const name = buildSessionName(extraction, summary);
+    expect(name).toMatch(/^\d{4}-\d{2}-\d{2}-page-title$/);
   });
 });
 
