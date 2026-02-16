@@ -78,8 +78,8 @@ export function InputPrompt({ history, onSubmit, onQuit }: InputPromptProps) {
     <Box flexDirection="column" paddingX={1}>
       <Banner />
       <Box>
-        <Text color="cyan" bold>
-          tldr{" "}
+        <Text color="#ff6b6b" bold>
+          {">"}{" "}
         </Text>
         <TextInput
           value={input}
