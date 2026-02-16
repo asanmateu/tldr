@@ -1,0 +1,13 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "*.{ts,tsx,json}"
+      run: bunx biome check --write --staged
+    typecheck:
+      run: bun run tsc --noEmit
+
+pre-push:
+  commands:
+    test:
+      run: bun run vitest run

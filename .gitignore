@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+.tldr/
+*.mp3
+.DS_Store
