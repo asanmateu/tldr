@@ -18,6 +18,8 @@ export { buildSystemPrompt, buildUserPrompt } from "../prompts.js";
 export { isCliAvailable } from "../providers/cli.js";
 export { importMarkdown } from "../import.js";
 export { chatWithSession, buildChatSystemPrompt } from "../chat.js";
+export { resolveTheme, detectAppearance, DEFAULT_THEME, PALETTES } from "../theme.js";
+export { setTheme } from "../config.js";
 
 export type {
   Config,
@@ -34,4 +36,11 @@ export type {
   TldrSettings,
   SessionPaths,
   ChatMessage,
+  ThemeConfig,
+  ThemePalette,
+  ThemeName,
+  AppearanceMode,
+  PitchPreset,
+  VolumePreset,
+  SummarizationProvider,
 } from "../types.js";

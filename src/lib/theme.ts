@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import type { ThemeConfig, ThemeName, ThemePalette } from "./types.js";
 
 // 3 themes × 2 appearances = 6 palettes
-const PALETTES: Record<ThemeName, Record<"dark" | "light", ThemePalette>> = {
+export const PALETTES: Record<ThemeName, Record<"dark" | "light", ThemePalette>> = {
   coral: {
     dark: {
       brand: "#ff6b6b",
