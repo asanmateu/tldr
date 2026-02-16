@@ -1,8 +1,9 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { useCallback, useState } from "react";
+import { useListNavigation } from "../hooks/useListNavigation.js";
 import { useTheme } from "../lib/ThemeContext.js";
-import { resolveConfig } from "../lib/config.js";
+import { MODEL_IDS, resolveConfig } from "../lib/config.js";
 import type {
   AppearanceMode,
   CognitiveTrait,
@@ -17,6 +18,7 @@ import type {
   Tone,
   VolumePreset,
 } from "../lib/types.js";
+import { SelectionList } from "./SelectionList.js";
 
 interface ConfigSetupProps {
   currentConfig?: Config | undefined;
@@ -89,6 +91,12 @@ const ALL_PROVIDERS: { value: SummarizationProvider; label: string; hint: string
   { value: "cli", label: "CLI", hint: "requires Claude Code sub, ~5s" },
 ];
 
+const ALL_MODELS: { value: string; label: string; hint: string }[] = [
+  { value: "haiku", label: "Haiku", hint: MODEL_IDS.haiku },
+  { value: "sonnet", label: "Sonnet", hint: MODEL_IDS.sonnet },
+  { value: "opus", label: "Opus", hint: MODEL_IDS.opus },
+];
+
 const ALL_THEME_NAMES: { value: ThemeName; label: string; hint: string }[] = [
   { value: "coral", label: "Coral", hint: "warm reds & oranges" },
   { value: "ocean", label: "Ocean", hint: "cool blues & teals" },
@@ -106,7 +114,7 @@ const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string }[] = [
   { key: "traits", label: "Cognitive traits" },
   { key: "tone", label: "Tone" },
   { key: "style", label: "Summary style" },
-  { key: "model", label: "Model override" },
+  { key: "model", label: "Model" },
   { key: "provider", label: "Provider" },
   { key: "voice", label: "TTS Voice" },
   { key: "ttsSpeed", label: "TTS Speed" },
@@ -150,66 +158,90 @@ export function ConfigSetup({
     new Set(defaults.cognitiveTraits),
   );
   const [tone, setTone] = useState<Tone>(defaults.tone);
-  const [toneIndex, setToneIndex] = useState(
-    Math.max(
-      ALL_TONES.findIndex((t) => t.value === defaults.tone),
-      0,
-    ),
-  );
   const [style, setStyle] = useState<SummaryStyle>(defaults.summaryStyle);
-  const [styleIndex, setStyleIndex] = useState(
-    Math.max(
-      ALL_STYLES.findIndex((s) => s.value === defaults.summaryStyle),
-      0,
-    ),
-  );
-  const [traitCursor, setTraitCursor] = useState(0);
-  const [voiceIndex, setVoiceIndex] = useState(
-    Math.max(
-      VOICES.findIndex((v) => v.value === defaults.voice),
-      0,
-    ),
-  );
   const [customInstructions, setCustomInstructions] = useState(defaults.customInstructions ?? "");
   const [ttsSpeedInput, setTtsSpeedInput] = useState(String(defaults.ttsSpeed));
   const [pitch, setPitch] = useState<PitchPreset>(defaults.pitch);
-  const [pitchIndex, setPitchIndex] = useState(
-    Math.max(
-      ALL_PITCHES.findIndex((p) => p.value === defaults.pitch),
-      0,
-    ),
-  );
   const [volume, setVolume] = useState<VolumePreset>(defaults.volume);
-  const [volumeIndex, setVolumeIndex] = useState(
-    Math.max(
-      ALL_VOLUMES.findIndex((v) => v.value === defaults.volume),
-      0,
-    ),
-  );
   const [provider, setProvider] = useState<SummarizationProvider>(defaults.provider);
-  const [providerIndex, setProviderIndex] = useState(
-    Math.max(
-      ALL_PROVIDERS.findIndex((p) => p.value === defaults.provider),
-      0,
-    ),
-  );
+
+  // Model state — find initial tier from the resolved model ID
+  const initialModelTier =
+    ALL_MODELS.find((m) => MODEL_IDS[m.value as keyof typeof MODEL_IDS] === defaults.model)
+      ?.value ?? "opus";
+  const [selectedModel, setSelectedModel] = useState(initialModelTier);
 
   // Theme state
   const [themeName, setThemeName] = useState<ThemeName>(themeConfig?.name ?? "coral");
-  const [themeNameIndex, setThemeNameIndex] = useState(
-    Math.max(
+  const [appearance, setAppearance] = useState<AppearanceMode>(themeConfig?.appearance ?? "auto");
+  const [themeSubStep, setThemeSubStep] = useState<"name" | "appearance">("name");
+
+  // Navigation hooks
+  const toneNav = useListNavigation({
+    itemCount: ALL_TONES.length,
+    initialIndex: Math.max(
+      ALL_TONES.findIndex((t) => t.value === defaults.tone),
+      0,
+    ),
+  });
+  const styleNav = useListNavigation({
+    itemCount: ALL_STYLES.length,
+    initialIndex: Math.max(
+      ALL_STYLES.findIndex((s) => s.value === defaults.summaryStyle),
+      0,
+    ),
+  });
+  const traitNav = useListNavigation({ itemCount: ALL_TRAITS.length });
+  const voiceNav = useListNavigation({
+    itemCount: VOICES.length,
+    initialIndex: Math.max(
+      VOICES.findIndex((v) => v.value === defaults.voice),
+      0,
+    ),
+  });
+  const pitchNav = useListNavigation({
+    itemCount: ALL_PITCHES.length,
+    initialIndex: Math.max(
+      ALL_PITCHES.findIndex((p) => p.value === defaults.pitch),
+      0,
+    ),
+  });
+  const volumeNav = useListNavigation({
+    itemCount: ALL_VOLUMES.length,
+    initialIndex: Math.max(
+      ALL_VOLUMES.findIndex((v) => v.value === defaults.volume),
+      0,
+    ),
+  });
+  const providerNav = useListNavigation({
+    itemCount: ALL_PROVIDERS.length,
+    initialIndex: Math.max(
+      ALL_PROVIDERS.findIndex((p) => p.value === defaults.provider),
+      0,
+    ),
+  });
+  const modelNav = useListNavigation({
+    itemCount: ALL_MODELS.length,
+    initialIndex: Math.max(
+      ALL_MODELS.findIndex((m) => m.value === initialModelTier),
+      0,
+    ),
+  });
+  const themeNameNav = useListNavigation({
+    itemCount: ALL_THEME_NAMES.length,
+    initialIndex: Math.max(
       ALL_THEME_NAMES.findIndex((t) => t.value === (themeConfig?.name ?? "coral")),
       0,
     ),
-  );
-  const [appearance, setAppearance] = useState<AppearanceMode>(themeConfig?.appearance ?? "auto");
-  const [appearanceIndex, setAppearanceIndex] = useState(
-    Math.max(
+  });
+  const appearanceNav = useListNavigation({
+    itemCount: ALL_APPEARANCES.length,
+    initialIndex: Math.max(
       ALL_APPEARANCES.findIndex((a) => a.value === (themeConfig?.appearance ?? "auto")),
       0,
     ),
-  );
-  const [themeSubStep, setThemeSubStep] = useState<"name" | "appearance">("name");
+  });
+  const editMenuNav = useListNavigation({ itemCount: EDIT_MENU_ITEMS.length });
 
   // First-run step state
   const skipApiKey = hasEnvApiKey || defaults.provider === "cli";
@@ -217,12 +249,11 @@ export function ConfigSetup({
   const [firstRunStep, setFirstRunStep] = useState<FirstRunStep>(initialStep);
 
   // Edit mode state
-  const [editMenuIndex, setEditMenuIndex] = useState(0);
   const [editingField, setEditingField] = useState<EditMenuItem | null>(null);
 
   const buildConfig = useCallback((): Config => {
     const resolvedApiKey = hasEnvApiKey ? (process.env.ANTHROPIC_API_KEY ?? "") : apiKey;
-    const voice = VOICES[voiceIndex]?.value ?? "en-US-JennyNeural";
+    const voice = VOICES[voiceNav.index]?.value ?? "en-US-JennyNeural";
     const ttsSpeed = Number.parseFloat(ttsSpeedInput) || 1.0;
 
     const profile: Profile = {
@@ -230,6 +261,7 @@ export function ConfigSetup({
       tone,
       summaryStyle: style,
       customInstructions: customInstructions || undefined,
+      model: selectedModel !== "opus" ? selectedModel : undefined,
       voice: voice !== "en-US-JennyNeural" ? voice : undefined,
       ttsSpeed: ttsSpeed !== 1.0 ? ttsSpeed : undefined,
       pitch: pitch !== "default" ? pitch : undefined,
@@ -247,11 +279,12 @@ export function ConfigSetup({
   }, [
     hasEnvApiKey,
     apiKey,
-    voiceIndex,
+    voiceNav.index,
     ttsSpeedInput,
     pitch,
     volume,
     provider,
+    selectedModel,
     selectedTraits,
     tone,
     style,
@@ -265,6 +298,47 @@ export function ConfigSetup({
       setFirstRunStep("traits");
     }
   }, []);
+
+  const toggleTrait = useCallback(() => {
+    const trait = ALL_TRAITS[traitNav.index];
+    if (trait) {
+      setSelectedTraits((prev) => {
+        const next = new Set(prev);
+        if (next.has(trait.value)) {
+          next.delete(trait.value);
+        } else {
+          next.add(trait.value);
+        }
+        return next;
+      });
+    }
+  }, [traitNav.index]);
+
+  const handleThemeNameSelect = useCallback(() => {
+    const selected = ALL_THEME_NAMES[themeNameNav.index];
+    if (selected) {
+      setThemeName(selected.value);
+      onThemeChange?.({ name: selected.value, appearance });
+    }
+    setThemeSubStep("appearance");
+  }, [themeNameNav.index, appearance, onThemeChange]);
+
+  const handleAppearanceSelect = useCallback(
+    (nextStep: "traits" | null) => {
+      const selected = ALL_APPEARANCES[appearanceNav.index];
+      if (selected) {
+        setAppearance(selected.value);
+        onThemeChange?.({ name: themeName, appearance: selected.value });
+      }
+      setThemeSubStep("name");
+      if (nextStep === "traits") {
+        setFirstRunStep("traits");
+      } else {
+        setEditingField(null);
+      }
+    },
+    [appearanceNav.index, themeName, onThemeChange],
+  );
 
   useInput((ch, key) => {
     if (key.escape) {
@@ -280,58 +354,30 @@ export function ConfigSetup({
     if (isFirstRun && !editProfile) {
       if (firstRunStep === "theme") {
         if (themeSubStep === "name") {
-          if (key.upArrow) setThemeNameIndex((i) => Math.max(0, i - 1));
-          if (key.downArrow) setThemeNameIndex((i) => Math.min(ALL_THEME_NAMES.length - 1, i + 1));
-          if (key.return) {
-            const selected = ALL_THEME_NAMES[themeNameIndex];
-            if (selected) {
-              setThemeName(selected.value);
-              onThemeChange?.({ name: selected.value, appearance });
-            }
-            setThemeSubStep("appearance");
-          }
+          if (key.upArrow) themeNameNav.handleUp();
+          if (key.downArrow) themeNameNav.handleDown();
+          if (key.return) handleThemeNameSelect();
         } else {
-          if (key.upArrow) setAppearanceIndex((i) => Math.max(0, i - 1));
-          if (key.downArrow) setAppearanceIndex((i) => Math.min(ALL_APPEARANCES.length - 1, i + 1));
-          if (key.return) {
-            const selected = ALL_APPEARANCES[appearanceIndex];
-            if (selected) {
-              setAppearance(selected.value);
-              onThemeChange?.({ name: themeName, appearance: selected.value });
-            }
-            setThemeSubStep("name");
-            setFirstRunStep("traits");
-          }
+          if (key.upArrow) appearanceNav.handleUp();
+          if (key.downArrow) appearanceNav.handleDown();
+          if (key.return) handleAppearanceSelect("traits");
         }
         return;
       }
 
       if (firstRunStep === "traits") {
-        if (key.upArrow) setTraitCursor((i) => Math.max(0, i - 1));
-        if (key.downArrow) setTraitCursor((i) => Math.min(ALL_TRAITS.length - 1, i + 1));
-        if (ch === " ") {
-          const trait = ALL_TRAITS[traitCursor];
-          if (trait) {
-            setSelectedTraits((prev) => {
-              const next = new Set(prev);
-              if (next.has(trait.value)) {
-                next.delete(trait.value);
-              } else {
-                next.add(trait.value);
-              }
-              return next;
-            });
-          }
-        }
+        if (key.upArrow) traitNav.handleUp();
+        if (key.downArrow) traitNav.handleDown();
+        if (ch === " ") toggleTrait();
         if (key.return) setFirstRunStep("tone");
         return;
       }
 
       if (firstRunStep === "tone") {
-        if (key.upArrow) setToneIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setToneIndex((i) => Math.min(ALL_TONES.length - 1, i + 1));
+        if (key.upArrow) toneNav.handleUp();
+        if (key.downArrow) toneNav.handleDown();
         if (key.return) {
-          const selected = ALL_TONES[toneIndex];
+          const selected = ALL_TONES[toneNav.index];
           if (selected) setTone(selected.value);
           setFirstRunStep("style");
         }
@@ -339,12 +385,11 @@ export function ConfigSetup({
       }
 
       if (firstRunStep === "style") {
-        if (key.upArrow) setStyleIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setStyleIndex((i) => Math.min(ALL_STYLES.length - 1, i + 1));
+        if (key.upArrow) styleNav.handleUp();
+        if (key.downArrow) styleNav.handleDown();
         if (key.return) {
-          const selected = ALL_STYLES[styleIndex];
+          const selected = ALL_STYLES[styleNav.index];
           if (selected) setStyle(selected.value);
-          // Done — save
           setTimeout(() => onSave(buildConfig()), 0);
         }
         return;
@@ -355,10 +400,10 @@ export function ConfigSetup({
     // --- Edit profile mode ---
     if (editProfile) {
       if (!editingField) {
-        if (key.upArrow) setEditMenuIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setEditMenuIndex((i) => Math.min(EDIT_MENU_ITEMS.length - 1, i + 1));
+        if (key.upArrow) editMenuNav.handleUp();
+        if (key.downArrow) editMenuNav.handleDown();
         if (key.return) {
-          const item = EDIT_MENU_ITEMS[editMenuIndex];
+          const item = EDIT_MENU_ITEMS[editMenuNav.index];
           if (item?.key === "save") {
             onSave(buildConfig());
           } else if (item) {
@@ -368,61 +413,32 @@ export function ConfigSetup({
         return;
       }
 
-      // Editing a specific field
       if (editingField === "theme") {
         if (themeSubStep === "name") {
-          if (key.upArrow) setThemeNameIndex((i) => Math.max(0, i - 1));
-          if (key.downArrow) setThemeNameIndex((i) => Math.min(ALL_THEME_NAMES.length - 1, i + 1));
-          if (key.return) {
-            const selected = ALL_THEME_NAMES[themeNameIndex];
-            if (selected) {
-              setThemeName(selected.value);
-              onThemeChange?.({ name: selected.value, appearance });
-            }
-            setThemeSubStep("appearance");
-          }
+          if (key.upArrow) themeNameNav.handleUp();
+          if (key.downArrow) themeNameNav.handleDown();
+          if (key.return) handleThemeNameSelect();
         } else {
-          if (key.upArrow) setAppearanceIndex((i) => Math.max(0, i - 1));
-          if (key.downArrow) setAppearanceIndex((i) => Math.min(ALL_APPEARANCES.length - 1, i + 1));
-          if (key.return) {
-            const selected = ALL_APPEARANCES[appearanceIndex];
-            if (selected) {
-              setAppearance(selected.value);
-              onThemeChange?.({ name: themeName, appearance: selected.value });
-            }
-            setThemeSubStep("name");
-            setEditingField(null);
-          }
+          if (key.upArrow) appearanceNav.handleUp();
+          if (key.downArrow) appearanceNav.handleDown();
+          if (key.return) handleAppearanceSelect(null);
         }
         return;
       }
 
       if (editingField === "traits") {
-        if (key.upArrow) setTraitCursor((i) => Math.max(0, i - 1));
-        if (key.downArrow) setTraitCursor((i) => Math.min(ALL_TRAITS.length - 1, i + 1));
-        if (ch === " ") {
-          const trait = ALL_TRAITS[traitCursor];
-          if (trait) {
-            setSelectedTraits((prev) => {
-              const next = new Set(prev);
-              if (next.has(trait.value)) {
-                next.delete(trait.value);
-              } else {
-                next.add(trait.value);
-              }
-              return next;
-            });
-          }
-        }
+        if (key.upArrow) traitNav.handleUp();
+        if (key.downArrow) traitNav.handleDown();
+        if (ch === " ") toggleTrait();
         if (key.return) setEditingField(null);
         return;
       }
 
       if (editingField === "tone") {
-        if (key.upArrow) setToneIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setToneIndex((i) => Math.min(ALL_TONES.length - 1, i + 1));
+        if (key.upArrow) toneNav.handleUp();
+        if (key.downArrow) toneNav.handleDown();
         if (key.return) {
-          const selected = ALL_TONES[toneIndex];
+          const selected = ALL_TONES[toneNav.index];
           if (selected) setTone(selected.value);
           setEditingField(null);
         }
@@ -430,10 +446,10 @@ export function ConfigSetup({
       }
 
       if (editingField === "style") {
-        if (key.upArrow) setStyleIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setStyleIndex((i) => Math.min(ALL_STYLES.length - 1, i + 1));
+        if (key.upArrow) styleNav.handleUp();
+        if (key.downArrow) styleNav.handleDown();
         if (key.return) {
-          const selected = ALL_STYLES[styleIndex];
+          const selected = ALL_STYLES[styleNav.index];
           if (selected) setStyle(selected.value);
           setEditingField(null);
         }
@@ -441,23 +457,28 @@ export function ConfigSetup({
       }
 
       if (editingField === "model") {
-        // Model override is advanced — just go back for now
-        if (key.return) setEditingField(null);
+        if (key.upArrow) modelNav.handleUp();
+        if (key.downArrow) modelNav.handleDown();
+        if (key.return) {
+          const selected = ALL_MODELS[modelNav.index];
+          if (selected) setSelectedModel(selected.value);
+          setEditingField(null);
+        }
         return;
       }
 
       if (editingField === "voice") {
-        if (key.upArrow) setVoiceIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setVoiceIndex((i) => Math.min(VOICES.length - 1, i + 1));
+        if (key.upArrow) voiceNav.handleUp();
+        if (key.downArrow) voiceNav.handleDown();
         if (key.return) setEditingField(null);
         return;
       }
 
       if (editingField === "pitch") {
-        if (key.upArrow) setPitchIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setPitchIndex((i) => Math.min(ALL_PITCHES.length - 1, i + 1));
+        if (key.upArrow) pitchNav.handleUp();
+        if (key.downArrow) pitchNav.handleDown();
         if (key.return) {
-          const selected = ALL_PITCHES[pitchIndex];
+          const selected = ALL_PITCHES[pitchNav.index];
           if (selected) setPitch(selected.value);
           setEditingField(null);
         }
@@ -465,10 +486,10 @@ export function ConfigSetup({
       }
 
       if (editingField === "volume") {
-        if (key.upArrow) setVolumeIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setVolumeIndex((i) => Math.min(ALL_VOLUMES.length - 1, i + 1));
+        if (key.upArrow) volumeNav.handleUp();
+        if (key.downArrow) volumeNav.handleDown();
         if (key.return) {
-          const selected = ALL_VOLUMES[volumeIndex];
+          const selected = ALL_VOLUMES[volumeNav.index];
           if (selected) setVolume(selected.value);
           setEditingField(null);
         }
@@ -476,22 +497,17 @@ export function ConfigSetup({
       }
 
       if (editingField === "provider") {
-        if (key.upArrow) setProviderIndex((i) => Math.max(0, i - 1));
-        if (key.downArrow) setProviderIndex((i) => Math.min(ALL_PROVIDERS.length - 1, i + 1));
+        if (key.upArrow) providerNav.handleUp();
+        if (key.downArrow) providerNav.handleDown();
         if (key.return) {
-          const selected = ALL_PROVIDERS[providerIndex];
+          const selected = ALL_PROVIDERS[providerNav.index];
           if (selected) setProvider(selected.value);
           setEditingField(null);
         }
         return;
       }
 
-      if (editingField === "ttsSpeed") {
-        // Handled by TextInput onSubmit
-        return;
-      }
-
-      if (editingField === "customInstructions") {
+      if (editingField === "ttsSpeed" || editingField === "customInstructions") {
         // Handled by TextInput onSubmit
         return;
       }
@@ -521,65 +537,49 @@ export function ConfigSetup({
           )}
 
           {firstRunStep === "theme" && themeSubStep === "name" && (
-            <Box flexDirection="column">
-              <Text>Color theme (Enter to confirm):</Text>
-              {ALL_THEME_NAMES.map((t, i) => (
-                <Text key={t.value} {...(i === themeNameIndex ? { color: theme.accent } : {})}>
-                  {i === themeNameIndex ? ">" : " "} {t.label} <Text dimColor>({t.hint})</Text>
-                </Text>
-              ))}
-            </Box>
+            <SelectionList
+              title="Color theme (Enter to confirm):"
+              items={ALL_THEME_NAMES}
+              selectedIndex={themeNameNav.index}
+            />
           )}
 
           {firstRunStep === "theme" && themeSubStep === "appearance" && (
-            <Box flexDirection="column">
-              <Text>Appearance mode (Enter to confirm):</Text>
-              {ALL_APPEARANCES.map((a, i) => (
-                <Text key={a.value} {...(i === appearanceIndex ? { color: theme.accent } : {})}>
-                  {i === appearanceIndex ? ">" : " "} {a.label} <Text dimColor>({a.hint})</Text>
-                </Text>
-              ))}
-            </Box>
+            <SelectionList
+              title="Appearance mode (Enter to confirm):"
+              items={ALL_APPEARANCES}
+              selectedIndex={appearanceNav.index}
+            />
           )}
 
           {firstRunStep === "traits" && (
-            <Box flexDirection="column">
-              <Text>Cognitive traits (Space to toggle, Enter to confirm):</Text>
-              {ALL_TRAITS.map((t, i) => {
-                const checked = selectedTraits.has(t.value);
-                const cursor = i === traitCursor;
-                return (
-                  <Text key={t.value} {...(cursor ? { color: theme.accent } : {})}>
-                    {cursor ? ">" : " "} [{checked ? "x" : " "}] {t.label}
-                  </Text>
-                );
-              })}
+            <>
+              <SelectionList
+                title="Cognitive traits (Space to toggle, Enter to confirm):"
+                items={ALL_TRAITS}
+                selectedIndex={traitNav.index}
+                checkedValues={selectedTraits as unknown as Set<string>}
+              />
               <Text dimColor>
                 Selected: {selectedTraits.size > 0 ? [...selectedTraits].join(", ") : "none"}
               </Text>
-            </Box>
+            </>
           )}
 
           {firstRunStep === "tone" && (
-            <Box flexDirection="column">
-              <Text>Tone (Enter to confirm):</Text>
-              {ALL_TONES.map((t, i) => (
-                <Text key={t.value} {...(i === toneIndex ? { color: theme.accent } : {})}>
-                  {i === toneIndex ? ">" : " "} {t.label}
-                </Text>
-              ))}
-            </Box>
+            <SelectionList
+              title="Tone (Enter to confirm):"
+              items={ALL_TONES}
+              selectedIndex={toneNav.index}
+            />
           )}
 
           {firstRunStep === "style" && (
-            <Box flexDirection="column">
-              <Text>Summary style (Enter to confirm):</Text>
-              {ALL_STYLES.map((s, i) => (
-                <Text key={s.value} {...(i === styleIndex ? { color: theme.accent } : {})}>
-                  {i === styleIndex ? ">" : " "} {s.label} <Text dimColor>({s.hint})</Text>
-                </Text>
-              ))}
-            </Box>
+            <SelectionList
+              title="Summary style (Enter to confirm):"
+              items={ALL_STYLES}
+              selectedIndex={styleNav.index}
+            />
           )}
         </Box>
 
@@ -606,9 +606,9 @@ export function ConfigSetup({
               current = selectedTraits.size > 0 ? [...selectedTraits].join(", ") : "none";
             if (item.key === "tone") current = tone;
             if (item.key === "style") current = style;
-            if (item.key === "model") current = defaults.model;
+            if (item.key === "model") current = selectedModel;
             if (item.key === "provider") current = provider;
-            if (item.key === "voice") current = VOICES[voiceIndex]?.label ?? "";
+            if (item.key === "voice") current = VOICES[voiceNav.index]?.label ?? "";
             if (item.key === "ttsSpeed") current = `${ttsSpeedInput}x`;
             if (item.key === "pitch") current = pitch;
             if (item.key === "volume") current = volume;
@@ -616,114 +616,84 @@ export function ConfigSetup({
               current = customInstructions ? `"${customInstructions.slice(0, 30)}..."` : "none";
 
             return (
-              <Text key={item.key} {...(i === editMenuIndex ? { color: theme.accent } : {})}>
-                {i === editMenuIndex ? ">" : " "} {item.label}
+              <Text key={item.key} {...(i === editMenuNav.index ? { color: theme.accent } : {})}>
+                {i === editMenuNav.index ? ">" : " "} {item.label}
                 {item.key !== "save" && <Text dimColor> ({current})</Text>}
               </Text>
             );
           })}
 
         {editingField === "theme" && themeSubStep === "name" && (
-          <Box flexDirection="column">
-            <Text>Color theme (Enter to confirm):</Text>
-            {ALL_THEME_NAMES.map((t, i) => (
-              <Text key={t.value} {...(i === themeNameIndex ? { color: theme.accent } : {})}>
-                {i === themeNameIndex ? ">" : " "} {t.label} <Text dimColor>({t.hint})</Text>
-              </Text>
-            ))}
-          </Box>
+          <SelectionList
+            title="Color theme (Enter to confirm):"
+            items={ALL_THEME_NAMES}
+            selectedIndex={themeNameNav.index}
+          />
         )}
 
         {editingField === "theme" && themeSubStep === "appearance" && (
-          <Box flexDirection="column">
-            <Text>Appearance mode (Enter to confirm):</Text>
-            {ALL_APPEARANCES.map((a, i) => (
-              <Text key={a.value} {...(i === appearanceIndex ? { color: theme.accent } : {})}>
-                {i === appearanceIndex ? ">" : " "} {a.label} <Text dimColor>({a.hint})</Text>
-              </Text>
-            ))}
-          </Box>
+          <SelectionList
+            title="Appearance mode (Enter to confirm):"
+            items={ALL_APPEARANCES}
+            selectedIndex={appearanceNav.index}
+          />
         )}
 
         {editingField === "traits" && (
-          <Box flexDirection="column">
-            <Text>Cognitive traits (Space to toggle, Enter to go back):</Text>
-            {ALL_TRAITS.map((t, i) => {
-              const checked = selectedTraits.has(t.value);
-              const cursor = i === traitCursor;
-              return (
-                <Text key={t.value} {...(cursor ? { color: theme.accent } : {})}>
-                  {cursor ? ">" : " "} [{checked ? "x" : " "}] {t.label}
-                </Text>
-              );
-            })}
-          </Box>
+          <SelectionList
+            title="Cognitive traits (Space to toggle, Enter to go back):"
+            items={ALL_TRAITS}
+            selectedIndex={traitNav.index}
+            checkedValues={selectedTraits as unknown as Set<string>}
+          />
         )}
 
         {editingField === "tone" && (
-          <Box flexDirection="column">
-            <Text>Tone (Enter to confirm):</Text>
-            {ALL_TONES.map((t, i) => (
-              <Text key={t.value} {...(i === toneIndex ? { color: theme.accent } : {})}>
-                {i === toneIndex ? ">" : " "} {t.label}
-              </Text>
-            ))}
-          </Box>
+          <SelectionList
+            title="Tone (Enter to confirm):"
+            items={ALL_TONES}
+            selectedIndex={toneNav.index}
+          />
         )}
 
         {editingField === "style" && (
-          <Box flexDirection="column">
-            <Text>Summary style (Enter to confirm):</Text>
-            {ALL_STYLES.map((s, i) => (
-              <Text key={s.value} {...(i === styleIndex ? { color: theme.accent } : {})}>
-                {i === styleIndex ? ">" : " "} {s.label} <Text dimColor>({s.hint})</Text>
-              </Text>
-            ))}
-          </Box>
+          <SelectionList
+            title="Summary style (Enter to confirm):"
+            items={ALL_STYLES}
+            selectedIndex={styleNav.index}
+          />
         )}
 
         {editingField === "voice" && (
-          <Box flexDirection="column">
-            <Text>TTS Voice (Enter to confirm):</Text>
-            {VOICES.map((v, i) => (
-              <Text key={v.value} {...(i === voiceIndex ? { color: theme.accent } : {})}>
-                {i === voiceIndex ? ">" : " "} {v.label} <Text dimColor>({v.hint})</Text>
-              </Text>
-            ))}
-          </Box>
+          <SelectionList
+            title="TTS Voice (Enter to confirm):"
+            items={VOICES}
+            selectedIndex={voiceNav.index}
+          />
         )}
 
         {editingField === "pitch" && (
-          <Box flexDirection="column">
-            <Text>Pitch (Enter to confirm):</Text>
-            {ALL_PITCHES.map((p, i) => (
-              <Text key={p.value} {...(i === pitchIndex ? { color: theme.accent } : {})}>
-                {i === pitchIndex ? ">" : " "} {p.label} <Text dimColor>({p.hint})</Text>
-              </Text>
-            ))}
-          </Box>
+          <SelectionList
+            title="Pitch (Enter to confirm):"
+            items={ALL_PITCHES}
+            selectedIndex={pitchNav.index}
+          />
         )}
 
         {editingField === "volume" && (
-          <Box flexDirection="column">
-            <Text>Volume (Enter to confirm):</Text>
-            {ALL_VOLUMES.map((v, i) => (
-              <Text key={v.value} {...(i === volumeIndex ? { color: theme.accent } : {})}>
-                {i === volumeIndex ? ">" : " "} {v.label} <Text dimColor>({v.hint})</Text>
-              </Text>
-            ))}
-          </Box>
+          <SelectionList
+            title="Volume (Enter to confirm):"
+            items={ALL_VOLUMES}
+            selectedIndex={volumeNav.index}
+          />
         )}
 
         {editingField === "provider" && (
-          <Box flexDirection="column">
-            <Text>Provider (Enter to confirm):</Text>
-            {ALL_PROVIDERS.map((p, i) => (
-              <Text key={p.value} {...(i === providerIndex ? { color: theme.accent } : {})}>
-                {i === providerIndex ? ">" : " "} {p.label} <Text dimColor>({p.hint})</Text>
-              </Text>
-            ))}
-          </Box>
+          <SelectionList
+            title="Provider (Enter to confirm):"
+            items={ALL_PROVIDERS}
+            selectedIndex={providerNav.index}
+          />
         )}
 
         {editingField === "ttsSpeed" && (
@@ -749,11 +719,11 @@ export function ConfigSetup({
         )}
 
         {editingField === "model" && (
-          <Box flexDirection="column">
-            <Text>Model override (set via CLI: --model sonnet):</Text>
-            <Text dimColor>Current: {defaults.model}</Text>
-            <Text dimColor>Press Enter to go back</Text>
-          </Box>
+          <SelectionList
+            title="Model (Enter to confirm):"
+            items={ALL_MODELS}
+            selectedIndex={modelNav.index}
+          />
         )}
       </Box>
 

@@ -1,6 +1,13 @@
 import { buildSystemPrompt, buildUserPrompt } from "./prompts.js";
 import { getProvider } from "./providers/index.js";
-import type { CognitiveTrait, Config, ExtractionResult, ImageData, TldrResult } from "./types.js";
+import type {
+  CognitiveTrait,
+  Config,
+  ExtractionResult,
+  ImageData,
+  TldrResult,
+  Tone,
+} from "./types.js";
 
 const TRAIT_AUDIO_RULES: Record<CognitiveTrait, string> = {
   dyslexia:
@@ -11,6 +18,13 @@ const TRAIT_AUDIO_RULES: Record<CognitiveTrait, string> = {
   esl: "Use common everyday vocabulary. Briefly explain specialized terms inline. Avoid phrasal verbs and culturally-specific references. Use active voice.",
   "visual-thinker":
     "Paint word pictures with spatial language. Describe relationships as physical arrangements. Give items a memorable spatial or narrative structure.",
+};
+
+const TONE_HINTS: Record<Tone, string> = {
+  eli5: "Keep it super simple and fun, like explaining to a curious kid.",
+  academic: "Stay precise and analytical, but still conversational.",
+  professional: "Be clear and polished, like a well-produced briefing.",
+  casual: "Be relaxed and friendly, like chatting with a smart friend.",
 };
 
 type SummarizerErrorCode = "AUTH" | "RATE_LIMIT" | "NETWORK" | "NOT_FOUND" | "TIMEOUT" | "UNKNOWN";
@@ -88,14 +102,7 @@ export async function summarize(
 }
 
 export async function rewriteForSpeech(markdown: string, config: Config): Promise<string> {
-  const toneHint =
-    config.tone === "eli5"
-      ? "Keep it super simple and fun, like explaining to a curious kid."
-      : config.tone === "academic"
-        ? "Stay precise and analytical, but still conversational."
-        : config.tone === "professional"
-          ? "Be clear and polished, like a well-produced briefing."
-          : "Be relaxed and friendly, like chatting with a smart friend.";
+  const toneHint = TONE_HINTS[config.tone];
 
   let traitSection = "";
   if (config.cognitiveTraits.length > 0) {

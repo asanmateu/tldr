@@ -7,14 +7,13 @@ import {
   listProfiles,
   loadConfig,
   loadSettings,
-  saveSettings,
   setActiveProfile,
-  setTheme,
 } from "./lib/config.js";
+import { ConfigSetError, applyConfigSet } from "./lib/configSetter.js";
 import * as fmt from "./lib/fmt.js";
 import { importMarkdown } from "./lib/import.js";
 import { resolveTheme } from "./lib/theme.js";
-import type { AppearanceMode, ConfigOverrides, ThemeName } from "./lib/types.js";
+import type { ConfigOverrides } from "./lib/types.js";
 
 const args = process.argv.slice(2);
 
@@ -48,9 +47,15 @@ if (args.includes("--help") || args.includes("-h")) {
 
   ${fmt.label("Configuration:")}
     tldr config                       Show current resolved config
-    tldr config set <key> <value>     Set a top-level setting
+    tldr config set <key> <value>     Set a setting
     tldr config set provider <api|cli>     Set summarization provider
     tldr config set model <tier|id>        Set model (haiku/sonnet/opus or full ID)
+    tldr config set tone <tone>            Set tone (casual/professional/academic/eli5)
+    tldr config set style <style>          Set summary style (quick/standard/detailed/study-notes)
+    tldr config set voice <voice>          Set TTS voice (e.g. en-US-JennyNeural)
+    tldr config set tts-speed <number>     Set TTS speed (e.g. 1.0, 1.25)
+    tldr config set traits <list>          Set cognitive traits (comma-separated)
+    tldr config set custom-instructions <text>  Set custom instructions
     tldr config set output-dir <path>      Set session output directory
     tldr config set theme <name>           Set color theme (coral/ocean/forest)
     tldr config set appearance <mode>      Set appearance (auto/dark/light)
@@ -139,88 +144,15 @@ async function handleConfig() {
       process.exit(1);
     }
 
-    const settings = await loadSettings();
-    const topLevelKeys = ["apiKey", "baseUrl", "maxTokens", "activeProfile"];
-    if (topLevelKeys.includes(key)) {
-      if (key === "maxTokens") {
-        (settings as unknown as Record<string, unknown>)[key] = Number.parseInt(value, 10);
-      } else {
-        (settings as unknown as Record<string, unknown>)[key] = value;
-      }
-      await saveSettings(settings);
-      console.log(`Set ${key} = ${key === "apiKey" ? "***" : value}`);
-    } else if (key === "pitch") {
-      const valid = ["low", "default", "high"];
-      if (!valid.includes(value)) {
-        console.error(`Invalid pitch. Use one of: ${valid.join(", ")}`);
+    try {
+      const message = await applyConfigSet(key, value, args);
+      console.log(message);
+    } catch (err) {
+      if (err instanceof ConfigSetError) {
+        console.error(err.message);
         process.exit(1);
       }
-      const profileName = settings.activeProfile;
-      const profile = settings.profiles[profileName];
-      if (profile) {
-        profile.pitch = value === "default" ? undefined : (value as "low" | "high");
-        await saveSettings(settings);
-        console.log(`Set pitch = ${value} (profile: ${profileName})`);
-      }
-    } else if (key === "volume") {
-      const valid = ["quiet", "normal", "loud"];
-      if (!valid.includes(value)) {
-        console.error(`Invalid volume. Use one of: ${valid.join(", ")}`);
-        process.exit(1);
-      }
-      const profileName = settings.activeProfile;
-      const profile = settings.profiles[profileName];
-      if (profile) {
-        profile.volume = value === "normal" ? undefined : (value as "quiet" | "loud");
-        await saveSettings(settings);
-        console.log(`Set volume = ${value} (profile: ${profileName})`);
-      }
-    } else if (key === "provider") {
-      if (value !== "api" && value !== "cli") {
-        console.error('Invalid provider. Use "api" or "cli".');
-        process.exit(1);
-      }
-      const profileName = settings.activeProfile;
-      const profile = settings.profiles[profileName];
-      if (profile) {
-        profile.provider = value === "cli" ? undefined : value;
-        await saveSettings(settings);
-        console.log(`Set provider = ${value} (profile: ${profileName})`);
-      }
-    } else if (key === "model") {
-      const profileName = settings.activeProfile;
-      const profile = settings.profiles[profileName];
-      if (profile) {
-        profile.model = value;
-        await saveSettings(settings);
-        console.log(`Set model = ${value} (profile: ${profileName})`);
-      }
-    } else if (key === "output-dir") {
-      settings.outputDir = value;
-      await saveSettings(settings);
-      console.log(`Set output-dir = ${value}`);
-    } else if (key === "theme") {
-      const valid = ["coral", "ocean", "forest"];
-      if (!valid.includes(value)) {
-        console.error(`Invalid theme. Use one of: ${valid.join(", ")}`);
-        process.exit(1);
-      }
-      await setTheme({ name: value as ThemeName });
-      console.log(`Set theme = ${value}`);
-    } else if (key === "appearance") {
-      const valid = ["auto", "dark", "light"];
-      if (!valid.includes(value)) {
-        console.error(`Invalid appearance. Use one of: ${valid.join(", ")}`);
-        process.exit(1);
-      }
-      await setTheme({ appearance: value as AppearanceMode });
-      console.log(`Set appearance = ${value}`);
-    } else {
-      console.error(`Unknown key: ${key}`);
-      console.error(
-        `Valid keys: ${topLevelKeys.join(", ")}, model, pitch, volume, provider, output-dir, theme, appearance`,
-      );
-      process.exit(1);
+      throw err;
     }
     process.exit(0);
   }

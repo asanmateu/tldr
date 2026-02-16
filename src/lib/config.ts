@@ -125,14 +125,21 @@ function parseSettings(parsed: unknown): TldrSettings {
   };
 }
 
-const VALID_TONES = new Set(["casual", "professional", "academic", "eli5"]);
-const VALID_STYLES = new Set(["quick", "standard", "detailed", "study-notes"]);
-const VALID_TRAITS = new Set(["dyslexia", "adhd", "autism", "esl", "visual-thinker"]);
-const VALID_PITCHES = new Set(["low", "default", "high"]);
-const VALID_VOLUMES = new Set(["quiet", "normal", "loud"]);
-const VALID_PROVIDERS = new Set(["api", "cli"]);
-const VALID_THEME_NAMES = new Set(["coral", "ocean", "forest"]);
-const VALID_APPEARANCES = new Set(["dark", "light", "auto"]);
+export const VALID_TONES = new Set(["casual", "professional", "academic", "eli5"]);
+export const VALID_STYLES = new Set(["quick", "standard", "detailed", "study-notes"]);
+export const VALID_TRAITS = new Set(["dyslexia", "adhd", "autism", "esl", "visual-thinker"]);
+export const VALID_PITCHES = new Set(["low", "default", "high"]);
+export const VALID_VOLUMES = new Set(["quiet", "normal", "loud"]);
+export const VALID_PROVIDERS = new Set(["api", "cli"]);
+export const VALID_THEME_NAMES = new Set(["coral", "ocean", "forest"]);
+export const VALID_APPEARANCES = new Set(["dark", "light", "auto"]);
+export const VALID_VOICES = new Set([
+  "en-US-JennyNeural",
+  "en-US-GuyNeural",
+  "en-US-AriaNeural",
+  "en-GB-SoniaNeural",
+  "en-AU-NatashaNeural",
+]);
 
 function parseProfile(raw: unknown): Profile {
   if (typeof raw !== "object" || raw === null) {

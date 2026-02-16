@@ -22,6 +22,33 @@ export interface SlackOptions {
   fetchUserName?: (token: string, userId: string) => Promise<string>;
 }
 
+type SlackErrorCode = "NO_TOKEN" | "INVALID_URL" | "NOT_FOUND" | "AUTH" | "NETWORK";
+
+function classifySlackError(message: string): SlackErrorCode {
+  if (message.includes("channel_not_found") || message.includes("thread_not_found")) {
+    return "NOT_FOUND";
+  }
+  if (
+    message.includes("invalid_auth") ||
+    message.includes("not_authed") ||
+    message.includes("token_revoked")
+  ) {
+    return "AUTH";
+  }
+  return "NETWORK";
+}
+
+function buildSlackError(message: string): SlackError {
+  const code = classifySlackError(message);
+  const prefix =
+    code === "NOT_FOUND"
+      ? "Thread not found"
+      : code === "AUTH"
+        ? "Authentication failed"
+        : "Slack API error";
+  return new SlackError(`${prefix}: ${message}`, code);
+}
+
 const SLACK_URL_PATTERN = /slack\.com\/archives\/([A-Z0-9]+)\/p(\d+)/i;
 
 export function parseSlackUrl(url: string): { channelId: string; messageTs: string } {
@@ -56,14 +83,7 @@ async function defaultFetchReplies(
     });
 
     if (!result.ok) {
-      const error = result.error ?? "Unknown error";
-      if (error === "channel_not_found" || error === "thread_not_found") {
-        throw new SlackError(`Thread not found: ${error}`, "NOT_FOUND");
-      }
-      if (error === "invalid_auth" || error === "not_authed" || error === "token_revoked") {
-        throw new SlackError(`Authentication failed: ${error}`, "AUTH");
-      }
-      throw new SlackError(`Slack API error: ${error}`, "NETWORK");
+      throw buildSlackError(result.error ?? "Unknown error");
     }
 
     return (result.messages ?? []).map((m) => ({
@@ -73,18 +93,7 @@ async function defaultFetchReplies(
     }));
   } catch (error) {
     if (error instanceof SlackError) throw error;
-    const message = error instanceof Error ? error.message : String(error);
-    if (message.includes("channel_not_found") || message.includes("thread_not_found")) {
-      throw new SlackError(`Thread not found: ${message}`, "NOT_FOUND");
-    }
-    if (
-      message.includes("invalid_auth") ||
-      message.includes("not_authed") ||
-      message.includes("token_revoked")
-    ) {
-      throw new SlackError(`Authentication failed: ${message}`, "AUTH");
-    }
-    throw new SlackError(`Slack API error: ${message}`, "NETWORK");
+    throw buildSlackError(error instanceof Error ? error.message : String(error));
   }
 }
 

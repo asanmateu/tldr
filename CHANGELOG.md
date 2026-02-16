@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactored `config set` handler from if-else chain to data-driven dispatch (`configSetter.ts`)
+- Extracted `<SelectionList>` component and `useListNavigation` hook from ConfigSetup
+- Replaced nested ternary in speech rewriter with `TONE_HINTS` Record lookup
+- Extracted `classifySlackError()` to deduplicate Slack error classification
+- Merged duplicate PDF switch cases in pipeline
+- Exported validation sets from `config.ts` as single source of truth (added `VALID_VOICES`)
+
 ### Added
 
+- `config set` support for 6 profile settings previously only editable via `/config` UI: `tone`, `style`, `voice`, `tts-speed`, `traits`, `custom-instructions`
+- Model picker in `/config` profile editor (replaces display-only view with haiku/sonnet/opus selector)
 - `/history` slash command to browse and resume past sessions with navigable list, deduplication, and time-ago labels
 - Interactive slash commands (`/setup`, `/config`, `/theme`, `/help`, `/quit`) with autocomplete in interactive mode
 - `CLAUDE.md` with project conventions for AI assistants

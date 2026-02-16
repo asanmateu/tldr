@@ -11,10 +11,7 @@ export async function extract(input: string): Promise<ExtractionResult> {
       const { extractFromUrl } = await import("./extractors/web.js");
       return extractFromUrl(classified.value);
     }
-    case "url:pdf": {
-      const { extractFromPdf } = await import("./extractors/pdf.js");
-      return extractFromPdf(classified.value);
-    }
+    case "url:pdf":
     case "file:pdf": {
       const { extractFromPdf } = await import("./extractors/pdf.js");
       return extractFromPdf(classified.value);

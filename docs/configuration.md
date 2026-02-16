@@ -17,6 +17,12 @@ Run `tldr config` to see the current resolved configuration.
 | `activeProfile` | Profile name | Global | `tldr config set activeProfile work` |
 | `provider` | `cli` or `api` | Profile | `tldr config set provider api` |
 | `model` | Tier alias or full model ID | Profile | `tldr config set model sonnet` |
+| `tone` | `casual`, `professional`, `academic`, `eli5` | Profile | `tldr config set tone professional` |
+| `style` | `quick`, `standard`, `detailed`, `study-notes` | Profile | `tldr config set style quick` |
+| `voice` | TTS voice name | Profile | `tldr config set voice en-US-GuyNeural` |
+| `tts-speed` | Positive number | Profile | `tldr config set tts-speed 1.25` |
+| `traits` | Comma-separated list | Profile | `tldr config set traits adhd,dyslexia` |
+| `custom-instructions` | Freeform text | Profile | `tldr config set custom-instructions Summarize with bullet points` |
 | `pitch` | `low`, `default`, `high` | Profile | `tldr config set pitch high` |
 | `volume` | `quiet`, `normal`, `loud` | Profile | `tldr config set volume loud` |
 | `theme` | `coral`, `ocean`, `forest` | Global | `tldr config set theme ocean` |
