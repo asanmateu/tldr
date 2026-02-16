@@ -7,12 +7,14 @@ import { ErrorView } from "./components/ErrorView.js";
 import { InputPrompt } from "./components/InputPrompt.js";
 import { ProcessingView } from "./components/ProcessingView.js";
 import { SummaryView } from "./components/SummaryView.js";
+import { ThemeProvider } from "./lib/ThemeContext.js";
 import { writeClipboard } from "./lib/clipboard.js";
-import { loadConfig, saveConfig } from "./lib/config.js";
+import { loadConfig, loadSettings, saveConfig, saveSettings } from "./lib/config.js";
 import { addEntry, getRecent } from "./lib/history.js";
 import { isCliAvailable } from "./lib/providers/cli.js";
 import { getSessionPaths, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
+import { resolveTheme } from "./lib/theme.js";
 import {
   generateAudio,
   playAudio,
@@ -26,6 +28,8 @@ import type {
   ConfigOverrides,
   ExtractionResult,
   SessionPaths,
+  ThemeConfig,
+  ThemePalette,
   TldrResult,
 } from "./lib/types.js";
 import { extract } from "./pipeline.js";
@@ -56,11 +60,17 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [audioError, setAudioError] = useState<string | undefined>(undefined);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [currentSession, setCurrentSession] = useState<SessionPaths | undefined>(undefined);
+  const [themePalette, setThemePalette] = useState<ThemePalette>(resolveTheme());
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig | undefined>(undefined);
 
   // Load config and history on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
   useEffect(() => {
     (async () => {
+      const settings = await loadSettings();
+      setThemeConfig(settings.theme);
+      setThemePalette(resolveTheme(settings.theme));
+
       let cfg = await loadConfig(overrides);
       const recent = await getRecent(10);
       setHistory(recent);
@@ -166,6 +176,14 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
     }
   }, []);
 
+  const handleThemeChange = useCallback(async (newThemeConfig: ThemeConfig) => {
+    setThemeConfig(newThemeConfig);
+    setThemePalette(resolveTheme(newThemeConfig));
+    const settings = await loadSettings();
+    settings.theme = newThemeConfig;
+    await saveSettings(settings);
+  }, []);
+
   const handleConfigSave = useCallback(
     async (newConfig: Config) => {
       await saveConfig(newConfig);
@@ -265,59 +283,65 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
 
   if (!config && state !== "config") {
     return (
-      <Box paddingX={1}>
-        <Text dimColor>Loading...</Text>
-      </Box>
+      <ThemeProvider palette={themePalette}>
+        <Box paddingX={1}>
+          <Text dimColor>Loading...</Text>
+        </Box>
+      </ThemeProvider>
     );
   }
 
   return (
-    <Box flexDirection="column">
-      {state === "config" && (
-        <ConfigSetup
-          currentConfig={config}
-          editProfile={editProfile}
-          onSave={handleConfigSave}
-          onCancel={() => {
-            if (config?.apiKey || config?.provider === "cli") {
-              if (editProfile) {
-                exit();
+    <ThemeProvider palette={themePalette}>
+      <Box flexDirection="column">
+        {state === "config" && (
+          <ConfigSetup
+            currentConfig={config}
+            editProfile={editProfile}
+            themeConfig={themeConfig}
+            onThemeChange={handleThemeChange}
+            onSave={handleConfigSave}
+            onCancel={() => {
+              if (config?.apiKey || config?.provider === "cli") {
+                if (editProfile) {
+                  exit();
+                } else {
+                  setState("idle");
+                }
               } else {
-                setState("idle");
+                exit();
               }
-            } else {
-              exit();
-            }
-          }}
-        />
-      )}
-      {state === "idle" && (
-        <InputPrompt
-          history={history}
-          onSubmit={(value) => {
-            if (config) processInput(value, config);
-          }}
-          onQuit={() => exit()}
-        />
-      )}
-      {(state === "extracting" || state === "summarizing") && (
-        <ProcessingView phase={state} source={input} extraction={extraction} />
-      )}
-      {state === "result" && extraction && (
-        <SummaryView
-          extraction={extraction}
-          summary={summary}
-          isStreaming={isStreaming}
-          isGeneratingAudio={isGeneratingAudio}
-          isPlaying={!!audioProcess}
-          audioError={audioError}
-          sessionDir={currentSession?.sessionDir}
-        />
-      )}
-      {state === "chat" && config && (
-        <ChatView config={config} summaryContent={summary} onExit={() => setState("result")} />
-      )}
-      {state === "error" && <ErrorView message={error.message} hint={error.hint} />}
-    </Box>
+            }}
+          />
+        )}
+        {state === "idle" && (
+          <InputPrompt
+            history={history}
+            onSubmit={(value) => {
+              if (config) processInput(value, config);
+            }}
+            onQuit={() => exit()}
+          />
+        )}
+        {(state === "extracting" || state === "summarizing") && (
+          <ProcessingView phase={state} source={input} extraction={extraction} />
+        )}
+        {state === "result" && extraction && (
+          <SummaryView
+            extraction={extraction}
+            summary={summary}
+            isStreaming={isStreaming}
+            isGeneratingAudio={isGeneratingAudio}
+            isPlaying={!!audioProcess}
+            audioError={audioError}
+            sessionDir={currentSession?.sessionDir}
+          />
+        )}
+        {state === "chat" && config && (
+          <ChatView config={config} summaryContent={summary} onExit={() => setState("result")} />
+        )}
+        {state === "error" && <ErrorView message={error.message} hint={error.hint} />}
+      </Box>
+    </ThemeProvider>
   );
 }

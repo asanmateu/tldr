@@ -1,6 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { useCallback, useEffect, useState } from "react";
+import { useTheme } from "../lib/ThemeContext.js";
 import { readClipboard } from "../lib/clipboard.js";
 import type { TldrResult } from "../lib/types.js";
 import { Banner } from "./Banner.js";
@@ -22,6 +23,7 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 export function InputPrompt({ history, onSubmit, onQuit }: InputPromptProps) {
+  const theme = useTheme();
   const [input, setInput] = useState("");
   const [clipboardHint, setClipboardHint] = useState<string | undefined>(undefined);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -78,7 +80,7 @@ export function InputPrompt({ history, onSubmit, onQuit }: InputPromptProps) {
     <Box flexDirection="column" paddingX={1}>
       <Banner />
       <Box>
-        <Text color="#ff6b6b" bold>
+        <Text color={theme.brand} bold>
           {">"}{" "}
         </Text>
         <TextInput

@@ -1,6 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { useCallback, useState } from "react";
+import { useTheme } from "../lib/ThemeContext.js";
 import { chatWithSession } from "../lib/chat.js";
 import type { ChatMessage, Config } from "../lib/types.js";
 
@@ -11,6 +12,7 @@ interface ChatViewProps {
 }
 
 export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
+  const theme = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -58,14 +60,14 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
   return (
     <Box flexDirection="column" paddingX={1}>
       <Box marginBottom={1}>
-        <Text bold color="cyan">
+        <Text bold color={theme.accent}>
           Chat — ask questions about this summary
         </Text>
       </Box>
 
       {messages.map((msg, i) => (
         <Box key={`msg-${i}-${msg.role}`} marginBottom={msg.role === "assistant" ? 1 : 0}>
-          <Text bold color={msg.role === "user" ? "yellow" : "green"}>
+          <Text bold color={msg.role === "user" ? theme.warning : theme.success}>
             {msg.role === "user" ? "You: " : "AI: "}
           </Text>
           <Text wrap="wrap">{msg.content}</Text>
@@ -74,11 +76,11 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
 
       {isStreaming && (
         <Box marginBottom={1}>
-          <Text bold color="green">
+          <Text bold color={theme.success}>
             AI:{" "}
           </Text>
           <Text wrap="wrap">{streamingResponse}</Text>
-          <Text color="cyan">▊</Text>
+          <Text color={theme.accent}>▊</Text>
         </Box>
       )}
 
@@ -91,7 +93,7 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
           <Text dimColor>Thinking...</Text>
         ) : (
           <Box>
-            <Text bold color="cyan">
+            <Text bold color={theme.accent}>
               {"› "}
             </Text>
             <TextInput value={inputValue} onChange={setInputValue} onSubmit={handleSubmit} />

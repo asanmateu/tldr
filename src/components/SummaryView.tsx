@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import { useTheme } from "../lib/ThemeContext.js";
 import type { ExtractionResult } from "../lib/types.js";
 
 interface SummaryViewProps {
@@ -27,6 +28,7 @@ export function SummaryView({
   audioError,
   sessionDir,
 }: SummaryViewProps) {
+  const theme = useTheme();
   const summaryWords = summary.split(/\s+/).filter(Boolean).length;
   const domain = extraction.source.replace(/^https?:\/\//, "").split("/")[0] ?? extraction.source;
   const isImage = !!extraction.image;
@@ -42,26 +44,26 @@ export function SummaryView({
       </Box>
       {sessionDir && (
         <Box>
-          <Text color="green">Saved to {sessionDir}</Text>
+          <Text color={theme.success}>Saved to {sessionDir}</Text>
         </Box>
       )}
       <Box marginTop={1}>
         <Text>{summary}</Text>
-        {isStreaming && <Text color="cyan">▊</Text>}
+        {isStreaming && <Text color={theme.accent}>▊</Text>}
       </Box>
       <Box marginTop={1}>
         <Text dimColor>─────────────────────────────────</Text>
       </Box>
       {audioError && (
         <Box>
-          <Text color="red">Audio failed: {audioError}</Text>
+          <Text color={theme.error}>Audio failed: {audioError}</Text>
         </Box>
       )}
       <Box>
         {isGeneratingAudio ? (
-          <Text color="yellow">Generating audio...</Text>
+          <Text color={theme.warning}>Generating audio...</Text>
         ) : isPlaying ? (
-          <Text color="green">Playing audio... [s] stop</Text>
+          <Text color={theme.success}>Playing audio... [s] stop</Text>
         ) : (
           <Text dimColor>
             [Enter] new · [c] copy · [a] audio · [t] talk · [r] re-summarize · [q] quit

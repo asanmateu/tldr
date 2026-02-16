@@ -27,6 +27,7 @@ const {
   createProfile,
   deleteProfile,
   setActiveProfile,
+  setTheme,
   MODEL_IDS,
 } = await import("../lib/config.js");
 
@@ -496,6 +497,177 @@ describe("config", () => {
       });
 
       await expect(setActiveProfile("nonexistent")).rejects.toThrow("does not exist");
+    });
+  });
+
+  describe("theme settings", () => {
+    it("saves and loads theme round-trip", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+        },
+        theme: { name: "ocean", appearance: "dark" },
+      });
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toEqual({ name: "ocean", appearance: "dark" });
+    });
+
+    it("returns undefined theme when not set", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+        },
+      });
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toBeUndefined();
+    });
+
+    it("ignores invalid theme name", async () => {
+      await ensureConfigDir();
+      const settingsPath = join(getConfigDir(), "settings.json");
+      await fsWriteFile(
+        settingsPath,
+        JSON.stringify({
+          activeProfile: "default",
+          profiles: {},
+          theme: { name: "neon", appearance: "dark" },
+        }),
+        "utf-8",
+      );
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toBeUndefined();
+    });
+
+    it("ignores invalid appearance mode", async () => {
+      await ensureConfigDir();
+      const settingsPath = join(getConfigDir(), "settings.json");
+      await fsWriteFile(
+        settingsPath,
+        JSON.stringify({
+          activeProfile: "default",
+          profiles: {},
+          theme: { name: "coral", appearance: "neon" },
+        }),
+        "utf-8",
+      );
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toBeUndefined();
+    });
+
+    it("ignores theme when not an object", async () => {
+      await ensureConfigDir();
+      const settingsPath = join(getConfigDir(), "settings.json");
+      await fsWriteFile(
+        settingsPath,
+        JSON.stringify({
+          activeProfile: "default",
+          profiles: {},
+          theme: "coral",
+        }),
+        "utf-8",
+      );
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toBeUndefined();
+    });
+
+    it("parses all valid theme names", async () => {
+      for (const name of ["coral", "ocean", "forest"]) {
+        await saveSettings({
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+          },
+          theme: { name: name as "coral" | "ocean" | "forest", appearance: "auto" },
+        });
+
+        const loaded = await loadSettings();
+        expect(loaded.theme?.name).toBe(name);
+      }
+    });
+
+    it("parses all valid appearance modes", async () => {
+      for (const appearance of ["auto", "dark", "light"]) {
+        await saveSettings({
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+          },
+          theme: {
+            name: "coral",
+            appearance: appearance as "auto" | "dark" | "light",
+          },
+        });
+
+        const loaded = await loadSettings();
+        expect(loaded.theme?.appearance).toBe(appearance);
+      }
+    });
+  });
+
+  describe("setTheme", () => {
+    it("sets theme name while preserving appearance", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+        },
+        theme: { name: "coral", appearance: "dark" },
+      });
+
+      await setTheme({ name: "ocean" });
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toEqual({ name: "ocean", appearance: "dark" });
+    });
+
+    it("sets appearance while preserving theme name", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+        },
+        theme: { name: "forest", appearance: "dark" },
+      });
+
+      await setTheme({ appearance: "light" });
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toEqual({ name: "forest", appearance: "light" });
+    });
+
+    it("creates theme from defaults when none exists", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+        },
+      });
+
+      await setTheme({ name: "ocean" });
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toEqual({ name: "ocean", appearance: "auto" });
+    });
+
+    it("sets both name and appearance at once", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+        },
+      });
+
+      await setTheme({ name: "forest", appearance: "light" });
+
+      const loaded = await loadSettings();
+      expect(loaded.theme).toEqual({ name: "forest", appearance: "light" });
     });
   });
 });

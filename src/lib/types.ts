@@ -70,6 +70,7 @@ export interface TldrSettings {
   outputDir?: string | undefined;
   activeProfile: string;
   profiles: Record<string, Profile>;
+  theme?: ThemeConfig | undefined;
 }
 
 export interface ResolvedConfig {
@@ -104,6 +105,26 @@ export interface SessionPaths {
   sessionDir: string;
   summaryPath: string;
   audioPath: string;
+}
+
+// --- Theme configuration ---
+
+export type ThemeName = "coral" | "ocean" | "forest";
+export type AppearanceMode = "dark" | "light" | "auto";
+
+export interface ThemePalette {
+  brand: string;
+  brandBorder: string;
+  brandAccent: string;
+  accent: string;
+  success: string;
+  warning: string;
+  error: string;
+}
+
+export interface ThemeConfig {
+  name: ThemeName;
+  appearance: AppearanceMode;
 }
 
 export type AppState =

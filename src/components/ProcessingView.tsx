@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
+import { useTheme } from "../lib/ThemeContext.js";
 import type { ExtractionResult } from "../lib/types.js";
 
 interface ProcessingViewProps {
@@ -9,6 +10,7 @@ interface ProcessingViewProps {
 }
 
 export function ProcessingView({ phase, source, extraction }: ProcessingViewProps) {
+  const theme = useTheme();
   const isImage = !!extraction?.image;
 
   const label =
@@ -23,7 +25,7 @@ export function ProcessingView({ phase, source, extraction }: ProcessingViewProp
   return (
     <Box flexDirection="column" paddingX={1}>
       <Box>
-        <Text color="cyan">
+        <Text color={theme.accent}>
           <Spinner type="dots" />
         </Text>
         <Text> {label}</Text>

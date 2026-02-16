@@ -2,6 +2,7 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type {
+  AppearanceMode,
   CognitiveTrait,
   ConfigOverrides,
   ModelTier,
@@ -9,6 +10,8 @@ import type {
   ResolvedConfig,
   SummarizationProvider,
   SummaryStyle,
+  ThemeConfig,
+  ThemeName,
   TldrSettings,
   Tone,
   TtsMode,
@@ -96,6 +99,19 @@ function parseSettings(parsed: unknown): TldrSettings {
     profiles.default = { ...DEFAULT_PROFILE };
   }
 
+  let theme: ThemeConfig | undefined;
+  if (typeof obj.theme === "object" && obj.theme !== null) {
+    const t = obj.theme as Record<string, unknown>;
+    if (
+      typeof t.name === "string" &&
+      VALID_THEME_NAMES.has(t.name) &&
+      typeof t.appearance === "string" &&
+      VALID_APPEARANCES.has(t.appearance)
+    ) {
+      theme = { name: t.name as ThemeName, appearance: t.appearance as AppearanceMode };
+    }
+  }
+
   return {
     apiKey: typeof obj.apiKey === "string" ? obj.apiKey : undefined,
     baseUrl: typeof obj.baseUrl === "string" ? obj.baseUrl : undefined,
@@ -103,6 +119,7 @@ function parseSettings(parsed: unknown): TldrSettings {
     outputDir: typeof obj.outputDir === "string" ? obj.outputDir : undefined,
     activeProfile: typeof obj.activeProfile === "string" ? obj.activeProfile : "default",
     profiles,
+    theme,
   };
 }
 
@@ -111,6 +128,8 @@ const VALID_STYLES = new Set(["quick", "standard", "detailed", "study-notes"]);
 const VALID_TRAITS = new Set(["dyslexia", "adhd", "autism", "esl", "visual-thinker"]);
 const VALID_TTS_MODES = new Set(["strip", "rewrite"]);
 const VALID_PROVIDERS = new Set(["api", "cli"]);
+const VALID_THEME_NAMES = new Set(["coral", "ocean", "forest"]);
+const VALID_APPEARANCES = new Set(["dark", "light", "auto"]);
 
 function parseProfile(raw: unknown): Profile {
   if (typeof raw !== "object" || raw === null) {
@@ -360,5 +379,12 @@ export async function setActiveProfile(name: string): Promise<void> {
     throw new Error(`Profile "${name}" does not exist.`);
   }
   settings.activeProfile = name;
+  await saveSettings(settings);
+}
+
+export async function setTheme(theme: Partial<ThemeConfig>): Promise<void> {
+  const settings = await loadSettings();
+  const current = settings.theme ?? { name: "coral", appearance: "auto" };
+  settings.theme = { ...current, ...theme };
   await saveSettings(settings);
 }

@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import { useTheme } from "../lib/ThemeContext.js";
 
 interface ErrorViewProps {
   message: string;
@@ -6,13 +7,15 @@ interface ErrorViewProps {
 }
 
 export function ErrorView({ message, hint }: ErrorViewProps) {
+  const theme = useTheme();
+
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Text color="red" bold>
+      <Text color={theme.error} bold>
         Error: {message}
       </Text>
       {hint && (
-        <Text color="yellow" dimColor>
+        <Text color={theme.warning} dimColor>
           {hint}
         </Text>
       )}

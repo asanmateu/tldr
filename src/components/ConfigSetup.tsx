@@ -1,13 +1,17 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { useCallback, useState } from "react";
+import { useTheme } from "../lib/ThemeContext.js";
 import { resolveConfig } from "../lib/config.js";
 import type {
+  AppearanceMode,
   CognitiveTrait,
   Config,
   Profile,
   SummarizationProvider,
   SummaryStyle,
+  ThemeConfig,
+  ThemeName,
   TldrSettings,
   Tone,
   TtsMode,
@@ -16,12 +20,15 @@ import type {
 interface ConfigSetupProps {
   currentConfig?: Config | undefined;
   editProfile?: boolean | undefined;
+  themeConfig?: ThemeConfig | undefined;
+  onThemeChange?: (theme: ThemeConfig) => void;
   onSave: (config: Config) => void;
   onCancel: () => void;
 }
 
-type FirstRunStep = "apiKey" | "traits" | "tone" | "style";
+type FirstRunStep = "apiKey" | "theme" | "traits" | "tone" | "style";
 type EditMenuItem =
+  | "theme"
   | "traits"
   | "tone"
   | "style"
@@ -73,7 +80,20 @@ const ALL_PROVIDERS: { value: SummarizationProvider; label: string; hint: string
   { value: "cli", label: "CLI", hint: "requires Claude Code sub, ~5s" },
 ];
 
+const ALL_THEME_NAMES: { value: ThemeName; label: string; hint: string }[] = [
+  { value: "coral", label: "Coral", hint: "warm reds & oranges" },
+  { value: "ocean", label: "Ocean", hint: "cool blues & teals" },
+  { value: "forest", label: "Forest", hint: "earthy greens" },
+];
+
+const ALL_APPEARANCES: { value: AppearanceMode; label: string; hint: string }[] = [
+  { value: "auto", label: "Auto", hint: "detect from system" },
+  { value: "dark", label: "Dark", hint: "always dark palette" },
+  { value: "light", label: "Light", hint: "always light palette" },
+];
+
 const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string }[] = [
+  { key: "theme", label: "Theme" },
   { key: "traits", label: "Cognitive traits" },
   { key: "tone", label: "Tone" },
   { key: "style", label: "Summary style" },
@@ -100,7 +120,15 @@ function buildDefaultConfig(): Config {
   return resolveConfig(settings);
 }
 
-export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: ConfigSetupProps) {
+export function ConfigSetup({
+  currentConfig,
+  editProfile,
+  themeConfig,
+  onThemeChange,
+  onSave,
+  onCancel,
+}: ConfigSetupProps) {
+  const theme = useTheme();
   const hasEnvApiKey = !!process.env.ANTHROPIC_API_KEY;
   const isFirstRun = !editProfile;
 
@@ -144,9 +172,26 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
     ),
   );
 
+  // Theme state
+  const [themeName, setThemeName] = useState<ThemeName>(themeConfig?.name ?? "coral");
+  const [themeNameIndex, setThemeNameIndex] = useState(
+    Math.max(
+      ALL_THEME_NAMES.findIndex((t) => t.value === (themeConfig?.name ?? "coral")),
+      0,
+    ),
+  );
+  const [appearance, setAppearance] = useState<AppearanceMode>(themeConfig?.appearance ?? "auto");
+  const [appearanceIndex, setAppearanceIndex] = useState(
+    Math.max(
+      ALL_APPEARANCES.findIndex((a) => a.value === (themeConfig?.appearance ?? "auto")),
+      0,
+    ),
+  );
+  const [themeSubStep, setThemeSubStep] = useState<"name" | "appearance">("name");
+
   // First-run step state
   const skipApiKey = hasEnvApiKey || defaults.provider === "cli";
-  const initialStep: FirstRunStep = isFirstRun && !skipApiKey ? "apiKey" : "traits";
+  const initialStep: FirstRunStep = isFirstRun && !skipApiKey ? "apiKey" : "theme";
   const [firstRunStep, setFirstRunStep] = useState<FirstRunStep>(initialStep);
 
   // Edit mode state
@@ -209,6 +254,34 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
 
     // --- First-run mode ---
     if (isFirstRun && !editProfile) {
+      if (firstRunStep === "theme") {
+        if (themeSubStep === "name") {
+          if (key.upArrow) setThemeNameIndex((i) => Math.max(0, i - 1));
+          if (key.downArrow) setThemeNameIndex((i) => Math.min(ALL_THEME_NAMES.length - 1, i + 1));
+          if (key.return) {
+            const selected = ALL_THEME_NAMES[themeNameIndex];
+            if (selected) {
+              setThemeName(selected.value);
+              onThemeChange?.({ name: selected.value, appearance });
+            }
+            setThemeSubStep("appearance");
+          }
+        } else {
+          if (key.upArrow) setAppearanceIndex((i) => Math.max(0, i - 1));
+          if (key.downArrow) setAppearanceIndex((i) => Math.min(ALL_APPEARANCES.length - 1, i + 1));
+          if (key.return) {
+            const selected = ALL_APPEARANCES[appearanceIndex];
+            if (selected) {
+              setAppearance(selected.value);
+              onThemeChange?.({ name: themeName, appearance: selected.value });
+            }
+            setThemeSubStep("name");
+            setFirstRunStep("traits");
+          }
+        }
+        return;
+      }
+
       if (firstRunStep === "traits") {
         if (key.upArrow) setTraitCursor((i) => Math.max(0, i - 1));
         if (key.downArrow) setTraitCursor((i) => Math.min(ALL_TRAITS.length - 1, i + 1));
@@ -272,6 +345,34 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
       }
 
       // Editing a specific field
+      if (editingField === "theme") {
+        if (themeSubStep === "name") {
+          if (key.upArrow) setThemeNameIndex((i) => Math.max(0, i - 1));
+          if (key.downArrow) setThemeNameIndex((i) => Math.min(ALL_THEME_NAMES.length - 1, i + 1));
+          if (key.return) {
+            const selected = ALL_THEME_NAMES[themeNameIndex];
+            if (selected) {
+              setThemeName(selected.value);
+              onThemeChange?.({ name: selected.value, appearance });
+            }
+            setThemeSubStep("appearance");
+          }
+        } else {
+          if (key.upArrow) setAppearanceIndex((i) => Math.max(0, i - 1));
+          if (key.downArrow) setAppearanceIndex((i) => Math.min(ALL_APPEARANCES.length - 1, i + 1));
+          if (key.return) {
+            const selected = ALL_APPEARANCES[appearanceIndex];
+            if (selected) {
+              setAppearance(selected.value);
+              onThemeChange?.({ name: themeName, appearance: selected.value });
+            }
+            setThemeSubStep("name");
+            setEditingField(null);
+          }
+        }
+        return;
+      }
+
       if (editingField === "traits") {
         if (key.upArrow) setTraitCursor((i) => Math.max(0, i - 1));
         if (key.downArrow) setTraitCursor((i) => Math.min(ALL_TRAITS.length - 1, i + 1));
@@ -366,7 +467,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
   if (isFirstRun && !editProfile) {
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Text bold color="cyan">
+        <Text bold color={theme.accent}>
           tldr Setup
         </Text>
 
@@ -384,6 +485,28 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
             </Box>
           )}
 
+          {firstRunStep === "theme" && themeSubStep === "name" && (
+            <Box flexDirection="column">
+              <Text>Color theme (Enter to confirm):</Text>
+              {ALL_THEME_NAMES.map((t, i) => (
+                <Text key={t.value} {...(i === themeNameIndex ? { color: theme.accent } : {})}>
+                  {i === themeNameIndex ? ">" : " "} {t.label} <Text dimColor>({t.hint})</Text>
+                </Text>
+              ))}
+            </Box>
+          )}
+
+          {firstRunStep === "theme" && themeSubStep === "appearance" && (
+            <Box flexDirection="column">
+              <Text>Appearance mode (Enter to confirm):</Text>
+              {ALL_APPEARANCES.map((a, i) => (
+                <Text key={a.value} {...(i === appearanceIndex ? { color: theme.accent } : {})}>
+                  {i === appearanceIndex ? ">" : " "} {a.label} <Text dimColor>({a.hint})</Text>
+                </Text>
+              ))}
+            </Box>
+          )}
+
           {firstRunStep === "traits" && (
             <Box flexDirection="column">
               <Text>Cognitive traits (Space to toggle, Enter to confirm):</Text>
@@ -391,7 +514,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
                 const checked = selectedTraits.has(t.value);
                 const cursor = i === traitCursor;
                 return (
-                  <Text key={t.value} {...(cursor ? { color: "cyan" } : {})}>
+                  <Text key={t.value} {...(cursor ? { color: theme.accent } : {})}>
                     {cursor ? ">" : " "} [{checked ? "x" : " "}] {t.label}
                   </Text>
                 );
@@ -406,7 +529,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
             <Box flexDirection="column">
               <Text>Tone (Enter to confirm):</Text>
               {ALL_TONES.map((t, i) => (
-                <Text key={t.value} {...(i === toneIndex ? { color: "cyan" } : {})}>
+                <Text key={t.value} {...(i === toneIndex ? { color: theme.accent } : {})}>
                   {i === toneIndex ? ">" : " "} {t.label}
                 </Text>
               ))}
@@ -417,7 +540,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
             <Box flexDirection="column">
               <Text>Summary style (Enter to confirm):</Text>
               {ALL_STYLES.map((s, i) => (
-                <Text key={s.value} {...(i === styleIndex ? { color: "cyan" } : {})}>
+                <Text key={s.value} {...(i === styleIndex ? { color: theme.accent } : {})}>
                   {i === styleIndex ? ">" : " "} {s.label} <Text dimColor>({s.hint})</Text>
                 </Text>
               ))}
@@ -435,7 +558,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
   // --- Render: Edit profile mode ---
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Text bold color="cyan">
+      <Text bold color={theme.accent}>
         Edit Profile: {defaults.profileName}
       </Text>
 
@@ -443,6 +566,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
         {!editingField &&
           EDIT_MENU_ITEMS.map((item, i) => {
             let current = "";
+            if (item.key === "theme") current = `${themeName} / ${appearance}`;
             if (item.key === "traits")
               current = selectedTraits.size > 0 ? [...selectedTraits].join(", ") : "none";
             if (item.key === "tone") current = tone;
@@ -456,12 +580,34 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
               current = customInstructions ? `"${customInstructions.slice(0, 30)}..."` : "none";
 
             return (
-              <Text key={item.key} {...(i === editMenuIndex ? { color: "cyan" } : {})}>
+              <Text key={item.key} {...(i === editMenuIndex ? { color: theme.accent } : {})}>
                 {i === editMenuIndex ? ">" : " "} {item.label}
                 {item.key !== "save" && <Text dimColor> ({current})</Text>}
               </Text>
             );
           })}
+
+        {editingField === "theme" && themeSubStep === "name" && (
+          <Box flexDirection="column">
+            <Text>Color theme (Enter to confirm):</Text>
+            {ALL_THEME_NAMES.map((t, i) => (
+              <Text key={t.value} {...(i === themeNameIndex ? { color: theme.accent } : {})}>
+                {i === themeNameIndex ? ">" : " "} {t.label} <Text dimColor>({t.hint})</Text>
+              </Text>
+            ))}
+          </Box>
+        )}
+
+        {editingField === "theme" && themeSubStep === "appearance" && (
+          <Box flexDirection="column">
+            <Text>Appearance mode (Enter to confirm):</Text>
+            {ALL_APPEARANCES.map((a, i) => (
+              <Text key={a.value} {...(i === appearanceIndex ? { color: theme.accent } : {})}>
+                {i === appearanceIndex ? ">" : " "} {a.label} <Text dimColor>({a.hint})</Text>
+              </Text>
+            ))}
+          </Box>
+        )}
 
         {editingField === "traits" && (
           <Box flexDirection="column">
@@ -470,7 +616,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
               const checked = selectedTraits.has(t.value);
               const cursor = i === traitCursor;
               return (
-                <Text key={t.value} {...(cursor ? { color: "cyan" } : {})}>
+                <Text key={t.value} {...(cursor ? { color: theme.accent } : {})}>
                   {cursor ? ">" : " "} [{checked ? "x" : " "}] {t.label}
                 </Text>
               );
@@ -482,7 +628,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
           <Box flexDirection="column">
             <Text>Tone (Enter to confirm):</Text>
             {ALL_TONES.map((t, i) => (
-              <Text key={t.value} {...(i === toneIndex ? { color: "cyan" } : {})}>
+              <Text key={t.value} {...(i === toneIndex ? { color: theme.accent } : {})}>
                 {i === toneIndex ? ">" : " "} {t.label}
               </Text>
             ))}
@@ -493,7 +639,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
           <Box flexDirection="column">
             <Text>Summary style (Enter to confirm):</Text>
             {ALL_STYLES.map((s, i) => (
-              <Text key={s.value} {...(i === styleIndex ? { color: "cyan" } : {})}>
+              <Text key={s.value} {...(i === styleIndex ? { color: theme.accent } : {})}>
                 {i === styleIndex ? ">" : " "} {s.label} <Text dimColor>({s.hint})</Text>
               </Text>
             ))}
@@ -504,7 +650,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
           <Box flexDirection="column">
             <Text>TTS Voice (Enter to confirm):</Text>
             {VOICES.map((v, i) => (
-              <Text key={v} {...(i === voiceIndex ? { color: "cyan" } : {})}>
+              <Text key={v} {...(i === voiceIndex ? { color: theme.accent } : {})}>
                 {i === voiceIndex ? ">" : " "} {v}
               </Text>
             ))}
@@ -515,7 +661,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
           <Box flexDirection="column">
             <Text>TTS Mode (Enter to confirm):</Text>
             {ALL_TTS_MODES.map((m, i) => (
-              <Text key={m.value} {...(i === ttsModeIndex ? { color: "cyan" } : {})}>
+              <Text key={m.value} {...(i === ttsModeIndex ? { color: theme.accent } : {})}>
                 {i === ttsModeIndex ? ">" : " "} {m.label} <Text dimColor>({m.hint})</Text>
               </Text>
             ))}
@@ -526,7 +672,7 @@ export function ConfigSetup({ currentConfig, editProfile, onSave, onCancel }: Co
           <Box flexDirection="column">
             <Text>Provider (Enter to confirm):</Text>
             {ALL_PROVIDERS.map((p, i) => (
-              <Text key={p.value} {...(i === providerIndex ? { color: "cyan" } : {})}>
+              <Text key={p.value} {...(i === providerIndex ? { color: theme.accent } : {})}>
                 {i === providerIndex ? ">" : " "} {p.label} <Text dimColor>({p.hint})</Text>
               </Text>
             ))}

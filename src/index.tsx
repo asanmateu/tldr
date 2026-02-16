@@ -9,10 +9,12 @@ import {
   loadSettings,
   saveSettings,
   setActiveProfile,
+  setTheme,
 } from "./lib/config.js";
 import * as fmt from "./lib/fmt.js";
 import { importMarkdown } from "./lib/import.js";
-import type { ConfigOverrides } from "./lib/types.js";
+import { resolveTheme } from "./lib/theme.js";
+import type { AppearanceMode, ConfigOverrides, ThemeName } from "./lib/types.js";
 
 const args = process.argv.slice(2);
 
@@ -24,6 +26,12 @@ function getFlag(name: string): string | undefined {
 
 function hasFlag(name: string): boolean {
   return args.includes(`--${name}`);
+}
+
+// Load theme for CLI output (non-interactive commands)
+{
+  const settings = await loadSettings();
+  fmt.initTheme(resolveTheme(settings.theme));
 }
 
 if (args.includes("--help") || args.includes("-h")) {
@@ -44,6 +52,8 @@ if (args.includes("--help") || args.includes("-h")) {
     tldr config set provider <api|cli>     Set summarization provider
     tldr config set model <tier|id>        Set model (haiku/sonnet/opus or full ID)
     tldr config set output-dir <path>      Set session output directory
+    tldr config set theme <name>           Set color theme (coral/ocean/forest)
+    tldr config set appearance <mode>      Set appearance (auto/dark/light)
     tldr config setup                 Re-run first-time setup flow
 
   ${fmt.label("Import:")}
@@ -82,7 +92,11 @@ async function handleConfig() {
 
   if (!sub || sub === "show") {
     const config = await loadConfig();
+    const settings = await loadSettings();
     console.log(`\n${fmt.brand("  Resolved Configuration")}\n`);
+    console.log(
+      `  ${fmt.label("Theme:")}       ${settings.theme?.name ?? "coral"} / ${settings.theme?.appearance ?? "auto"}`,
+    );
     console.log(`  ${fmt.label("Profile:")}     ${config.profileName}`);
     console.log(`  ${fmt.label("Provider:")}    ${config.provider}`);
     console.log(
@@ -170,10 +184,26 @@ async function handleConfig() {
       settings.outputDir = value;
       await saveSettings(settings);
       console.log(`Set output-dir = ${value}`);
+    } else if (key === "theme") {
+      const valid = ["coral", "ocean", "forest"];
+      if (!valid.includes(value)) {
+        console.error(`Invalid theme. Use one of: ${valid.join(", ")}`);
+        process.exit(1);
+      }
+      await setTheme({ name: value as ThemeName });
+      console.log(`Set theme = ${value}`);
+    } else if (key === "appearance") {
+      const valid = ["auto", "dark", "light"];
+      if (!valid.includes(value)) {
+        console.error(`Invalid appearance. Use one of: ${valid.join(", ")}`);
+        process.exit(1);
+      }
+      await setTheme({ appearance: value as AppearanceMode });
+      console.log(`Set appearance = ${value}`);
     } else {
       console.error(`Unknown key: ${key}`);
       console.error(
-        `Valid keys: ${topLevelKeys.join(", ")}, model, tts-mode, provider, output-dir`,
+        `Valid keys: ${topLevelKeys.join(", ")}, model, tts-mode, provider, output-dir, theme, appearance`,
       );
       process.exit(1);
     }
