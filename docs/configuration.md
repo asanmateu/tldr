@@ -18,6 +18,8 @@ Run `tldr config` to see the current resolved configuration.
 | `provider` | `cli` or `api` | Profile | `tldr config set provider api` |
 | `model` | Tier alias or full model ID | Profile | `tldr config set model sonnet` |
 | `tts-mode` | `strip` or `rewrite` | Profile | `tldr config set tts-mode rewrite` |
+| `theme` | `coral`, `ocean`, `forest` | Global | `tldr config set theme ocean` |
+| `appearance` | `auto`, `dark`, `light` | Global | `tldr config set appearance light` |
 
 ## Profile System
 
@@ -41,6 +43,29 @@ tldr profile edit work            # Edit profile settings (interactive)
 tldr profile delete work          # Delete a profile
 tldr --profile work <url>         # Use a profile for one run
 ```
+
+## Theme
+
+The color theme is selected during first-run setup (after API key, before traits). You can also change it later via `tldr profile edit` → Theme menu item, or directly with the CLI:
+
+```bash
+tldr config set theme <name>         # coral, ocean, forest
+tldr config set appearance <mode>    # auto, dark, light
+```
+
+Three themes are available:
+
+- **coral** — warm reds (default)
+- **ocean** — cool blues
+- **forest** — earthy greens
+
+Three appearance modes:
+
+- **auto** — detects system dark/light setting on macOS (default)
+- **dark** — always dark background
+- **light** — always light background
+
+Theme and appearance are stored at the settings level in `settings.json`, not per-profile.
 
 ## Per-Style Model Configuration
 
@@ -120,3 +145,5 @@ tldr config set model gpt-4o              # Non-Claude model (with compatible AP
 | Voice | `en-US-JennyNeural` |
 | TTS speed | `1.0x` |
 | TTS mode | `strip` |
+| Theme | `coral` |
+| Appearance | `auto` (detects system dark/light on macOS) |

@@ -67,6 +67,8 @@ tldr --style quick "https://..."     # Quick summary instead of study notes
 tldr --model sonnet "https://..."    # Use a different model
 ```
 
+Choose from three color themes (coral, ocean, forest) and auto dark/light mode during setup, or change later with `tldr config set theme`.
+
 You can set up profiles for different contexts (work, study, casual) with different tones, styles, and cognitive trait settings.
 
 See the [Configuration guide](docs/configuration.md) for details.
