@@ -2,6 +2,25 @@
 
 Thanks for your interest in tldr!
 
+## Getting started
+
+Requires [Bun](https://bun.sh) (v1.0+).
+
+```bash
+git clone https://github.com/asanmateu/tldr.git
+cd tldr
+bun install
+```
+
+Run locally during development:
+
+```bash
+bun run dev              # Run in development mode
+bun run test             # Run tests
+bun run check            # Lint + format check
+bun link                 # Register as `tldr` command locally
+```
+
 ## How to help right now
 
 The most valuable contribution at this stage is **using tldr and telling us what's off**. The core functionality is in place, but it needs real-world feedback to get sharp.

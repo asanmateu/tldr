@@ -17,8 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Docs now separate user installation (Homebrew/binary) from developer setup (clone + Bun)
+- CONTRIBUTING.md includes "Getting started" section with development setup steps
 - Version import in `Banner.tsx` switched from `createRequire` to static JSON import for compiled binary compatibility
-- README installation section now lists Homebrew, standalone binary, and from-source options
+- README installation section now lists Homebrew and standalone binary only; "From source" moved to Development section
 - Added `resolveJsonModule` to `tsconfig.json`
 - Added npm metadata fields (`files`, `engines`, `repository`, `keywords`, `author`, `license`) to `package.json`
 - Refactored `config set` handler from if-else chain to data-driven dispatch (`configSetter.ts`)

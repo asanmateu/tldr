@@ -45,17 +45,6 @@ curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux
 mv tldr-linux-arm64 /usr/local/bin/tldr
 ```
 
-### From source
-
-Requires [Bun](https://bun.sh) (v1.0+).
-
-```bash
-git clone https://github.com/asanmateu/tldr.git
-cd tldr
-bun install
-bun link
-```
-
 Once installed, if [Claude Code](https://docs.anthropic.com/en/docs/claude-code) is authenticated, `tldr` works immediately.
 
 ---
@@ -145,12 +134,20 @@ tldr config set provider api
 
 ## Development
 
+Requires [Bun](https://bun.sh) (v1.0+).
+
 ```bash
+git clone https://github.com/asanmateu/tldr.git
+cd tldr
 bun install
+```
+
+```bash
 bun run dev              # Run in development
 bun run test             # Run tests
 bun run typecheck        # Type check
 bun run check            # Lint + format check
+bun link                 # Make available as `tldr` command
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for architecture and project structure.
