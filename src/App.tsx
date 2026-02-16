@@ -13,7 +13,13 @@ import { addEntry, getRecent } from "./lib/history.js";
 import { isCliAvailable } from "./lib/providers/cli.js";
 import { getSessionPaths, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
-import { generateAudio, playAudio, speakFallback, stopAudio, stripMarkdownForSpeech } from "./lib/tts.js";
+import {
+  generateAudio,
+  playAudio,
+  speakFallback,
+  stopAudio,
+  stripMarkdownForSpeech,
+} from "./lib/tts.js";
 import type {
   AppState,
   Config,
