@@ -27,7 +27,22 @@ export async function extract(input: string): Promise<ExtractionResult> {
     case "file": {
       const { readFile } = await import("node:fs/promises");
       const path = expandHome(classified.value);
-      const content = await readFile(path, "utf-8");
+      let content: string;
+      try {
+        content = await readFile(path, "utf-8");
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === "ENOENT") {
+          throw new Error(`File not found: ${classified.value}`);
+        }
+        if (code === "EISDIR") {
+          throw new Error(`Path is a directory, not a file: ${classified.value}`);
+        }
+        if (code === "EACCES") {
+          throw new Error(`Permission denied: ${classified.value}`);
+        }
+        throw err;
+      }
       const wordCount = content.split(/\s+/).filter(Boolean).length;
       return {
         content,

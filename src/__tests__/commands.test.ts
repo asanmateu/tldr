@@ -45,4 +45,23 @@ describe("parseCommand", () => {
   it("handles extra whitespace in args", () => {
     expect(parseCommand("/help   bar  baz")).toEqual({ command: "help", args: "bar  baz" });
   });
+
+  it("parses unknown commands without crashing", () => {
+    expect(parseCommand("/clear")).toEqual({ command: "clear", args: "" });
+  });
+});
+
+describe("unknown command detection", () => {
+  it("recognizes known commands", () => {
+    for (const cmd of SLASH_COMMANDS) {
+      expect(SLASH_COMMANDS.some((c) => c.name === cmd.name)).toBe(true);
+    }
+  });
+
+  it("identifies unknown commands", () => {
+    const unknowns = ["clear", "reset", "exit", "foo"];
+    for (const name of unknowns) {
+      expect(SLASH_COMMANDS.some((c) => c.name === name)).toBe(false);
+    }
+  });
 });

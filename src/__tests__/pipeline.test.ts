@@ -41,4 +41,22 @@ describe("pipeline integration", () => {
     expect(result.content).toBe("");
     expect(result.wordCount).toBe(0);
   });
+
+  it("throws friendly error for non-existent file paths", async () => {
+    const error = await extract("/nonexistent/path/to/file.txt").catch((e) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe("File not found: /nonexistent/path/to/file.txt");
+  });
+
+  it("throws friendly error for directory paths", async () => {
+    const error = await extract("/tmp").catch((e) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe("Path is a directory, not a file: /tmp");
+  });
+
+  it("throws friendly error for slash-command-like input via CLI", async () => {
+    const error = await extract("/clear").catch((e) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe("File not found: /clear");
+  });
 });

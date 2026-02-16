@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Graceful error messages for invalid file paths (e.g. `/clear` no longer shows raw ENOENT stack trace)
+- Unknown slash commands now show "Unknown command" feedback instead of being silently ignored
 - First-run setup wizard now correctly shows on fresh install (was skipped when provider defaulted to `cli`)
 - CI audit step failing due to missing `package-lock.json`
 

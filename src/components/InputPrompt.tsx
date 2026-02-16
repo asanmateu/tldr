@@ -3,7 +3,7 @@ import TextInput from "ink-text-input";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTheme } from "../lib/ThemeContext.js";
 import { readClipboard } from "../lib/clipboard.js";
-import { matchCommands, parseCommand } from "../lib/commands.js";
+import { SLASH_COMMANDS, matchCommands, parseCommand } from "../lib/commands.js";
 import type { TldrResult } from "../lib/types.js";
 import { Banner } from "./Banner.js";
 import { SlashCommandMenu } from "./SlashCommandMenu.js";
@@ -31,6 +31,7 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
   const [clipboardHint, setClipboardHint] = useState<string | undefined>(undefined);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [slashMenuIndex, setSlashMenuIndex] = useState(0);
+  const [commandError, setCommandError] = useState<string | undefined>(undefined);
 
   const filteredCommands = useMemo(() => matchCommands(input), [input]);
   const slashMenuVisible = input.startsWith("/") && filteredCommands.length > 0;
@@ -53,10 +54,14 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
     setSlashMenuIndex(0);
   }, [filteredCommands.length]);
 
-  const handleChange = useCallback((value: string) => {
-    setInput(value);
-    setHistoryIndex(-1);
-  }, []);
+  const handleChange = useCallback(
+    (value: string) => {
+      setInput(value);
+      setHistoryIndex(-1);
+      if (commandError) setCommandError(undefined);
+    },
+    [commandError],
+  );
 
   const handleSubmit = useCallback(
     (value: string) => {
@@ -75,11 +80,15 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
         }
         const parsed = parseCommand(trimmed);
         if (parsed) {
-          setInput("");
-          onSlashCommand(parsed.command);
+          const isKnown = SLASH_COMMANDS.some((cmd) => cmd.name === parsed.command);
+          if (isKnown) {
+            setInput("");
+            onSlashCommand(parsed.command);
+            return;
+          }
+          setCommandError(`Unknown command: /${parsed.command}. Type / to see available commands.`);
           return;
         }
-        // Unknown slash command — ignore
         return;
       }
 
@@ -154,10 +163,12 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
       {slashMenuVisible && (
         <SlashCommandMenu commands={filteredCommands} selectedIndex={slashMenuIndex} />
       )}
-      {!slashMenuVisible && clipboardHint && !input && (
+      {commandError && !slashMenuVisible && <Text color="red">{commandError}</Text>}
+      {!slashMenuVisible && !commandError && clipboardHint && !input && (
         <Text dimColor>Clipboard: {clipboardHint}</Text>
       )}
       {!slashMenuVisible &&
+        !commandError &&
         history.slice(0, 3).map((entry) => (
           <Text key={entry.timestamp} dimColor>
             {formatTimeAgo(entry.timestamp)} · {entry.extraction.source}
