@@ -42,7 +42,7 @@ vi.mock("node:os", () => ({
   homedir: () => "/mock-home",
 }));
 
-const { generateAudio, playAudio, stopAudio, stripMarkdownForSpeech } = await import(
+const { generateAudio, playAudio, speakFallback, stopAudio, stripMarkdownForSpeech } = await import(
   "../lib/tts.js"
 );
 
@@ -206,6 +206,54 @@ Visit [Anthropic](https://anthropic.com) for more.`;
         stdio: "ignore",
       });
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe("speakFallback", () => {
+    it("spawns say on macOS", () => {
+      vi.stubGlobal("process", { ...process, platform: "darwin" });
+      speakFallback("Hello world");
+
+      expect(mockSpawn).toHaveBeenCalledWith("say", ["Hello world"], { stdio: "ignore" });
+      vi.unstubAllGlobals();
+    });
+
+    it("spawns espeak on Linux", () => {
+      vi.stubGlobal("process", { ...process, platform: "linux" });
+      speakFallback("Hello world");
+
+      expect(mockSpawn).toHaveBeenCalledWith("espeak", ["Hello world"], { stdio: "ignore" });
+      vi.unstubAllGlobals();
+    });
+
+    it("returns undefined on unsupported platforms", () => {
+      vi.stubGlobal("process", { ...process, platform: "win32" });
+      const result = speakFallback("Hello world");
+
+      expect(result).toBeUndefined();
+      vi.unstubAllGlobals();
+    });
+  });
+
+  describe("generateAudio timeout", () => {
+    it("rejects when synthesis takes too long", async () => {
+      mockSynthesize.mockImplementationOnce(
+        () => new Promise((resolve) => setTimeout(resolve, 60_000)), // simulates hang
+      );
+
+      let caughtError: Error | undefined;
+      try {
+        await Promise.race([
+          generateAudio("Hello", "en-US-JennyNeural"),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("TTS synthesis timed out")), 50),
+          ),
+        ]);
+      } catch (err) {
+        caughtError = err as Error;
+      }
+
+      expect(caughtError?.message).toBe("TTS synthesis timed out");
     });
   });
 

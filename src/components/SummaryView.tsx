@@ -5,7 +5,9 @@ interface SummaryViewProps {
   extraction: ExtractionResult;
   summary: string;
   isStreaming: boolean;
+  isGeneratingAudio: boolean;
   isPlaying: boolean;
+  audioError?: string | undefined;
   sessionDir?: string | undefined;
 }
 
@@ -20,7 +22,9 @@ export function SummaryView({
   extraction,
   summary,
   isStreaming,
+  isGeneratingAudio,
   isPlaying,
+  audioError,
   sessionDir,
 }: SummaryViewProps) {
   const summaryWords = summary.split(/\s+/).filter(Boolean).length;
@@ -38,7 +42,7 @@ export function SummaryView({
       </Box>
       {sessionDir && (
         <Box>
-          <Text dimColor>Saved to {sessionDir}</Text>
+          <Text color="green">Saved to {sessionDir}</Text>
         </Box>
       )}
       <Box marginTop={1}>
@@ -48,8 +52,15 @@ export function SummaryView({
       <Box marginTop={1}>
         <Text dimColor>─────────────────────────────────</Text>
       </Box>
+      {audioError && (
+        <Box>
+          <Text color="red">Audio failed: {audioError}</Text>
+        </Box>
+      )}
       <Box>
-        {isPlaying ? (
+        {isGeneratingAudio ? (
+          <Text color="yellow">Generating audio...</Text>
+        ) : isPlaying ? (
           <Text color="green">Playing audio... [s] stop</Text>
         ) : (
           <Text dimColor>

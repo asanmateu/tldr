@@ -66,7 +66,12 @@ export async function generateAudio(
       ? `${speed >= 1 ? "+" : ""}${Math.round((speed - 1) * 100)}%`
       : undefined;
   const tts = new EdgeTTS(text, voice, rate ? { rate } : undefined);
-  const result = await tts.synthesize();
+  const result = await Promise.race([
+    tts.synthesize(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("TTS synthesis timed out")), 15_000),
+    ),
+  ]);
 
   const arrayBuffer = await result.audio.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
@@ -103,4 +108,14 @@ export function stopAudio(proc: ChildProcess): void {
   if (!proc.killed) {
     proc.kill();
   }
+}
+
+export function speakFallback(text: string): ChildProcess | undefined {
+  if (process.platform === "darwin") {
+    return spawn("say", [text], { stdio: "ignore" });
+  }
+  if (process.platform === "linux") {
+    return spawn("espeak", [text], { stdio: "ignore" });
+  }
+  return undefined;
 }

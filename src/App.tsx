@@ -13,7 +13,7 @@ import { addEntry, getRecent } from "./lib/history.js";
 import { isCliAvailable } from "./lib/providers/cli.js";
 import { getSessionPaths, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
-import { generateAudio, playAudio, stopAudio, stripMarkdownForSpeech } from "./lib/tts.js";
+import { generateAudio, playAudio, speakFallback, stopAudio, stripMarkdownForSpeech } from "./lib/tts.js";
 import type {
   AppState,
   Config,
@@ -47,6 +47,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   });
   const [history, setHistory] = useState<TldrResult[]>([]);
   const [audioProcess, setAudioProcess] = useState<ChildProcess | undefined>(undefined);
+  const [audioError, setAudioError] = useState<string | undefined>(undefined);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [currentSession, setCurrentSession] = useState<SessionPaths | undefined>(undefined);
 
   // Load config and history on mount
@@ -139,7 +141,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
 
       // Save session output
       try {
-        const paths = getSessionPaths(activeConfig.outputDir, result);
+        const paths = getSessionPaths(activeConfig.outputDir, result, tldrResult.summary);
         const saved = await saveSummary(paths, tldrResult.summary);
         setCurrentSession(saved);
       } catch {
@@ -182,7 +184,9 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           writeClipboard(summary);
           return;
         }
-        if (ch === "a" && !audioProcess) {
+        if (ch === "a" && !audioProcess && !isGeneratingAudio) {
+          setAudioError(undefined);
+          setIsGeneratingAudio(true);
           (async () => {
             try {
               const ttsMode = config?.ttsMode ?? "strip";
@@ -192,17 +196,32 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
               } else {
                 speechText = stripMarkdownForSpeech(summary);
               }
-              const path = await generateAudio(
-                speechText,
-                config?.voice ?? "en-US-JennyNeural",
-                config?.ttsSpeed,
-                currentSession?.audioPath,
-              );
-              const proc = playAudio(path);
-              setAudioProcess(proc);
-              proc.on("exit", () => setAudioProcess(undefined));
-            } catch {
-              // TTS unavailable, silently fail
+              try {
+                const path = await generateAudio(
+                  speechText,
+                  config?.voice ?? "en-US-JennyNeural",
+                  config?.ttsSpeed,
+                  currentSession?.audioPath,
+                );
+                setIsGeneratingAudio(false);
+                const proc = playAudio(path);
+                setAudioProcess(proc);
+                proc.on("exit", () => setAudioProcess(undefined));
+              } catch {
+                // edge-tts failed — fall back to system TTS
+                setIsGeneratingAudio(false);
+                const proc = speakFallback(speechText);
+                if (proc) {
+                  setAudioProcess(proc);
+                  proc.on("exit", () => setAudioProcess(undefined));
+                } else {
+                  setAudioError("No TTS available");
+                }
+              }
+            } catch (err) {
+              setIsGeneratingAudio(false);
+              const msg = err instanceof Error ? err.message : "Audio generation failed";
+              setAudioError(msg);
             }
           })();
           return;
@@ -283,7 +302,9 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           extraction={extraction}
           summary={summary}
           isStreaming={isStreaming}
+          isGeneratingAudio={isGeneratingAudio}
           isPlaying={!!audioProcess}
+          audioError={audioError}
           sessionDir={currentSession?.sessionDir}
         />
       )}
