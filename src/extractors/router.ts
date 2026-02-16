@@ -1,3 +1,4 @@
+import { FILE_PATH_PATTERN, normalizeDraggedPath } from "../lib/paths.js";
 import type { ClassifiedInput, InputType } from "../lib/types.js";
 
 const URL_PATTERN = /^https?:\/\//i;
@@ -11,8 +12,6 @@ const PLATFORM_PATTERNS: Array<{ pattern: RegExp; type: InputType }> = [
 
 const PDF_URL_PATTERN = /\.pdf(\?.*)?$/i;
 const IMAGE_URL_PATTERN = /\.(jpe?g|png|gif|webp)(\?.*)?$/i;
-
-const FILE_PATH_PATTERN = /^(\/|~\/|\.\/|\.\.\/)/;
 
 function isPdfPath(value: string): boolean {
   return /\.pdf$/i.test(value);
@@ -50,14 +49,15 @@ export function classify(input: string): ClassifiedInput {
     return { type: "url", value: trimmed };
   }
 
-  if (FILE_PATH_PATTERN.test(trimmed)) {
-    if (isPdfPath(trimmed)) {
-      return { type: "file:pdf", value: trimmed };
+  const normalizedPath = normalizeDraggedPath(trimmed);
+  if (FILE_PATH_PATTERN.test(normalizedPath)) {
+    if (isPdfPath(normalizedPath)) {
+      return { type: "file:pdf", value: normalizedPath };
     }
-    if (isImagePath(trimmed)) {
-      return { type: "file:image", value: trimmed };
+    if (isImagePath(normalizedPath)) {
+      return { type: "file:image", value: normalizedPath };
     }
-    return { type: "file", value: trimmed };
+    return { type: "file", value: normalizedPath };
   }
 
   return { type: "text", value: trimmed };

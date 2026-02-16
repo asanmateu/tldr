@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-02-17
+
+### Added
+
+- Drag-and-drop file support: paths pasted from iTerm2 (single-quoted), Terminal.app (backslash-escaped), and other emulators (double-quoted) are now correctly recognized
+- File type hint below input when a dragged file is detected (PDF document, Image, or File)
+
 ## [0.9.0] - 2026-02-17
 
 ### Added

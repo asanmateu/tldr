@@ -5,6 +5,7 @@ import { useUpdateCheck } from "../hooks/useUpdateCheck.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { readClipboard } from "../lib/clipboard.js";
 import { SLASH_COMMANDS, matchCommands, parseCommand } from "../lib/commands.js";
+import { looksLikeFilePath, normalizeDraggedPath } from "../lib/paths.js";
 import type { TldrResult } from "../lib/types.js";
 import { Banner } from "./Banner.js";
 import { SlashCommandMenu } from "./SlashCommandMenu.js";
@@ -28,6 +29,15 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
 
   const filteredCommands = useMemo(() => matchCommands(input), [input]);
   const slashMenuVisible = input.startsWith("/") && filteredCommands.length > 0;
+
+  const fileHint = useMemo(() => {
+    if (!input) return undefined;
+    if (!looksLikeFilePath(input)) return undefined;
+    const normalized = normalizeDraggedPath(input);
+    if (/\.pdf$/i.test(normalized)) return "Detected: PDF document";
+    if (/\.(jpe?g|png|gif|webp)$/i.test(normalized)) return "Detected: Image";
+    return "Detected: File";
+  }, [input]);
 
   useEffect(() => {
     const clip = readClipboard();
@@ -158,7 +168,8 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
         <SlashCommandMenu commands={filteredCommands} selectedIndex={slashMenuIndex} />
       )}
       {commandError && !slashMenuVisible && <Text color={theme.error}>{commandError}</Text>}
-      {!slashMenuVisible && !commandError && clipboardHint && !input && (
+      {!slashMenuVisible && !commandError && fileHint && input && <Text dimColor>{fileHint}</Text>}
+      {!slashMenuVisible && !commandError && !fileHint && clipboardHint && !input && (
         <Text dimColor>Clipboard: {clipboardHint}</Text>
       )}
     </Box>

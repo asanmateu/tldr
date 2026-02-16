@@ -239,6 +239,71 @@ describe("classify", () => {
     });
   });
 
+  describe("drag-and-drop paths", () => {
+    it("classifies single-quoted absolute paths (iTerm2)", () => {
+      expect(classify("'/Users/foo/my file.png'")).toEqual({
+        type: "file:image",
+        value: "/Users/foo/my file.png",
+      });
+    });
+
+    it("classifies double-quoted absolute paths", () => {
+      expect(classify('"/Users/foo/my file.pdf"')).toEqual({
+        type: "file:pdf",
+        value: "/Users/foo/my file.pdf",
+      });
+    });
+
+    it("classifies backslash-escaped spaces (Terminal.app)", () => {
+      expect(classify("/Users/foo/my\\ file.png")).toEqual({
+        type: "file:image",
+        value: "/Users/foo/my file.png",
+      });
+    });
+
+    it("classifies backslash-escaped parentheses", () => {
+      expect(classify("/Users/foo/file\\ \\(1\\).pdf")).toEqual({
+        type: "file:pdf",
+        value: "/Users/foo/file (1).pdf",
+      });
+    });
+
+    it("classifies quoted home-relative paths", () => {
+      expect(classify("'~/Documents/notes.md'")).toEqual({
+        type: "file",
+        value: "~/Documents/notes.md",
+      });
+    });
+
+    it("classifies quoted relative paths", () => {
+      expect(classify("'./readme.md'")).toEqual({
+        type: "file",
+        value: "./readme.md",
+      });
+    });
+
+    it("handles trailing whitespace and newlines", () => {
+      expect(classify("'/tmp/file.txt'\n")).toEqual({
+        type: "file",
+        value: "/tmp/file.txt",
+      });
+    });
+
+    it("does not misclassify quoted regular text as a file", () => {
+      expect(classify("'hello world'")).toEqual({
+        type: "text",
+        value: "'hello world'",
+      });
+    });
+
+    it("does not misclassify double-quoted regular text as a file", () => {
+      expect(classify('"some random text"')).toEqual({
+        type: "text",
+        value: '"some random text"',
+      });
+    });
+  });
+
   describe("edge cases", () => {
     it("trims whitespace around URLs", () => {
       expect(classify("  https://example.com  ")).toEqual({
