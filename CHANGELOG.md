@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Non-intrusive "update available" notification — checks GitHub Releases once per 24h, shown in idle prompt
 - `--version` / `-v` flag for standard CLI version output
 - Cross-platform build scripts (`build:darwin-arm64`, `build:darwin-x64`, `build:linux-x64`, `build:linux-arm64`, `build:all`)
 - GitHub Release workflow that builds standalone binaries on `v*` tag push and updates Homebrew tap

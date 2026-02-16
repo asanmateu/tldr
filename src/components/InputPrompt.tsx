@@ -1,12 +1,14 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useUpdateCheck } from "../hooks/useUpdateCheck.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { readClipboard } from "../lib/clipboard.js";
 import { SLASH_COMMANDS, matchCommands, parseCommand } from "../lib/commands.js";
 import type { TldrResult } from "../lib/types.js";
 import { Banner } from "./Banner.js";
 import { SlashCommandMenu } from "./SlashCommandMenu.js";
+import { UpdateNotice } from "./UpdateNotice.js";
 
 interface InputPromptProps {
   history: TldrResult[];
@@ -17,6 +19,7 @@ interface InputPromptProps {
 
 export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: InputPromptProps) {
   const theme = useTheme();
+  const updateInfo = useUpdateCheck();
   const [input, setInput] = useState("");
   const [clipboardHint, setClipboardHint] = useState<string | undefined>(undefined);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -139,6 +142,7 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
   return (
     <Box flexDirection="column" paddingX={1}>
       <Banner />
+      {updateInfo && <UpdateNotice update={updateInfo} />}
       <Box>
         <Text color={theme.brand} bold>
           {">"}{" "}

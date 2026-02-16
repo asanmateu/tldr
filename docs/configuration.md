@@ -155,6 +155,10 @@ tldr config set model claude-opus-4-6     # Full Claude model ID
 tldr config set model gpt-4o              # Non-Claude model (with compatible API)
 ```
 
+## Update Checks
+
+tldr automatically checks for new versions in the background using the GitHub Releases API. The result is cached in `~/.tldr/update-check.json` for 24 hours. If a newer version is available, a subtle notification appears in the idle prompt. The check fails silently when offline or if the API is unreachable.
+
 ## Defaults
 
 | Setting | Default |
