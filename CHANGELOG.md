@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Interactive slash commands (`/setup`, `/config`, `/theme`, `/help`, `/quit`) with autocomplete in interactive mode
+- `CLAUDE.md` with project conventions for AI assistants
 - MIT license
 - `tldr import <file.md>` command to import existing markdown as a session
 - Chat mode (`t` key in result view) for multi-turn Q&A about any summary
@@ -18,10 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- First-run setup wizard now correctly shows on fresh install (was skipped when provider defaulted to `cli`)
 - CI audit step failing due to missing `package-lock.json`
 
 ### Removed
 
+- Obsolete `tts-mode` references in `docs/configuration.md`
 - Broken Pipeline and Coverage badges pointing to previous remote
 
 ## [0.8.0] - 2026-02-16

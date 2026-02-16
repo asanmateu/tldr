@@ -17,7 +17,6 @@ Run `tldr config` to see the current resolved configuration.
 | `activeProfile` | Profile name | Global | `tldr config set activeProfile work` |
 | `provider` | `cli` or `api` | Profile | `tldr config set provider api` |
 | `model` | Tier alias or full model ID | Profile | `tldr config set model sonnet` |
-| `tts-mode` | `strip` or `rewrite` | Profile | `tldr config set tts-mode rewrite` |
 | `theme` | `coral`, `ocean`, `forest` | Global | `tldr config set theme ocean` |
 | `appearance` | `auto`, `dark`, `light` | Global | `tldr config set appearance light` |
 
@@ -30,7 +29,7 @@ Profiles let you save different settings for different contexts. Each profile st
 - Summary style (quick, detailed, study-notes)
 - Per-style model overrides
 - Provider (cli or api)
-- Voice, TTS speed, TTS mode
+- Voice, TTS speed, pitch, volume
 - Custom instructions
 
 ### Profile Commands
@@ -66,6 +65,20 @@ Three appearance modes:
 - **light** — always light background
 
 Theme and appearance are stored at the settings level in `settings.json`, not per-profile.
+
+## Interactive Slash Commands
+
+In interactive mode, type `/` to access commands with autocomplete:
+
+| Command | Description |
+|---------|-------------|
+| `/setup` | Re-run the first-time setup wizard |
+| `/config` | Edit current profile settings |
+| `/theme` | Change color theme |
+| `/help` | Show shortcuts and commands |
+| `/quit` | Exit the app |
+
+Use arrow keys to navigate the autocomplete menu, Tab to complete, and Enter to execute.
 
 ## Per-Style Model Configuration
 
@@ -144,6 +157,5 @@ tldr config set model gpt-4o              # Non-Claude model (with compatible AP
 | Tone | `casual` |
 | Voice | `en-US-JennyNeural` |
 | TTS speed | `1.0x` |
-| TTS mode | `strip` |
 | Theme | `coral` |
 | Appearance | `auto` (detects system dark/light on macOS) |
