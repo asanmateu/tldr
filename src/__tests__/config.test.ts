@@ -752,4 +752,51 @@ describe("config", () => {
       expect(loaded.volume).toBe("quiet");
     });
   });
+
+  describe("setupCompleted", () => {
+    it("fresh install (no file) returns setupCompleted as undefined", async () => {
+      const settings = await loadSettings();
+      // Fresh install has no file, so setupCompleted stays undefined from DEFAULT_SETTINGS
+      // But loadSettings returns undefined for fresh installs (no migration path hit)
+      expect(settings.setupCompleted).toBeUndefined();
+    });
+
+    it("existing file without setupCompleted defaults to true (migration)", async () => {
+      await ensureConfigDir();
+      const settingsPath = join(getConfigDir(), "settings.json");
+      await fsWriteFile(
+        settingsPath,
+        JSON.stringify({
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+          },
+        }),
+        "utf-8",
+      );
+
+      const settings = await loadSettings();
+      expect(settings.setupCompleted).toBe(true);
+    });
+
+    it("saveConfig sets setupCompleted to true", async () => {
+      const config = makeTestConfig();
+      await saveConfig(config);
+      const settings = await loadSettings();
+      expect(settings.setupCompleted).toBe(true);
+    });
+
+    it("round-trip: save with setupCompleted=true, load it back", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+        },
+        setupCompleted: true,
+      });
+
+      const loaded = await loadSettings();
+      expect(loaded.setupCompleted).toBe(true);
+    });
+  });
 });

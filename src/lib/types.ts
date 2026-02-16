@@ -73,6 +73,7 @@ export interface TldrSettings {
   activeProfile: string;
   profiles: Record<string, Profile>;
   theme?: ThemeConfig | undefined;
+  setupCompleted?: boolean | undefined;
 }
 
 export interface ResolvedConfig {
@@ -137,7 +138,8 @@ export type AppState =
   | "result"
   | "error"
   | "config"
-  | "chat";
+  | "chat"
+  | "help";
 
 export interface ChatMessage {
   role: "user" | "assistant";

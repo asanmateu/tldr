@@ -121,6 +121,7 @@ function parseSettings(parsed: unknown): TldrSettings {
     activeProfile: typeof obj.activeProfile === "string" ? obj.activeProfile : "default",
     profiles,
     theme,
+    setupCompleted: typeof obj.setupCompleted === "boolean" ? obj.setupCompleted : undefined,
   };
 }
 
@@ -189,7 +190,12 @@ export async function loadSettings(): Promise<TldrSettings> {
   // Try settings.json first
   try {
     const raw = await readFile(getSettingsFile(), "utf-8");
-    return parseSettings(JSON.parse(raw));
+    const settings = parseSettings(JSON.parse(raw));
+    // Migration: existing file without setupCompleted → treat as already set up
+    if (settings.setupCompleted === undefined) {
+      settings.setupCompleted = true;
+    }
+    return settings;
   } catch {
     // Fall through to legacy
   }
@@ -199,6 +205,8 @@ export async function loadSettings(): Promise<TldrSettings> {
     const legacyPath = getLegacyConfigFile();
     const raw = await readFile(legacyPath, "utf-8");
     const settings = parseSettings(JSON.parse(raw));
+    // Existing user — mark as already set up
+    settings.setupCompleted = true;
 
     // Migrate: save as settings.json and rename old file
     await saveSettings(settings);
@@ -209,6 +217,7 @@ export async function loadSettings(): Promise<TldrSettings> {
     // No config at all
   }
 
+  // Fresh install: setupCompleted remains undefined (falsy)
   return { ...DEFAULT_SETTINGS, profiles: { default: { ...DEFAULT_PROFILE } } };
 }
 
@@ -314,6 +323,7 @@ export async function loadConfig(overrides?: ConfigOverrides): Promise<ResolvedC
 export async function saveConfig(config: ResolvedConfig): Promise<void> {
   const settings = await loadSettings();
 
+  settings.setupCompleted = true;
   settings.apiKey = config.apiKey;
   settings.baseUrl = config.baseUrl;
   settings.maxTokens = config.maxTokens !== 1024 ? config.maxTokens : undefined;
