@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reworked README motivation section: leads with relatable origin story before connecting to the accessibility angle
+- Promoted audio as a key differentiator with dedicated README section
+- Slimmed README install block to Homebrew one-liner; moved standalone binary instructions to `docs/installation.md`
+- Reduced alternative provider section to a one-liner with link to providers guide
+- Added installation guide link to README documentation list
 - Refreshed CLI banner: replaced boxed frame with minimal `»  tl;dr` chevron style
 - Merged `accessibility.md` into `configuration.md` — tones and summary styles now live alongside the settings they configure
 - Grouped configuration settings by category (summary, audio, appearance, general) for easier scanning

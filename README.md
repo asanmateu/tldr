@@ -15,39 +15,29 @@ A CLI tool that turns articles, PDFs, videos, and more into short, clear summari
 
 ## Why this exists
 
-Some of us have always been able to understand complex ideas — we just need them presented differently. Walls of text, dense paragraphs, and buried key points aren't a reading problem, they're a format problem.
+I had a pile of to-reads growing at work — articles, PDFs, Slack threads, design docs — and it was overwhelming. Not because the material was hard, but because there was too much of it and it was all in the wrong format. Walls of text, dense paragraphs, key points buried halfway through.
 
-tldr exists because neurodivergent developers, students, and professionals deserve tools that work with their brains, not against them. Whether you have dyslexia, ADHD, are on the spectrum, or are reading in a second language — you shouldn't have to fight the format to get to the meaning.
+That's when I realized: the problem isn't reading ability, it's format. And that insight goes deeper than productivity. Neurodivergent developers, students, and professionals have always been able to understand complex ideas — they just need them presented differently. Whether you have dyslexia, ADHD, are on the spectrum, or are reading in a second language, you shouldn't have to fight the format to get to the meaning.
+
+tldr exists to fix that.
+
+---
+
+## Audio — not just another summarizer
+
+Most summarizers stop at text. tldr goes further: press `a` after any summary to hear it spoken aloud. But this isn't text-to-speech bolted on — it rewrites the summary into an engaging, podcast-style script tailored to your cognitive profile, then synthesizes it with natural-sounding voices.
+
+If you think better by listening, this changes everything. See the [Audio guide](docs/audio.md) for voice, speed, and pitch options.
 
 ---
 
 ## Installation
 
-### Homebrew (recommended)
-
 ```bash
 brew install asanmateu/tldr/tldr-cli
 ```
 
-### Standalone binary
-
-Download from [GitHub Releases](https://github.com/asanmateu/tldr/releases). Pick your platform:
-
-```bash
-# macOS Apple Silicon
-curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-darwin-arm64.tar.gz | tar xz && mv tldr-darwin-arm64 /usr/local/bin/tldr
-
-# macOS Intel
-curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-darwin-x64.tar.gz | tar xz && mv tldr-darwin-x64 /usr/local/bin/tldr
-
-# Linux x64
-curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-x64.tar.gz | tar xz && mv tldr-linux-x64 /usr/local/bin/tldr
-
-# Linux ARM64
-curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-arm64.tar.gz | tar xz && mv tldr-linux-arm64 /usr/local/bin/tldr
-```
-
-Once installed, if [Claude Code](https://docs.anthropic.com/en/docs/claude-code) is authenticated, `tldr` works immediately.
+Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to be installed and authenticated. See [Installation guide](docs/installation.md) for standalone binaries and other methods.
 
 ---
 
@@ -118,17 +108,13 @@ Traits stack. Enable multiple with `tldr profile edit`.
 
 ## Alternative provider
 
-By default, tldr uses Claude Code (included with your Claude Code subscription). If you'd rather use the API directly:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-tldr config set provider api
-```
+By default tldr uses Claude Code. To use the Anthropic API directly instead, see the [Providers guide](docs/providers.md).
 
 ---
 
 ## Documentation
 
+- [Installation](docs/installation.md) — Homebrew, standalone binaries, prerequisites
 - [Configuration](docs/configuration.md) — settings, profiles, tones, summary styles
 - [Providers](docs/providers.md) — CLI vs API setup
 - [Audio](docs/audio.md) — text-to-speech options
