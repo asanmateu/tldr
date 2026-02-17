@@ -6,6 +6,8 @@
 
 A CLI tool that turns articles, PDFs, videos, and more into short, clear summaries designed for how your brain actually works.
 
+[![CI](https://github.com/asanmateu/tldr/actions/workflows/ci.yml/badge.svg)](https://github.com/asanmateu/tldr/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/asanmateu/tldr/branch/main/graph/badge.svg)](https://codecov.io/gh/asanmateu/tldr)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>

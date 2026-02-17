@@ -12,8 +12,7 @@ jobs:
       - run: bun run biome check .
       - run: bun run tsc --noEmit
       - run: bun run test:coverage
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - uses: codecov/codecov-action@v5
         with:
-          name: coverage
-          path: coverage/
+          directory: coverage/
+          fail_ci_if_error: false
