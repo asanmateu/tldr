@@ -10,6 +10,9 @@ interface SummaryViewProps {
   isPlaying: boolean;
   audioError?: string | undefined;
   sessionDir?: string | undefined;
+  discardPending?: boolean | undefined;
+  voiceLabel?: string | undefined;
+  ttsSpeed?: number | undefined;
 }
 
 function estimateTimeSaved(wordCount: number): string {
@@ -27,6 +30,9 @@ export function SummaryView({
   isPlaying,
   audioError,
   sessionDir,
+  discardPending,
+  voiceLabel,
+  ttsSpeed,
 }: SummaryViewProps) {
   const theme = useTheme();
   const summaryWords = summary.split(/\s+/).filter(Boolean).length;
@@ -59,6 +65,11 @@ export function SummaryView({
           <Text color={theme.error}>Audio failed: {audioError}</Text>
         </Box>
       )}
+      {discardPending && (
+        <Box>
+          <Text color={theme.warning}>[q] press again to discard</Text>
+        </Box>
+      )}
       <Box>
         {isGeneratingAudio ? (
           <Text color={theme.warning}>Generating audio...</Text>
@@ -66,7 +77,9 @@ export function SummaryView({
           <Text color={theme.success}>Playing audio... [s] stop</Text>
         ) : (
           <Text dimColor>
-            [Enter] save · [c] copy · [a] audio · [t] talk · [r] re-summarize · [q] discard
+            [Enter] save · [c] copy · [a] audio
+            {voiceLabel ? ` (${voiceLabel}${ttsSpeed != null ? `, ${ttsSpeed}x` : ""})` : ""} · [t]
+            talk · [r] re-summarize · [q] discard
           </Text>
         )}
       </Box>

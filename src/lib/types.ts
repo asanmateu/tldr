@@ -147,7 +147,8 @@ export type AppState =
   | "config"
   | "chat"
   | "help"
-  | "history";
+  | "history"
+  | "profile";
 
 export interface ChatMessage {
   role: "user" | "assistant";

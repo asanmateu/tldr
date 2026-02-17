@@ -8,6 +8,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { name: "setup", description: "Re-run first-time setup wizard" },
   { name: "config", description: "Edit current profile settings" },
   { name: "theme", description: "Change color theme" },
+  { name: "profile", description: "Switch between profiles" },
   { name: "help", description: "Show shortcuts and commands" },
   { name: "quit", description: "Exit the app" },
 ];

@@ -4,6 +4,18 @@ import { dirname, join } from "node:path";
 import { ensureConfigDir, getConfigDir } from "./config.js";
 import type { PitchPreset, VolumePreset } from "./types.js";
 
+const VOICE_DISPLAY_NAMES: Record<string, string> = {
+  "en-US-JennyNeural": "Jenny",
+  "en-US-GuyNeural": "Guy",
+  "en-US-AriaNeural": "Aria",
+  "en-GB-SoniaNeural": "Sonia",
+  "en-AU-NatashaNeural": "Natasha",
+};
+
+export function getVoiceDisplayName(voiceId: string): string {
+  return VOICE_DISPLAY_NAMES[voiceId] ?? voiceId;
+}
+
 const PITCH_VALUES: Record<PitchPreset, string | undefined> = {
   low: "-5Hz",
   default: undefined,

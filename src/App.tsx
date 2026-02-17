@@ -8,17 +8,31 @@ import { HelpView } from "./components/HelpView.js";
 import { HistoryView } from "./components/HistoryView.js";
 import { InputPrompt } from "./components/InputPrompt.js";
 import { ProcessingView } from "./components/ProcessingView.js";
+import { ProfilePicker } from "./components/ProfilePicker.js";
 import { SummaryView } from "./components/SummaryView.js";
 import { ThemeProvider } from "./lib/ThemeContext.js";
 import { writeClipboard } from "./lib/clipboard.js";
-import { loadConfig, loadSettings, saveConfig, saveSettings } from "./lib/config.js";
-import { addEntry, deduplicateBySource, getRecent } from "./lib/history.js";
+import {
+  listProfiles,
+  loadConfig,
+  loadSettings,
+  saveConfig,
+  saveSettings,
+  setActiveProfile,
+} from "./lib/config.js";
+import { addEntry, deduplicateBySource, getRecent, removeEntry } from "./lib/history.js";
 import { isClaudeCodeAvailable } from "./lib/providers/claude-code.js";
 import { isCodexAvailable } from "./lib/providers/codex.js";
 import { getSessionPaths, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
 import { resolveTheme } from "./lib/theme.js";
-import { generateAudio, playAudio, speakFallback, stopAudio } from "./lib/tts.js";
+import {
+  generateAudio,
+  getVoiceDisplayName,
+  playAudio,
+  speakFallback,
+  stopAudio,
+} from "./lib/tts.js";
 import type {
   AppState,
   Config,
@@ -61,7 +75,12 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [themeConfig, setThemeConfig] = useState<ThemeConfig | undefined>(undefined);
   const [configMode, setConfigMode] = useState<"setup" | "edit">("setup");
   const [pendingResult, setPendingResult] = useState<TldrResult | undefined>(undefined);
+  const [discardPending, setDiscardPending] = useState(false);
+  const [toast, setToast] = useState<string | undefined>(undefined);
+  const [profiles, setProfiles] = useState<{ name: string; active: boolean }[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load config and history on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
@@ -246,6 +265,13 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           setConfigMode("edit");
           setState("config");
           break;
+        case "profile":
+          (async () => {
+            const profileList = await listProfiles();
+            setProfiles(profileList);
+            setState("profile");
+          })();
+          break;
         case "help":
           setState("help");
           break;
@@ -266,6 +292,35 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
     setPendingResult(undefined);
     setState("result");
   }, []);
+
+  const handleHistoryDelete = useCallback(async (entry: TldrResult) => {
+    await removeEntry(entry.timestamp);
+    const updated = await getRecent(100);
+    setHistory(updated);
+  }, []);
+
+  const handleProfileSwitch = useCallback(
+    async (name: string) => {
+      await setActiveProfile(name);
+      const cfg = await loadConfig(overrides);
+      setConfig(cfg);
+      const profileList = await listProfiles();
+      setProfiles(profileList);
+      setState("idle");
+    },
+    [overrides],
+  );
+
+  // Reset discard pending when leaving result state
+  useEffect(() => {
+    if (state !== "result") {
+      setDiscardPending(false);
+      if (discardTimerRef.current) {
+        clearTimeout(discardTimerRef.current);
+        discardTimerRef.current = null;
+      }
+    }
+  }, [state]);
 
   // ESC to cancel during extraction/summarization
   useInput(
@@ -339,6 +394,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         }
         if (key.return) {
           // Persist session on Enter before resetting
+          const sessionDir = currentSession?.sessionDir;
           if (pendingResult && currentSession) {
             (async () => {
               try {
@@ -358,19 +414,51 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           setExtraction(undefined);
           setInput("");
           setCurrentSession(undefined);
+
+          // Show save toast
+          if (sessionDir) {
+            setToast(`Saved to ${sessionDir}`);
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+            toastTimerRef.current = setTimeout(() => {
+              setToast(undefined);
+              toastTimerRef.current = null;
+            }, 3000);
+          }
           return;
         }
       }
 
-      if (
-        ch === "q" &&
-        state !== "config" &&
-        state !== "chat" &&
-        state !== "help" &&
-        state !== "history"
-      ) {
-        if (audioProcess) stopAudio(audioProcess);
-        exit();
+      // Double-tap q to discard in result state; single q exits in error state
+      if (ch === "q") {
+        if (state === "error") {
+          if (audioProcess) stopAudio(audioProcess);
+          exit();
+          return;
+        }
+        if (state === "result") {
+          if (discardPending) {
+            // Second press — discard and return to idle
+            if (discardTimerRef.current) {
+              clearTimeout(discardTimerRef.current);
+              discardTimerRef.current = null;
+            }
+            setDiscardPending(false);
+            if (audioProcess) stopAudio(audioProcess);
+            setPendingResult(undefined);
+            setState("idle");
+            setSummary("");
+            setExtraction(undefined);
+            setInput("");
+            setCurrentSession(undefined);
+          } else {
+            // First press — start discard timer
+            setDiscardPending(true);
+            discardTimerRef.current = setTimeout(() => {
+              setDiscardPending(false);
+              discardTimerRef.current = null;
+            }, 2000);
+          }
+        }
       }
     },
     { isActive: state === "result" || state === "error" },
@@ -419,7 +507,15 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         {state === "idle" && (
           <InputPrompt
             history={history}
+            toast={toast}
             onSubmit={(value) => {
+              if (toast) {
+                setToast(undefined);
+                if (toastTimerRef.current) {
+                  clearTimeout(toastTimerRef.current);
+                  toastTimerRef.current = null;
+                }
+              }
               if (config) processInput(value, config);
             }}
             onQuit={() => exit()}
@@ -438,6 +534,9 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             isPlaying={!!audioProcess}
             audioError={audioError}
             sessionDir={pendingResult ? undefined : currentSession?.sessionDir}
+            discardPending={discardPending}
+            voiceLabel={config ? getVoiceDisplayName(config.voice) : undefined}
+            ttsSpeed={config?.ttsSpeed}
           />
         )}
         {state === "chat" && config && (
@@ -447,6 +546,14 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           <HistoryView
             entries={deduplicateBySource(history)}
             onSelect={handleHistorySelect}
+            onDelete={handleHistoryDelete}
+            onClose={() => setState("idle")}
+          />
+        )}
+        {state === "profile" && (
+          <ProfilePicker
+            profiles={profiles}
+            onSwitch={handleProfileSwitch}
             onClose={() => setState("idle")}
           />
         )}

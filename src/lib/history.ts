@@ -42,6 +42,14 @@ export function deduplicateBySource(entries: TldrResult[]): TldrResult[] {
   });
 }
 
+export async function removeEntry(timestamp: number): Promise<void> {
+  const entries = await getRecent(MAX_ENTRIES);
+  const filtered = entries.filter((e) => e.timestamp !== timestamp);
+  if (filtered.length === entries.length) return; // no-op if not found
+  await ensureConfigDir();
+  await writeFile(getHistoryPath(), JSON.stringify(filtered, null, 2), "utf-8");
+}
+
 export async function getRecent(n: number): Promise<TldrResult[]> {
   try {
     const raw = await readFile(getHistoryPath(), "utf-8");

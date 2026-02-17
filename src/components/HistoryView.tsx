@@ -7,12 +7,13 @@ import type { TldrResult } from "../lib/types.js";
 interface HistoryViewProps {
   entries: TldrResult[];
   onSelect: (entry: TldrResult) => void;
+  onDelete: (entry: TldrResult) => void;
   onClose: () => void;
 }
 
 const VIEWPORT_SIZE = 15;
 
-export function HistoryView({ entries, onSelect, onClose }: HistoryViewProps) {
+export function HistoryView({ entries, onSelect, onDelete, onClose }: HistoryViewProps) {
   const theme = useTheme();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -26,6 +27,15 @@ export function HistoryView({ entries, onSelect, onClose }: HistoryViewProps) {
     if (key.return && entries.length > 0) {
       const entry = entries[selectedIndex];
       if (entry) onSelect(entry);
+      return;
+    }
+
+    if (ch === "d" && entries.length > 0) {
+      const entry = entries[selectedIndex];
+      if (entry) {
+        onDelete(entry);
+        setSelectedIndex((i) => Math.min(i, entries.length - 2));
+      }
       return;
     }
 
@@ -97,7 +107,7 @@ export function HistoryView({ entries, onSelect, onClose }: HistoryViewProps) {
       })}
       {hasMoreBelow && <Text dimColor>{"  \u2193 more"}</Text>}
       <Box marginTop={1}>
-        <Text dimColor>[Enter] select [Esc/q] back</Text>
+        <Text dimColor>[Enter] select · [d] delete · [Esc/q] back</Text>
       </Box>
     </Box>
   );

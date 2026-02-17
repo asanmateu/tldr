@@ -14,7 +14,7 @@ vi.mock("node:os", async () => {
   };
 });
 
-const { addEntry, deduplicateBySource, getRecent } = await import("../lib/history.js");
+const { addEntry, deduplicateBySource, getRecent, removeEntry } = await import("../lib/history.js");
 
 function makeEntry(i: number): TldrResult {
   return {
@@ -76,6 +76,46 @@ describe("history", () => {
 
     const entries = await getRecent(3);
     expect(entries).toHaveLength(3);
+  });
+});
+
+describe("removeEntry", () => {
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "tldr-hist-"));
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it("removes an entry by timestamp", async () => {
+    const entry1 = makeEntry(1);
+    const entry2 = makeEntry(2);
+    await addEntry(entry1);
+    await addEntry(entry2);
+
+    await removeEntry(entry1.timestamp);
+
+    const entries = await getRecent(10);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.summary).toBe("Summary 2");
+  });
+
+  it("no-ops when timestamp not found", async () => {
+    const entry = makeEntry(1);
+    await addEntry(entry);
+
+    await removeEntry(999999);
+
+    const entries = await getRecent(10);
+    expect(entries).toHaveLength(1);
+  });
+
+  it("handles empty history", async () => {
+    await removeEntry(12345);
+
+    const entries = await getRecent(10);
+    expect(entries).toEqual([]);
   });
 });
 

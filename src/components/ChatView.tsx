@@ -51,7 +51,11 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
     [messages, isStreaming, config, summaryContent],
   );
 
-  useInput((ch) => {
+  useInput((ch, key) => {
+    if (key.escape && !isStreaming) {
+      onExit();
+      return;
+    }
     if (ch === "q" && !isStreaming && inputValue === "") {
       onExit();
     }
@@ -102,7 +106,7 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
       </Box>
 
       <Box>
-        <Text dimColor>{isStreaming ? "" : "[q] back to summary (when input is empty)"}</Text>
+        <Text dimColor>{isStreaming ? "" : "[Esc] back · [q] back (when empty)"}</Text>
       </Box>
     </Box>
   );

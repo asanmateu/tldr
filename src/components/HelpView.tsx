@@ -73,13 +73,31 @@ export function HelpView({ onClose }: HelpViewProps) {
           {"  "}
           <Text color={theme.accent}>Enter</Text>
           {"  "}
-          <Text dimColor>New summary</Text>
+          <Text dimColor>Save & new summary</Text>
         </Text>
         <Text>
           {"  "}
           <Text color={theme.accent}>q</Text>
           {"  "}
-          <Text dimColor>Quit</Text>
+          <Text dimColor>Discard (double-tap)</Text>
+        </Text>
+      </Box>
+
+      <Box marginTop={1} flexDirection="column">
+        <Text bold color={theme.brand}>
+          Chat Shortcuts
+        </Text>
+        <Text>
+          {"  "}
+          <Text color={theme.accent}>Esc</Text>
+          {"  "}
+          <Text dimColor>Back to summary</Text>
+        </Text>
+        <Text>
+          {"  "}
+          <Text color={theme.accent}>q</Text>
+          {"  "}
+          <Text dimColor>Back (when input is empty)</Text>
         </Text>
       </Box>
 

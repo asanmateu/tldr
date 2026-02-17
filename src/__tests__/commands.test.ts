@@ -41,6 +41,12 @@ describe("matchCommands", () => {
     expect(names).toContain("history");
     expect(names).toContain("help");
   });
+
+  it("matches /profile command", () => {
+    const result = matchCommands("/pr");
+    expect(result).toHaveLength(1);
+    expect(result[0]?.name).toBe("profile");
+  });
 });
 
 describe("parseCommand", () => {

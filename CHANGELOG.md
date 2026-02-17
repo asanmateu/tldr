@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Double-tap `q` to discard: first press shows a warning, second press within 2s discards and returns to idle (no longer exits the process)
+- Save confirmation toast: pressing Enter in the result view now shows "Saved to {path}" for 3 seconds in the idle prompt
+- History entry deletion: press `d` in history view to remove an entry
+- `/profile` slash command to switch between profiles without leaving interactive mode
+- Voice and speed info shown in result view footer (e.g. `[a] audio (Jenny, 1.0x)`)
+- Press Esc to exit chat mode (works regardless of input text)
+
 ## [1.0.0] - 2026-02-17
 
 ### Added

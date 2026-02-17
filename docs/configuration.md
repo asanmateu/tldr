@@ -82,6 +82,8 @@ tldr profile delete work          # Delete a profile
 tldr --profile work <url>         # Use a profile for one run
 ```
 
+In interactive mode, type `/profile` to switch profiles without leaving the TUI.
+
 ## Interactive Commands
 
 In interactive mode, type `/` to access commands:
@@ -92,6 +94,7 @@ In interactive mode, type `/` to access commands:
 | `/setup` | Re-run the first-time setup wizard |
 | `/config` | Edit current profile settings |
 | `/theme` | Change color theme |
+| `/profile` | Switch between profiles |
 | `/help` | Show shortcuts and commands |
 | `/quit` | Exit the app |
 

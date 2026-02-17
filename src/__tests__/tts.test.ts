@@ -42,9 +42,26 @@ vi.mock("node:os", () => ({
   homedir: () => "/mock-home",
 }));
 
-const { generateAudio, playAudio, speakFallback, stopAudio } = await import("../lib/tts.js");
+const { generateAudio, getVoiceDisplayName, playAudio, speakFallback, stopAudio } = await import(
+  "../lib/tts.js"
+);
 
 describe("tts", () => {
+  describe("getVoiceDisplayName", () => {
+    it("returns short name for known voices", () => {
+      expect(getVoiceDisplayName("en-US-JennyNeural")).toBe("Jenny");
+      expect(getVoiceDisplayName("en-US-GuyNeural")).toBe("Guy");
+      expect(getVoiceDisplayName("en-US-AriaNeural")).toBe("Aria");
+      expect(getVoiceDisplayName("en-GB-SoniaNeural")).toBe("Sonia");
+      expect(getVoiceDisplayName("en-AU-NatashaNeural")).toBe("Natasha");
+    });
+
+    it("returns raw ID for unknown voices", () => {
+      expect(getVoiceDisplayName("de-DE-ConradNeural")).toBe("de-DE-ConradNeural");
+      expect(getVoiceDisplayName("custom-voice")).toBe("custom-voice");
+    });
+  });
+
   describe("generateAudio", () => {
     it("generates audio file from text", async () => {
       const path = await generateAudio("Hello world", "en-US-JennyNeural");

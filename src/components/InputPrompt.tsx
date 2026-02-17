@@ -13,12 +13,19 @@ import { UpdateNotice } from "./UpdateNotice.js";
 
 interface InputPromptProps {
   history: TldrResult[];
+  toast?: string | undefined;
   onSubmit: (input: string) => void;
   onQuit: () => void;
   onSlashCommand: (command: string) => void;
 }
 
-export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: InputPromptProps) {
+export function InputPrompt({
+  history,
+  toast,
+  onSubmit,
+  onQuit,
+  onSlashCommand,
+}: InputPromptProps) {
   const theme = useTheme();
   const updateInfo = useUpdateCheck();
   const [input, setInput] = useState("");
@@ -153,6 +160,11 @@ export function InputPrompt({ history, onSubmit, onQuit, onSlashCommand }: Input
     <Box flexDirection="column" paddingX={1}>
       <Banner />
       {updateInfo && <UpdateNotice update={updateInfo} />}
+      {toast && (
+        <Box>
+          <Text color={theme.success}>{toast}</Text>
+        </Box>
+      )}
       <Box>
         <Text color={theme.brand} bold>
           {">"}{" "}

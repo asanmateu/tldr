@@ -53,3 +53,5 @@ tldr config set output-dir ~/summaries
 |-----|--------|
 | `a` | Generate and play audio |
 | `s` | Stop audio playback |
+
+The result view footer shows the active voice name and TTS speed next to the `[a]` shortcut (e.g. `[a] audio (Jenny, 1.0x)`).
