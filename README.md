@@ -1,6 +1,6 @@
 <div align="center">
 
-# tldr
+# tl;dr
 
 **Summarize anything. Understand everything.**
 
@@ -31,24 +31,20 @@ brew install asanmateu/tldr/tldr-cli
 
 ### Standalone binary
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/asanmateu/tldr/releases):
+Download from [GitHub Releases](https://github.com/asanmateu/tldr/releases). Pick your platform:
 
 ```bash
 # macOS Apple Silicon
-curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-darwin-arm64.tar.gz | tar xz
-mv tldr-darwin-arm64 /usr/local/bin/tldr
+curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-darwin-arm64.tar.gz | tar xz && mv tldr-darwin-arm64 /usr/local/bin/tldr
 
 # macOS Intel
-curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-darwin-x64.tar.gz | tar xz
-mv tldr-darwin-x64 /usr/local/bin/tldr
+curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-darwin-x64.tar.gz | tar xz && mv tldr-darwin-x64 /usr/local/bin/tldr
 
 # Linux x64
-curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-x64.tar.gz | tar xz
-mv tldr-linux-x64 /usr/local/bin/tldr
+curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-x64.tar.gz | tar xz && mv tldr-linux-x64 /usr/local/bin/tldr
 
 # Linux ARM64
-curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-arm64.tar.gz | tar xz
-mv tldr-linux-arm64 /usr/local/bin/tldr
+curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-arm64.tar.gz | tar xz && mv tldr-linux-arm64 /usr/local/bin/tldr
 ```
 
 Once installed, if [Claude Code](https://docs.anthropic.com/en/docs/claude-code) is authenticated, `tldr` works immediately.
@@ -133,9 +129,8 @@ tldr config set provider api
 
 ## Documentation
 
-- [Configuration](docs/configuration.md) — config file, profiles, env vars
+- [Configuration](docs/configuration.md) — settings, profiles, tones, summary styles
 - [Providers](docs/providers.md) — CLI vs API setup
-- [Accessibility](docs/accessibility.md) — cognitive traits, tones, summary styles
 - [Audio](docs/audio.md) — text-to-speech options
 
 ---
