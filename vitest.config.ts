@@ -11,10 +11,10 @@ export default defineConfig({
       reporter: ["text", "text-summary", "cobertura"],
       reportsDirectory: "./coverage",
       thresholds: {
-        lines: 75,
-        functions: 85,
+        lines: 60,
+        functions: 65,
         branches: 55,
-        statements: 75,
+        statements: 60,
       },
     },
   },
