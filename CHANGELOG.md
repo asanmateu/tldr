@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/profile` slash command to switch between profiles without leaving interactive mode
 - Voice and speed info shown in result view footer (e.g. `[a] audio (Jenny, 1.0x)`)
 - Press Esc to exit chat mode (works regardless of input text)
+- Export `removeEntry` and `getVoiceDisplayName` from `lib/core` for reuse by desktop sidecar
 
 ## [1.0.0] - 2026-02-17
 
