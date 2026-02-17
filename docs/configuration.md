@@ -11,7 +11,7 @@ Most settings are easier to change interactively with `tldr profile edit` or `/c
 | `style` | `quick`, `standard`, `detailed`, `study-notes` | `tldr config set style quick` |
 | `tone` | `casual`, `professional`, `academic`, `eli5` | `tldr config set tone professional` |
 | `traits` | Comma-separated list | `tldr config set traits adhd,dyslexia` |
-| `model` | Tier alias or full model ID | `tldr config set model sonnet` |
+| `model` | Any model ID (aliases: `haiku`, `sonnet`, `opus`) | `tldr config set model sonnet` |
 | `provider` | `claude-code`, `anthropic`, `codex`, `gemini`, `ollama`, `openai`, `xai` | `tldr config set provider gemini` |
 | `custom-instructions` | Freeform text | `tldr config set custom-instructions "Focus on code examples"` |
 
@@ -115,7 +115,13 @@ Each summary style can use a different model. Configure in `settings.json`:
 
 When no `styleModels` are configured, all styles default to Opus.
 
-## Model Aliases
+## Model Selection
+
+The interactive profile editor (`tldr profile edit` / `/config`) uses a free-text input for the model field. Type any model ID supported by your provider — for example `gpt-4o` for OpenAI, `gemini-2.5-flash` for Gemini, or `llama3.3` for Ollama.
+
+### Anthropic Aliases
+
+For the Anthropic provider, short aliases are resolved automatically:
 
 | Alias | Resolves to |
 |-------|-------------|
@@ -123,7 +129,7 @@ When no `styleModels` are configured, all styles default to Opus.
 | `sonnet` | `claude-sonnet-4-5-20250929` |
 | `opus` | `claude-opus-4-6` |
 
-Any other string is passed through as-is (e.g. `gpt-4o` with a compatible API).
+Any other string is passed through as-is.
 
 ## Environment Variables
 

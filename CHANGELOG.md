@@ -20,11 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Interactive model picker now uses a free-text input instead of a fixed Haiku/Sonnet/Opus list, supporting any model ID for any provider
 - Renamed provider `api` → `anthropic` and `cli` → `claude-code` for clarity; updated all internal symbols (`apiProvider` → `anthropicProvider`, `cliProvider` → `claudeCodeProvider`, etc.)
 - Refactored OpenAI provider into factory pattern (`createOpenAICompatibleProvider`) for reuse by xAI
-
-### Changed
-
 - Reworked README motivation section: leads with relatable origin story before connecting to the accessibility angle
 - Promoted audio as a key differentiator with dedicated README section
 - Slimmed README install block to Homebrew one-liner; moved standalone binary instructions to `docs/installation.md`

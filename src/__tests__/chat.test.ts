@@ -44,7 +44,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): Config {
     ttsSpeed: 1.0,
     pitch: "default",
     volume: "normal",
-    provider: "api",
+    provider: "anthropic",
     outputDir: "/tmp/tldr-output",
     ...overrides,
   };

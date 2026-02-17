@@ -3,7 +3,7 @@ import TextInput from "ink-text-input";
 import { useCallback, useState } from "react";
 import { useListNavigation } from "../hooks/useListNavigation.js";
 import { useTheme } from "../lib/ThemeContext.js";
-import { MODEL_IDS, resolveConfig } from "../lib/config.js";
+import { resolveConfig } from "../lib/config.js";
 import type {
   AppearanceMode,
   CognitiveTrait,
@@ -96,12 +96,6 @@ const ALL_PROVIDERS: { value: SummarizationProvider; label: string; hint: string
   { value: "xai", label: "xAI / Grok", hint: "xAI API, needs XAI_API_KEY" },
 ];
 
-const ALL_MODELS: { value: string; label: string; hint: string }[] = [
-  { value: "haiku", label: "Haiku", hint: MODEL_IDS.haiku },
-  { value: "sonnet", label: "Sonnet", hint: MODEL_IDS.sonnet },
-  { value: "opus", label: "Opus", hint: MODEL_IDS.opus },
-];
-
 const ALL_THEME_NAMES: { value: ThemeName; label: string; hint: string }[] = [
   { value: "coral", label: "Coral", hint: "warm reds & oranges" },
   { value: "ocean", label: "Ocean", hint: "cool blues & teals" },
@@ -170,11 +164,9 @@ export function ConfigSetup({
   const [volume, setVolume] = useState<VolumePreset>(defaults.volume);
   const [provider, setProvider] = useState<SummarizationProvider>(defaults.provider);
 
-  // Model state — find initial tier from the resolved model ID
-  const initialModelTier =
-    ALL_MODELS.find((m) => MODEL_IDS[m.value as keyof typeof MODEL_IDS] === defaults.model)
-      ?.value ?? "opus";
-  const [selectedModel, setSelectedModel] = useState(initialModelTier);
+  // Model state — free-text input, pre-filled with current model
+  const [modelInput, setModelInput] = useState(defaults.model);
+  const [selectedModel, setSelectedModel] = useState(defaults.model);
 
   // Theme state
   const [themeName, setThemeName] = useState<ThemeName>(themeConfig?.name ?? "coral");
@@ -225,13 +217,6 @@ export function ConfigSetup({
       0,
     ),
   });
-  const modelNav = useListNavigation({
-    itemCount: ALL_MODELS.length,
-    initialIndex: Math.max(
-      ALL_MODELS.findIndex((m) => m.value === initialModelTier),
-      0,
-    ),
-  });
   const themeNameNav = useListNavigation({
     itemCount: ALL_THEME_NAMES.length,
     initialIndex: Math.max(
@@ -266,7 +251,7 @@ export function ConfigSetup({
       tone,
       summaryStyle: style,
       customInstructions: customInstructions || undefined,
-      model: selectedModel !== "opus" ? selectedModel : undefined,
+      model: selectedModel || undefined,
       voice: voice !== "en-US-JennyNeural" ? voice : undefined,
       ttsSpeed: ttsSpeed !== 1.0 ? ttsSpeed : undefined,
       pitch: pitch !== "default" ? pitch : undefined,
@@ -461,17 +446,6 @@ export function ConfigSetup({
         return;
       }
 
-      if (editingField === "model") {
-        if (key.upArrow) modelNav.handleUp();
-        if (key.downArrow) modelNav.handleDown();
-        if (key.return) {
-          const selected = ALL_MODELS[modelNav.index];
-          if (selected) setSelectedModel(selected.value);
-          setEditingField(null);
-        }
-        return;
-      }
-
       if (editingField === "voice") {
         if (key.upArrow) voiceNav.handleUp();
         if (key.downArrow) voiceNav.handleDown();
@@ -512,7 +486,11 @@ export function ConfigSetup({
         return;
       }
 
-      if (editingField === "ttsSpeed" || editingField === "customInstructions") {
+      if (
+        editingField === "model" ||
+        editingField === "ttsSpeed" ||
+        editingField === "customInstructions"
+      ) {
         // Handled by TextInput onSubmit
         return;
       }
@@ -724,11 +702,18 @@ export function ConfigSetup({
         )}
 
         {editingField === "model" && (
-          <SelectionList
-            title="Model (Enter to confirm):"
-            items={ALL_MODELS}
-            selectedIndex={modelNav.index}
-          />
+          <Box flexDirection="column">
+            <Text>Model (Enter to confirm):</Text>
+            <Text dimColor>Alias (e.g. haiku, sonnet, opus) or full model ID</Text>
+            <TextInput
+              value={modelInput}
+              onChange={setModelInput}
+              onSubmit={(value) => {
+                if (value.trim()) setSelectedModel(value.trim());
+                setEditingField(null);
+              }}
+            />
+          </Box>
         )}
       </Box>
 

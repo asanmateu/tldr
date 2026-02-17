@@ -23,7 +23,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): ResolvedConfig {
     ttsSpeed: 1.0,
     pitch: "default",
     volume: "normal",
-    provider: "cli",
+    provider: "claude-code",
     outputDir: "/tmp/tldr-output",
     ...overrides,
   };

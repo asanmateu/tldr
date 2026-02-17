@@ -87,7 +87,7 @@ const CONFIG_KEYS: Record<string, ConfigKeyDescriptor> = {
     target: "profile",
     property: "provider",
     validValues: VALID_PROVIDERS,
-    defaultValue: "cli",
+    defaultValue: "claude-code",
   },
   voice: {
     target: "profile",

@@ -163,6 +163,10 @@ tldr config set model grok-3-mini-fast
 | `grok-3-mini` | Balanced speed and quality |
 | `grok-3-mini-fast` | Fastest |
 
+## Model Selection in the Interactive Editor
+
+The profile editor (`tldr profile edit` / `/config`) uses a free-text input for the model field. Enter any model ID your provider supports — the value is passed through as-is. Anthropic aliases (`haiku`, `sonnet`, `opus`) are resolved automatically.
+
 ## Switching Providers
 
 ```bash

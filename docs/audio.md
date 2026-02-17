@@ -28,7 +28,7 @@ tldr config set volume quiet       # softer
 # Default volume: normal
 ```
 
-The voice setting accepts any edge-tts compatible voice name. Speed is a multiplier (e.g., `1.2` for 20% faster).
+Supported voices: `en-US-JennyNeural` (default), `en-US-GuyNeural`, `en-US-AriaNeural`, `en-GB-SoniaNeural`, `en-AU-NatashaNeural`. Speed is a multiplier (e.g., `1.2` for 20% faster).
 
 ## Session Output
 
