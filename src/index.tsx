@@ -48,13 +48,17 @@ if (args.includes("--help") || args.includes("-h")) {
     tldr --style quick <url>          Override style for this run
     tldr --model sonnet <url>         Override model for this run
     tldr --profile work <url>         Use specific profile for this run
-    tldr --provider cli <url>         Use Claude CLI (requires subscription)
+    tldr --provider openai <url>      Use OpenAI-compatible endpoint
+    tldr --provider gemini <url>      Use Google Gemini API
+    tldr --provider ollama <url>      Use local Ollama instance
+    tldr --provider xai <url>         Use xAI / Grok API
+    tldr --provider codex <url>       Use OpenAI Codex CLI
     tldr                              Interactive mode
 
   ${fmt.label("Configuration:")}
     tldr config                       Show current resolved config
     tldr config set <key> <value>     Set a setting
-    tldr config set provider <api|cli>     Set summarization provider
+    tldr config set provider <provider>   Set provider (anthropic/claude-code/codex/gemini/ollama/openai/xai)
     tldr config set model <tier|id>        Set model (haiku/sonnet/opus or full ID)
     tldr config set tone <tone>            Set tone (casual/professional/academic/eli5)
     tldr config set style <style>          Set summary style (quick/standard/detailed/study-notes)
@@ -87,13 +91,24 @@ if (args.includes("--help") || args.includes("-h")) {
     q       Quit
 
   ${fmt.label("Environment variables:")}
+    OPENAI_API_KEY            API key for OpenAI-compatible providers
+    OPENAI_BASE_URL           Custom base URL for OpenAI-compatible providers
+    GEMINI_API_KEY            API key for Google Gemini
+    XAI_API_KEY               API key for xAI / Grok
+    XAI_BASE_URL              Custom base URL for xAI
+    OLLAMA_BASE_URL           Ollama server URL (default: http://localhost:11434)
     SLACK_TOKEN               Slack Bot/User token for thread extraction
     NOTION_TOKEN              Notion integration token for page extraction
 
   ${fmt.label("Costs:")}
-    Audio (TTS)          FREE    (edge-tts, no API key needed)
-    Summaries (cli)      Included with Claude Code subscription
-    Summaries (api)      ~$0.005/summary (needs ANTHROPIC_API_KEY)
+    Audio (TTS)              FREE    (edge-tts, no API key needed)
+    Summaries (claude-code)  Included with Claude Code subscription
+    Summaries (anthropic)    ~$0.005/summary (needs ANTHROPIC_API_KEY)
+    Summaries (openai)       Varies by provider (needs OPENAI_API_KEY)
+    Summaries (gemini)       Varies by model (needs GEMINI_API_KEY)
+    Summaries (codex)        Requires OpenAI Codex CLI subscription
+    Summaries (ollama)       FREE    (local models, no API key)
+    Summaries (xai)          Varies by model (needs XAI_API_KEY)
 `);
   process.exit(0);
 }
@@ -133,6 +148,12 @@ async function handleConfig() {
     if (process.env.ANTHROPIC_API_KEY) envHints.push("ANTHROPIC_API_KEY");
     if (process.env.ANTHROPIC_BASE_URL) envHints.push("ANTHROPIC_BASE_URL");
     if (process.env.ANTHROPIC_MODEL) envHints.push("ANTHROPIC_MODEL");
+    if (process.env.OPENAI_API_KEY) envHints.push("OPENAI_API_KEY");
+    if (process.env.OPENAI_BASE_URL) envHints.push("OPENAI_BASE_URL");
+    if (process.env.GEMINI_API_KEY) envHints.push("GEMINI_API_KEY");
+    if (process.env.XAI_API_KEY) envHints.push("XAI_API_KEY");
+    if (process.env.XAI_BASE_URL) envHints.push("XAI_BASE_URL");
+    if (process.env.OLLAMA_BASE_URL) envHints.push("OLLAMA_BASE_URL");
     if (process.env.SLACK_TOKEN) envHints.push("SLACK_TOKEN");
     if (process.env.NOTION_TOKEN) envHints.push("NOTION_TOKEN");
     if (envHints.length > 0) {

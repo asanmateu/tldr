@@ -49,7 +49,14 @@ export type SummaryStyle = "quick" | "standard" | "detailed" | "study-notes";
 export type ModelTier = "haiku" | "sonnet" | "opus";
 export type PitchPreset = "low" | "default" | "high";
 export type VolumePreset = "quiet" | "normal" | "loud";
-export type SummarizationProvider = "api" | "cli";
+export type SummarizationProvider =
+  | "anthropic"
+  | "claude-code"
+  | "codex"
+  | "gemini"
+  | "ollama"
+  | "openai"
+  | "xai";
 
 export interface Profile {
   cognitiveTraits: CognitiveTrait[];

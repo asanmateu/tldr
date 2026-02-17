@@ -7,7 +7,6 @@
 A CLI tool that turns articles, PDFs, videos, and more into short, clear summaries designed for how your brain actually works.
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Powered by Claude](https://img.shields.io/badge/powered%20by-Claude-blueviolet.svg)](https://claude.ai)
 
 </div>
 
@@ -31,7 +30,7 @@ Press `a` after any summary to listen to it. tldr rewrites the summary into a sp
 brew install asanmateu/tldr/tldr-cli
 ```
 
-Works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), or bring your own Anthropic API key — see [Providers](docs/providers.md). For standalone binaries and other install methods, see the [Installation guide](docs/installation.md).
+Works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), or bring your own API key (Anthropic, OpenAI, Gemini, xAI, Ollama, Codex, etc.) — see [Providers](docs/providers.md). For standalone binaries and other install methods, see the [Installation guide](docs/installation.md).
 
 ---
 
@@ -100,9 +99,9 @@ Traits stack. Enable multiple with `tldr profile edit`.
 
 ---
 
-## Alternative provider
+## Alternative providers
 
-By default tldr uses Claude Code. To use the Anthropic API directly instead, see the [Providers guide](docs/providers.md).
+By default tldr uses Claude Code (`claude-code`). You can also use the Anthropic API directly (`anthropic`), Google Gemini (`gemini`), xAI/Grok (`xai`), local Ollama (`ollama`), OpenAI Codex CLI (`codex`), or any OpenAI-compatible endpoint (`openai`) — see the [Providers guide](docs/providers.md).
 
 ---
 
@@ -110,7 +109,7 @@ By default tldr uses Claude Code. To use the Anthropic API directly instead, see
 
 - [Installation](docs/installation.md) — Homebrew, standalone binaries, prerequisites
 - [Configuration](docs/configuration.md) — settings, profiles, tones, summary styles
-- [Providers](docs/providers.md) — CLI vs API setup
+- [Providers](docs/providers.md) — Claude Code, Anthropic API, Gemini, xAI, Ollama, Codex, and OpenAI-compatible setup
 - [Audio](docs/audio.md) — text-to-speech options
 
 ---

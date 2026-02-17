@@ -172,24 +172,59 @@ describe("configSetter", () => {
       expect(settings.profiles.default?.model).toBe("sonnet");
     });
 
-    it("sets provider to api", async () => {
+    it("sets provider to anthropic", async () => {
       await seedSettings();
-      await applyConfigSet("provider", "api", ["config", "set", "provider", "api"]);
+      await applyConfigSet("provider", "anthropic", ["config", "set", "provider", "anthropic"]);
       const settings = await loadSettings();
-      expect(settings.profiles.default?.provider).toBe("api");
+      expect(settings.profiles.default?.provider).toBe("anthropic");
     });
 
-    it("sets provider to cli (stores undefined)", async () => {
+    it("sets provider to claude-code (stores undefined)", async () => {
       await seedSettings();
-      await applyConfigSet("provider", "cli", ["config", "set", "provider", "cli"]);
+      await applyConfigSet("provider", "claude-code", ["config", "set", "provider", "claude-code"]);
       const settings = await loadSettings();
       expect(settings.profiles.default?.provider).toBeUndefined();
+    });
+
+    it("sets provider to openai", async () => {
+      await seedSettings();
+      await applyConfigSet("provider", "openai", ["config", "set", "provider", "openai"]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.provider).toBe("openai");
+    });
+
+    it("sets provider to gemini", async () => {
+      await seedSettings();
+      await applyConfigSet("provider", "gemini", ["config", "set", "provider", "gemini"]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.provider).toBe("gemini");
+    });
+
+    it("sets provider to codex", async () => {
+      await seedSettings();
+      await applyConfigSet("provider", "codex", ["config", "set", "provider", "codex"]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.provider).toBe("codex");
+    });
+
+    it("sets provider to ollama", async () => {
+      await seedSettings();
+      await applyConfigSet("provider", "ollama", ["config", "set", "provider", "ollama"]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.provider).toBe("ollama");
+    });
+
+    it("sets provider to xai", async () => {
+      await seedSettings();
+      await applyConfigSet("provider", "xai", ["config", "set", "provider", "xai"]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.provider).toBe("xai");
     });
 
     it("rejects invalid provider", async () => {
       await seedSettings();
       await expect(
-        applyConfigSet("provider", "openai", ["config", "set", "provider", "openai"]),
+        applyConfigSet("provider", "banana", ["config", "set", "provider", "banana"]),
       ).rejects.toThrow("Invalid provider");
     });
 

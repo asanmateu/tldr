@@ -130,7 +130,15 @@ export const VALID_STYLES = new Set(["quick", "standard", "detailed", "study-not
 export const VALID_TRAITS = new Set(["dyslexia", "adhd", "autism", "esl", "visual-thinker"]);
 export const VALID_PITCHES = new Set(["low", "default", "high"]);
 export const VALID_VOLUMES = new Set(["quiet", "normal", "loud"]);
-export const VALID_PROVIDERS = new Set(["api", "cli"]);
+export const VALID_PROVIDERS = new Set([
+  "anthropic",
+  "claude-code",
+  "codex",
+  "gemini",
+  "ollama",
+  "openai",
+  "xai",
+]);
 export const VALID_THEME_NAMES = new Set(["coral", "ocean", "forest"]);
 export const VALID_APPEARANCES = new Set(["dark", "light", "auto"]);
 export const VALID_VOICES = new Set([
@@ -238,10 +246,10 @@ export async function saveSettings(settings: TldrSettings): Promise<void> {
 export function getEnvOverrides(): Partial<ConfigOverrides> {
   const overrides: Partial<ConfigOverrides> = {};
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY ?? process.env.OPENAI_API_KEY;
   if (apiKey) overrides.apiKey = apiKey;
 
-  const baseUrl = process.env.ANTHROPIC_BASE_URL;
+  const baseUrl = process.env.ANTHROPIC_BASE_URL ?? process.env.OPENAI_BASE_URL;
   if (baseUrl) overrides.baseUrl = baseUrl;
 
   const model = process.env.ANTHROPIC_MODEL;
@@ -286,8 +294,8 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
   // Base URL: override > settings
   const baseUrl = overrides?.baseUrl ?? settings.baseUrl;
 
-  // Provider resolution: CLI override > profile setting > default "cli"
-  let provider: SummarizationProvider = "cli";
+  // Provider resolution: CLI override > profile setting > default "claude-code"
+  let provider: SummarizationProvider = "claude-code";
   if (
     overrides?.provider &&
     typeof overrides.provider === "string" &&
@@ -351,7 +359,7 @@ export async function saveConfig(config: ResolvedConfig): Promise<void> {
     ttsSpeed: config.ttsSpeed !== 1.0 ? config.ttsSpeed : undefined,
     pitch: config.pitch !== "default" ? config.pitch : undefined,
     volume: config.volume !== "normal" ? config.volume : undefined,
-    provider: config.provider !== "cli" ? config.provider : undefined,
+    provider: config.provider !== "claude-code" ? config.provider : undefined,
   };
 
   await saveSettings(settings);

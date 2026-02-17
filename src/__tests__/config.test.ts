@@ -46,7 +46,7 @@ function makeTestConfig(overrides?: Partial<import("../lib/types.js").ResolvedCo
     ttsSpeed: 1.0,
     pitch: "default" as const,
     volume: "normal" as const,
-    provider: "cli" as const,
+    provider: "claude-code" as const,
     outputDir: `${tempDir}/.tldr/output`,
     ...overrides,
   };
@@ -71,7 +71,7 @@ describe("config", () => {
     expect(config.tone).toBe("casual");
     expect(config.summaryStyle).toBe("standard");
     expect(config.model).toBe(MODEL_IDS.opus);
-    expect(config.provider).toBe("cli");
+    expect(config.provider).toBe("claude-code");
   });
 
   it("creates config dir", async () => {
@@ -280,14 +280,14 @@ describe("config", () => {
       expect(config.cognitiveTraits).toEqual(["adhd"]);
     });
 
-    it("defaults provider to cli", () => {
+    it("defaults provider to claude-code", () => {
       const config = resolveConfig({
         activeProfile: "default",
         profiles: {
           default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
         },
       });
-      expect(config.provider).toBe("cli");
+      expect(config.provider).toBe("claude-code");
     });
 
     it("resolves provider from profile", () => {
@@ -298,11 +298,11 @@ describe("config", () => {
             cognitiveTraits: [],
             tone: "casual",
             summaryStyle: "quick",
-            provider: "cli",
+            provider: "claude-code",
           },
         },
       });
-      expect(config.provider).toBe("cli");
+      expect(config.provider).toBe("claude-code");
     });
 
     it("overrides provider from CLI override", () => {
@@ -313,9 +313,91 @@ describe("config", () => {
             default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
           },
         },
-        { provider: "cli" },
+        { provider: "claude-code" },
       );
-      expect(config.provider).toBe("cli");
+      expect(config.provider).toBe("claude-code");
+    });
+
+    it("accepts 'openai' provider", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+          },
+        },
+        { provider: "openai" },
+      );
+      expect(config.provider).toBe("openai");
+    });
+
+    it("accepts 'gemini' provider", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+          },
+        },
+        { provider: "gemini" },
+      );
+      expect(config.provider).toBe("gemini");
+    });
+
+    it("accepts 'codex' provider", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+          },
+        },
+        { provider: "codex" },
+      );
+      expect(config.provider).toBe("codex");
+    });
+
+    it("accepts 'ollama' provider", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+          },
+        },
+        { provider: "ollama" },
+      );
+      expect(config.provider).toBe("ollama");
+    });
+
+    it("accepts 'xai' provider", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+          },
+        },
+        { provider: "xai" },
+      );
+      expect(config.provider).toBe("xai");
+    });
+
+    it("resolves provider from profile for all new providers", () => {
+      for (const p of ["gemini", "codex", "ollama", "xai"] as const) {
+        const config = resolveConfig({
+          activeProfile: "default",
+          profiles: {
+            default: {
+              cognitiveTraits: [],
+              tone: "casual",
+              summaryStyle: "quick",
+              provider: p,
+            },
+          },
+        });
+        expect(config.provider).toBe(p);
+      }
     });
 
     it("defaults outputDir to ~/Documents/tldr", () => {
@@ -432,6 +514,32 @@ describe("config", () => {
       vi.stubEnv("ANTHROPIC_MODEL", "sonnet");
       const overrides = getEnvOverrides();
       expect(overrides.model).toBe("sonnet");
+    });
+
+    it("reads OPENAI_API_KEY as fallback for apiKey", () => {
+      vi.stubEnv("OPENAI_API_KEY", "sk-openai-key");
+      const overrides = getEnvOverrides();
+      expect(overrides.apiKey).toBe("sk-openai-key");
+    });
+
+    it("prefers ANTHROPIC_API_KEY over OPENAI_API_KEY", () => {
+      vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-key");
+      vi.stubEnv("OPENAI_API_KEY", "sk-openai-key");
+      const overrides = getEnvOverrides();
+      expect(overrides.apiKey).toBe("sk-ant-key");
+    });
+
+    it("reads OPENAI_BASE_URL as fallback for baseUrl", () => {
+      vi.stubEnv("OPENAI_BASE_URL", "https://api.openai.com/v1");
+      const overrides = getEnvOverrides();
+      expect(overrides.baseUrl).toBe("https://api.openai.com/v1");
+    });
+
+    it("prefers ANTHROPIC_BASE_URL over OPENAI_BASE_URL", () => {
+      vi.stubEnv("ANTHROPIC_BASE_URL", "https://proxy.example.com");
+      vi.stubEnv("OPENAI_BASE_URL", "https://api.openai.com/v1");
+      const overrides = getEnvOverrides();
+      expect(overrides.baseUrl).toBe("https://proxy.example.com");
     });
 
     it("returns empty object when no env vars set", () => {

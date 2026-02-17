@@ -12,7 +12,7 @@ Most settings are easier to change interactively with `tldr profile edit` or `/c
 | `tone` | `casual`, `professional`, `academic`, `eli5` | `tldr config set tone professional` |
 | `traits` | Comma-separated list | `tldr config set traits adhd,dyslexia` |
 | `model` | Tier alias or full model ID | `tldr config set model sonnet` |
-| `provider` | `cli` or `api` | `tldr config set provider api` |
+| `provider` | `claude-code`, `anthropic`, `codex`, `gemini`, `ollama`, `openai`, `xai` | `tldr config set provider gemini` |
 | `custom-instructions` | Freeform text | `tldr config set custom-instructions "Focus on code examples"` |
 
 ### Tones
@@ -134,6 +134,12 @@ Environment variables override file settings:
 | `ANTHROPIC_API_KEY` | `apiKey` |
 | `ANTHROPIC_BASE_URL` | `baseUrl` |
 | `ANTHROPIC_MODEL` | `model` |
+| `OPENAI_API_KEY` | `apiKey` (if `ANTHROPIC_API_KEY` not set) |
+| `OPENAI_BASE_URL` | `baseUrl` (if `ANTHROPIC_BASE_URL` not set) |
+| `GEMINI_API_KEY` | API key for Gemini provider |
+| `XAI_API_KEY` | API key for xAI provider |
+| `XAI_BASE_URL` | Custom base URL for xAI |
+| `OLLAMA_BASE_URL` | Ollama server URL (default `http://localhost:11434`) |
 
 ## Resolution Order
 
@@ -148,7 +154,7 @@ Settings are resolved in this order (first wins):
 
 | Setting | Default |
 |---------|---------|
-| Provider | `cli` (Claude Code) |
+| Provider | `claude-code` (Claude Code) |
 | Summary style | `standard` |
 | Model | Opus (`claude-opus-4-6`) |
 | Cognitive traits | `dyslexia` |

@@ -87,8 +87,13 @@ const ALL_VOLUMES: { value: VolumePreset; label: string; hint: string }[] = [
 ];
 
 const ALL_PROVIDERS: { value: SummarizationProvider; label: string; hint: string }[] = [
-  { value: "api", label: "API", hint: "per-token, ~2s, needs API key" },
-  { value: "cli", label: "CLI", hint: "requires Claude Code sub, ~5s" },
+  { value: "anthropic", label: "Anthropic", hint: "Anthropic API, per-token, ~2s" },
+  { value: "claude-code", label: "Claude Code", hint: "requires Claude Code sub, ~5s" },
+  { value: "codex", label: "Codex CLI", hint: "OpenAI Codex CLI, requires codex installed" },
+  { value: "gemini", label: "Gemini", hint: "Google Gemini API, needs GEMINI_API_KEY" },
+  { value: "ollama", label: "Ollama", hint: "Local Ollama instance, no API key" },
+  { value: "openai", label: "OpenAI-compatible", hint: "OpenAI, Groq, Together, etc." },
+  { value: "xai", label: "xAI / Grok", hint: "xAI API, needs XAI_API_KEY" },
 ];
 
 const ALL_MODELS: { value: string; label: string; hint: string }[] = [
@@ -244,7 +249,7 @@ export function ConfigSetup({
   const editMenuNav = useListNavigation({ itemCount: EDIT_MENU_ITEMS.length });
 
   // First-run step state
-  const skipApiKey = hasEnvApiKey || defaults.provider === "cli";
+  const skipApiKey = hasEnvApiKey || defaults.provider === "claude-code";
   const initialStep: FirstRunStep = isFirstRun && !skipApiKey ? "apiKey" : "theme";
   const [firstRunStep, setFirstRunStep] = useState<FirstRunStep>(initialStep);
 
@@ -266,7 +271,7 @@ export function ConfigSetup({
       ttsSpeed: ttsSpeed !== 1.0 ? ttsSpeed : undefined,
       pitch: pitch !== "default" ? pitch : undefined,
       volume: volume !== "normal" ? volume : undefined,
-      provider: provider !== "cli" ? provider : undefined,
+      provider: provider !== "claude-code" ? provider : undefined,
     };
 
     const settings: TldrSettings = {

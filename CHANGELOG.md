@@ -9,7 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- OpenAI-compatible provider (`openai`) — works with OpenAI, Groq, Together, Fireworks, and any endpoint implementing the OpenAI chat completions API
+- Gemini provider (`gemini`) — uses Google's Gemini API via `@google/genai` SDK
+- Codex CLI provider (`codex`) — shells out to OpenAI's Codex CLI
+- Ollama native provider (`ollama`) — direct REST API, no extra dependency
+- xAI/Grok provider (`xai`) — OpenAI-compatible, uses `https://api.x.ai/v1`
+- `OPENAI_API_KEY` and `OPENAI_BASE_URL` environment variable support
+- `GEMINI_API_KEY`, `XAI_API_KEY`, `XAI_BASE_URL`, `OLLAMA_BASE_URL` environment variable support
 - Export `compareSemver` from `lib/core` for reuse by desktop sidecar
+
+### Changed
+
+- Renamed provider `api` → `anthropic` and `cli` → `claude-code` for clarity; updated all internal symbols (`apiProvider` → `anthropicProvider`, `cliProvider` → `claudeCodeProvider`, etc.)
+- Refactored OpenAI provider into factory pattern (`createOpenAICompatibleProvider`) for reuse by xAI
 
 ### Changed
 

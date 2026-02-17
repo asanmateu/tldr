@@ -13,7 +13,8 @@ import { ThemeProvider } from "./lib/ThemeContext.js";
 import { writeClipboard } from "./lib/clipboard.js";
 import { loadConfig, loadSettings, saveConfig, saveSettings } from "./lib/config.js";
 import { addEntry, deduplicateBySource, getRecent } from "./lib/history.js";
-import { isCliAvailable } from "./lib/providers/cli.js";
+import { isClaudeCodeAvailable } from "./lib/providers/claude-code.js";
+import { isCodexAvailable } from "./lib/providers/codex.js";
 import { getSessionPaths, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
 import { resolveTheme } from "./lib/theme.js";
@@ -76,18 +77,28 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
 
       // Graceful CLI fallback: if CLI provider selected but not available,
       // try API key, otherwise guide the user
-      if (cfg.provider === "cli" && !isCliAvailable()) {
+      if (cfg.provider === "claude-code" && !isClaudeCodeAvailable()) {
         if (cfg.apiKey) {
-          cfg = { ...cfg, provider: "api" };
+          cfg = { ...cfg, provider: "anthropic" };
         } else {
           setConfig(cfg);
           setError({
             message: "Claude Code is not installed or not authenticated.",
-            hint: 'Install it with: npm install -g @anthropic-ai/claude-code\nThen run "claude" to log in.\n\nOr run: tldr config set provider api — and set ANTHROPIC_API_KEY.',
+            hint: 'Install it with: npm install -g @anthropic-ai/claude-code\nThen run "claude" to log in.\n\nOr run: tldr config set provider anthropic — and set ANTHROPIC_API_KEY.\nOr run: tldr config set provider openai — and set OPENAI_API_KEY.',
           });
           setState("error");
           return;
         }
+      }
+
+      if (cfg.provider === "codex" && !isCodexAvailable()) {
+        setConfig(cfg);
+        setError({
+          message: "Codex CLI is not installed.",
+          hint: "Install it with: npm install -g @openai/codex\n\nOr switch provider:\n  tldr config set provider openai — and set OPENAI_API_KEY.\n  tldr config set provider anthropic — and set ANTHROPIC_API_KEY.",
+        });
+        setState("error");
+        return;
       }
 
       setConfig(cfg);
@@ -388,7 +399,12 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             onCancel={() => {
               if (configMode === "edit") {
                 setState("idle");
-              } else if (config?.apiKey || config?.provider === "cli") {
+              } else if (
+                config?.apiKey ||
+                config?.provider === "claude-code" ||
+                config?.provider === "codex" ||
+                config?.provider === "ollama"
+              ) {
                 if (editProfile) {
                   exit();
                 } else {
