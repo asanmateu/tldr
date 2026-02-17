@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -6,6 +6,7 @@ import {
   buildSessionName,
   getSessionPaths,
   parseTitleFromSummary,
+  saveAudioFile,
   saveSummary,
   slugify,
 } from "../lib/session.js";
@@ -167,5 +168,56 @@ describe("saveSummary", () => {
 
     const content2 = await readFile(second.summaryPath, "utf-8");
     expect(content2).toBe("second");
+  });
+});
+
+describe("saveAudioFile", () => {
+  it("copies audio file to session audioPath", async () => {
+    const sessionDir = join(tempDir, "2026-01-01-test");
+    const paths = {
+      sessionDir,
+      summaryPath: join(sessionDir, "summary.md"),
+      audioPath: join(sessionDir, "audio.mp3"),
+    };
+
+    // Create the session directory first (as saveSummary would)
+    const saved = await saveSummary(paths, "# Test");
+
+    // Create a fake source audio file
+    const sourceAudio = join(tempDir, "temp-audio.mp3");
+    await writeFile(sourceAudio, "fake-audio-data");
+
+    await saveAudioFile(saved, sourceAudio);
+
+    const content = await readFile(saved.audioPath, "utf-8");
+    expect(content).toBe("fake-audio-data");
+  });
+
+  it("works with deduped paths (audio lands in same dir as summary)", async () => {
+    const sessionDir = join(tempDir, "2026-01-01-test");
+    const paths = {
+      sessionDir,
+      summaryPath: join(sessionDir, "summary.md"),
+      audioPath: join(sessionDir, "audio.mp3"),
+    };
+
+    // Create two sessions to trigger dedup
+    await saveSummary(paths, "first");
+    const second = await saveSummary(paths, "second");
+
+    expect(second.sessionDir).toBe(`${sessionDir}-2`);
+
+    // Create fake audio and save to the deduped session
+    const sourceAudio = join(tempDir, "temp-audio.mp3");
+    await writeFile(sourceAudio, "audio-for-second");
+
+    await saveAudioFile(second, sourceAudio);
+
+    const audioContent = await readFile(second.audioPath, "utf-8");
+    expect(audioContent).toBe("audio-for-second");
+
+    // Verify audio is in the same dir as the summary
+    const summaryContent = await readFile(second.summaryPath, "utf-8");
+    expect(summaryContent).toBe("second");
   });
 });

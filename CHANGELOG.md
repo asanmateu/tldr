@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `saveAudio` profile setting: when enabled, audio is automatically generated and saved alongside the summary on Enter
+- `[w]` key in result view: per-save audio override (saves with audio when `saveAudio` is off, or saves without audio when `saveAudio` is on)
+- `save-audio` config key: `tldr config set save-audio true` / `false`
+- Auto-save audio toggle in profile editor (`tldr profile edit` / `/config`)
+- `saveAudioFile()` helper and core export for copying audio into session directories
 - Double-tap `q` to discard: first press shows a warning, second press within 2s discards and returns to idle (no longer exits the process)
 - Save confirmation toast: pressing Enter in the result view now shows "Saved to {path}" for 3 seconds in the idle prompt
 - History entry deletion: press `d` in history view to remove an entry
@@ -16,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Voice and speed info shown in result view footer (e.g. `[a] audio (Jenny, 1.0x)`)
 - Press Esc to exit chat mode (works regardless of input text)
 - Export `removeEntry` and `getVoiceDisplayName` from `lib/core` for reuse by desktop sidecar
+
+### Fixed
+
+- Audio preview no longer creates the session directory prematurely (fixes split audio/summary directories when deduplication triggers)
 
 ## [1.0.0] - 2026-02-17
 

@@ -23,7 +23,7 @@ import {
 import { addEntry, deduplicateBySource, getRecent, removeEntry } from "./lib/history.js";
 import { isClaudeCodeAvailable } from "./lib/providers/claude-code.js";
 import { isCodexAvailable } from "./lib/providers/codex.js";
-import { getSessionPaths, saveSummary } from "./lib/session.js";
+import { getSessionPaths, saveAudioFile, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
 import { resolveTheme } from "./lib/theme.js";
 import {
@@ -77,6 +77,9 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [pendingResult, setPendingResult] = useState<TldrResult | undefined>(undefined);
   const [discardPending, setDiscardPending] = useState(false);
   const [toast, setToast] = useState<string | undefined>(undefined);
+  const [tempAudioPath, setTempAudioPath] = useState<string | undefined>(undefined);
+  const [cachedSpeechText, setCachedSpeechText] = useState<string | undefined>(undefined);
+  const [isSavingAudio, setIsSavingAudio] = useState(false);
   const [profiles, setProfiles] = useState<{ name: string; active: boolean }[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -346,7 +349,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           (async () => {
             try {
               if (!config) throw new Error("Config not loaded");
-              const speechText = await rewriteForSpeech(summary, config);
+              const speechText = cachedSpeechText ?? (await rewriteForSpeech(summary, config));
+              setCachedSpeechText(speechText);
               try {
                 const path = await generateAudio(
                   speechText,
@@ -354,8 +358,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                   config.ttsSpeed,
                   config.pitch,
                   config.volume,
-                  currentSession?.audioPath,
                 );
+                setTempAudioPath(path);
                 setIsGeneratingAudio(false);
                 const proc = playAudio(path);
                 setAudioProcess(proc);
@@ -389,40 +393,85 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           return;
         }
         if (ch === "r") {
-          if (config) processInput(input, config);
+          if (config) {
+            setTempAudioPath(undefined);
+            setCachedSpeechText(undefined);
+            processInput(input, config);
+          }
           return;
         }
-        if (key.return) {
-          // Persist session on Enter before resetting
-          const sessionDir = currentSession?.sessionDir;
+        if ((key.return || ch === "w") && !isSavingAudio) {
+          const withAudio = key.return
+            ? (config?.saveAudio ?? false)
+            : !(config?.saveAudio ?? false);
+
+          // Stop any playing audio
+          if (audioProcess) {
+            stopAudio(audioProcess);
+            setAudioProcess(undefined);
+          }
+
           if (pendingResult && currentSession) {
             (async () => {
               try {
                 const saved = await saveSummary(currentSession, pendingResult.summary);
                 setCurrentSession(saved);
+
+                if (withAudio) {
+                  setIsSavingAudio(true);
+                  try {
+                    if (tempAudioPath) {
+                      await saveAudioFile(saved, tempAudioPath);
+                    } else if (config) {
+                      const speechText =
+                        cachedSpeechText ?? (await rewriteForSpeech(summary, config));
+                      const audioPath = await generateAudio(
+                        speechText,
+                        config.voice,
+                        config.ttsSpeed,
+                        config.pitch,
+                        config.volume,
+                      );
+                      await saveAudioFile(saved, audioPath);
+                    }
+                  } catch {
+                    // Audio failure is non-fatal — summary still saved
+                  }
+                  setIsSavingAudio(false);
+                }
+
+                // Show save toast
+                setToast(`Saved to ${saved.sessionDir}`);
+                if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+                toastTimerRef.current = setTimeout(() => {
+                  setToast(undefined);
+                  toastTimerRef.current = null;
+                }, 3000);
               } catch {
                 // Non-fatal
               }
               await addEntry(pendingResult);
               const updated = await getRecent(100);
               setHistory(updated);
-            })();
-          }
-          setPendingResult(undefined);
-          setState("idle");
-          setSummary("");
-          setExtraction(undefined);
-          setInput("");
-          setCurrentSession(undefined);
 
-          // Show save toast
-          if (sessionDir) {
-            setToast(`Saved to ${sessionDir}`);
-            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-            toastTimerRef.current = setTimeout(() => {
-              setToast(undefined);
-              toastTimerRef.current = null;
-            }, 3000);
+              setPendingResult(undefined);
+              setState("idle");
+              setSummary("");
+              setExtraction(undefined);
+              setInput("");
+              setCurrentSession(undefined);
+              setTempAudioPath(undefined);
+              setCachedSpeechText(undefined);
+            })();
+          } else {
+            setPendingResult(undefined);
+            setState("idle");
+            setSummary("");
+            setExtraction(undefined);
+            setInput("");
+            setCurrentSession(undefined);
+            setTempAudioPath(undefined);
+            setCachedSpeechText(undefined);
           }
           return;
         }
@@ -450,6 +499,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             setExtraction(undefined);
             setInput("");
             setCurrentSession(undefined);
+            setTempAudioPath(undefined);
+            setCachedSpeechText(undefined);
           } else {
             // First press — start discard timer
             setDiscardPending(true);
@@ -537,6 +588,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             discardPending={discardPending}
             voiceLabel={config ? getVoiceDisplayName(config.voice) : undefined}
             ttsSpeed={config?.ttsSpeed}
+            saveAudio={config?.saveAudio ?? false}
+            isSavingAudio={isSavingAudio}
           />
         )}
         {state === "chat" && config && (

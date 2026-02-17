@@ -47,11 +47,35 @@ Change the output directory:
 tldr config set output-dir ~/summaries
 ```
 
+## Auto-save Audio
+
+By default, pressing Enter saves only the summary. You can enable automatic audio saving:
+
+```bash
+tldr config set save-audio true
+```
+
+When `save-audio` is enabled, pressing Enter generates audio and saves both `summary.md` and `audio.mp3` to the session directory. If you've already previewed audio with `a`, the cached audio is reused (no re-generation).
+
+You can also toggle this in the profile editor (`tldr profile edit` / `/config`).
+
+### Per-save Override
+
+The `[w]` key inverts the default behavior for a single save:
+
+| `save-audio` setting | `[Enter]` | `[w]` |
+|---------------------|-----------|-------|
+| `false` (default) | Save summary only | Save summary + audio |
+| `true` | Save summary + audio | Save summary only |
+
+Audio failures are non-fatal — the summary is always saved even if audio generation fails.
+
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
 | `a` | Generate and play audio |
 | `s` | Stop audio playback |
+| `w` | Save with audio override (inverts `save-audio` setting) |
 
 The result view footer shows the active voice name and TTS speed next to the `[a]` shortcut (e.g. `[a] audio (Jenny, 1.0x)`).

@@ -13,6 +13,8 @@ interface SummaryViewProps {
   discardPending?: boolean | undefined;
   voiceLabel?: string | undefined;
   ttsSpeed?: number | undefined;
+  saveAudio: boolean;
+  isSavingAudio: boolean;
 }
 
 function estimateTimeSaved(wordCount: number): string {
@@ -33,6 +35,8 @@ export function SummaryView({
   discardPending,
   voiceLabel,
   ttsSpeed,
+  saveAudio,
+  isSavingAudio,
 }: SummaryViewProps) {
   const theme = useTheme();
   const summaryWords = summary.split(/\s+/).filter(Boolean).length;
@@ -71,13 +75,16 @@ export function SummaryView({
         </Box>
       )}
       <Box>
-        {isGeneratingAudio ? (
+        {isSavingAudio ? (
+          <Text color={theme.warning}>Saving with audio...</Text>
+        ) : isGeneratingAudio ? (
           <Text color={theme.warning}>Generating audio...</Text>
         ) : isPlaying ? (
           <Text color={theme.success}>Playing audio... [s] stop</Text>
         ) : (
           <Text dimColor>
-            [Enter] save · [c] copy · [a] audio
+            {saveAudio ? "[Enter] save + audio · [w] save only" : "[Enter] save · [w] save + audio"}{" "}
+            · [c] copy · [a] audio
             {voiceLabel ? ` (${voiceLabel}${ttsSpeed != null ? `, ${ttsSpeed}x` : ""})` : ""} · [t]
             talk · [r] re-summarize · [q] discard
           </Text>

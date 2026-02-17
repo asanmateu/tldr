@@ -48,6 +48,7 @@ function makeTestConfig(overrides?: Partial<import("../lib/types.js").ResolvedCo
     volume: "normal" as const,
     provider: "claude-code" as const,
     outputDir: `${tempDir}/.tldr/output`,
+    saveAudio: false,
     ...overrides,
   };
 }
@@ -398,6 +399,31 @@ describe("config", () => {
         });
         expect(config.provider).toBe(p);
       }
+    });
+
+    it("defaults saveAudio to false", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+      expect(config.saveAudio).toBe(false);
+    });
+
+    it("resolves saveAudio from profile", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "quick",
+            saveAudio: true,
+          },
+        },
+      });
+      expect(config.saveAudio).toBe(true);
     });
 
     it("defaults outputDir to ~/Documents/tldr", () => {
@@ -848,6 +874,22 @@ describe("config", () => {
       const config = await loadConfig();
       expect(config.tone).toBe("casual");
       expect((config as unknown as Record<string, unknown>).ttsMode).toBeUndefined();
+    });
+  });
+
+  describe("saveAudio round-trip", () => {
+    it("saves and loads saveAudio round-trip", async () => {
+      const config = makeTestConfig({ saveAudio: true });
+      await saveConfig(config);
+      const loaded = await loadConfig();
+      expect(loaded.saveAudio).toBe(true);
+    });
+
+    it("defaults saveAudio to false when not set", async () => {
+      const config = makeTestConfig({ saveAudio: false });
+      await saveConfig(config);
+      const loaded = await loadConfig();
+      expect(loaded.saveAudio).toBe(false);
     });
   });
 

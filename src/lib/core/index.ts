@@ -12,7 +12,7 @@ export {
   setActiveProfile,
 } from "../config.js";
 export { addEntry, getRecent, removeEntry } from "../history.js";
-export { getSessionPaths, saveSummary } from "../session.js";
+export { getSessionPaths, saveAudioFile, saveSummary } from "../session.js";
 export { generateAudio, getVoiceDisplayName, playAudio, stopAudio } from "../tts.js";
 export { buildSystemPrompt, buildUserPrompt } from "../prompts.js";
 export { isClaudeCodeAvailable } from "../providers/claude-code.js";

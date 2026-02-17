@@ -25,6 +25,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): ResolvedConfig {
     volume: "normal",
     provider: "claude-code",
     outputDir: "/tmp/tldr-output",
+    saveAudio: false,
     ...overrides,
   };
 }

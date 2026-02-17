@@ -47,6 +47,7 @@ tldr --style quick "https://example.com/article"
 | `tts-speed` | Positive number | `tldr config set tts-speed 1.25` |
 | `pitch` | `low`, `default`, `high` | `tldr config set pitch high` |
 | `volume` | `quiet`, `normal`, `loud` | `tldr config set volume loud` |
+| `save-audio` | `true`, `false` | `tldr config set save-audio true` |
 
 ## Appearance
 
@@ -172,5 +173,6 @@ Settings are resolved in this order (first wins):
 | TTS speed | `1.0x` |
 | Pitch | `default` |
 | Volume | `normal` |
+| Save audio | `false` |
 | Theme | `coral` |
 | Appearance | `auto` |

@@ -1,4 +1,4 @@
-import { mkdir, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ExtractionResult, SessionPaths } from "./types.js";
 
@@ -64,4 +64,8 @@ export async function saveSummary(paths: SessionPaths, markdown: string): Promis
   await mkdir(resolved.sessionDir, { recursive: true });
   await writeFile(resolved.summaryPath, markdown, "utf-8");
   return resolved;
+}
+
+export async function saveAudioFile(paths: SessionPaths, sourcePath: string): Promise<void> {
+  await copyFile(sourcePath, paths.audioPath);
 }

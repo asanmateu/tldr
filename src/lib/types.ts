@@ -70,6 +70,7 @@ export interface Profile {
   pitch?: PitchPreset | undefined;
   volume?: VolumePreset | undefined;
   provider?: SummarizationProvider | undefined;
+  saveAudio?: boolean | undefined;
 }
 
 export interface TldrSettings {
@@ -99,6 +100,7 @@ export interface ResolvedConfig {
   volume: VolumePreset;
   provider: SummarizationProvider;
   outputDir: string;
+  saveAudio: boolean;
 }
 
 export type Config = ResolvedConfig;

@@ -198,6 +198,7 @@ function parseProfile(raw: unknown): Profile {
       typeof obj.provider === "string" && VALID_PROVIDERS.has(obj.provider)
         ? (obj.provider as SummarizationProvider)
         : undefined,
+    saveAudio: typeof obj.saveAudio === "boolean" ? obj.saveAudio : undefined,
   };
 }
 
@@ -324,6 +325,7 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
     volume: profile.volume && VALID_VOLUMES.has(profile.volume) ? profile.volume : "normal",
     provider,
     outputDir,
+    saveAudio: profile.saveAudio ?? false,
   };
 }
 
@@ -360,6 +362,7 @@ export async function saveConfig(config: ResolvedConfig): Promise<void> {
     pitch: config.pitch !== "default" ? config.pitch : undefined,
     volume: config.volume !== "normal" ? config.volume : undefined,
     provider: config.provider !== "claude-code" ? config.provider : undefined,
+    saveAudio: config.saveAudio || undefined,
   };
 
   await saveSettings(settings);

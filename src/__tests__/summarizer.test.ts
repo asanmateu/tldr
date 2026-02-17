@@ -102,6 +102,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): Config {
     volume: "normal",
     provider: "anthropic",
     outputDir: "/tmp/tldr-output",
+    saveAudio: false,
     ...overrides,
   };
 }

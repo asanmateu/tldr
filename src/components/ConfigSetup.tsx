@@ -41,6 +41,7 @@ type EditMenuItem =
   | "ttsSpeed"
   | "pitch"
   | "volume"
+  | "saveAudio"
   | "customInstructions"
   | "save";
 
@@ -119,6 +120,7 @@ const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string }[] = [
   { key: "ttsSpeed", label: "TTS Speed" },
   { key: "pitch", label: "Pitch" },
   { key: "volume", label: "Volume" },
+  { key: "saveAudio", label: "Auto-save audio" },
   { key: "customInstructions", label: "Custom instructions" },
   { key: "save", label: "Save & exit" },
 ];
@@ -163,6 +165,7 @@ export function ConfigSetup({
   const [pitch, setPitch] = useState<PitchPreset>(defaults.pitch);
   const [volume, setVolume] = useState<VolumePreset>(defaults.volume);
   const [provider, setProvider] = useState<SummarizationProvider>(defaults.provider);
+  const [saveAudio, setSaveAudio] = useState(defaults.saveAudio);
 
   // Model state — free-text input, pre-filled with current model
   const [modelInput, setModelInput] = useState(defaults.model);
@@ -257,6 +260,7 @@ export function ConfigSetup({
       pitch: pitch !== "default" ? pitch : undefined,
       volume: volume !== "normal" ? volume : undefined,
       provider: provider !== "claude-code" ? provider : undefined,
+      saveAudio: saveAudio || undefined,
     };
 
     const settings: TldrSettings = {
@@ -279,6 +283,7 @@ export function ConfigSetup({
     tone,
     style,
     customInstructions,
+    saveAudio,
     defaults.profileName,
   ]);
 
@@ -486,6 +491,14 @@ export function ConfigSetup({
         return;
       }
 
+      if (editingField === "saveAudio") {
+        if (key.return) {
+          setSaveAudio((prev) => !prev);
+          setEditingField(null);
+        }
+        return;
+      }
+
       if (
         editingField === "model" ||
         editingField === "ttsSpeed" ||
@@ -595,6 +608,7 @@ export function ConfigSetup({
             if (item.key === "ttsSpeed") current = `${ttsSpeedInput}x`;
             if (item.key === "pitch") current = pitch;
             if (item.key === "volume") current = volume;
+            if (item.key === "saveAudio") current = saveAudio ? "on" : "off";
             if (item.key === "customInstructions")
               current = customInstructions ? `"${customInstructions.slice(0, 30)}..."` : "none";
 
@@ -687,6 +701,13 @@ export function ConfigSetup({
               onChange={setTtsSpeedInput}
               onSubmit={() => setEditingField(null)}
             />
+          </Box>
+        )}
+
+        {editingField === "saveAudio" && (
+          <Box flexDirection="column">
+            <Text>Auto-save audio: {saveAudio ? "on" : "off"}</Text>
+            <Text dimColor>Press Enter to toggle {saveAudio ? "off" : "on"}</Text>
           </Box>
         )}
 
