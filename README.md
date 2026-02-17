@@ -15,19 +15,13 @@ A CLI tool that turns articles, PDFs, videos, and more into short, clear summari
 
 ## Why this exists
 
-I had a pile of to-reads growing at work — articles, PDFs, Slack threads, design docs — and it was overwhelming. Not because the material was hard, but because there was too much of it and it was all in the wrong format. Walls of text, dense paragraphs, key points buried halfway through.
-
-That's when I realized: the problem isn't reading ability, it's format. And that insight goes deeper than productivity. Neurodivergent developers, students, and professionals have always been able to understand complex ideas — they just need them presented differently. Whether you have dyslexia, ADHD, are on the spectrum, or are reading in a second language, you shouldn't have to fight the format to get to the meaning.
-
-tldr exists to fix that.
+I had a pile of to-reads growing at work and it was overwhelming — not because the material was hard, but because it was all in the wrong format. The problem isn't reading ability, it's format. That goes double if you're neurodivergent, reading in a second language, or just short on time.
 
 ---
 
-## Audio — not just another summarizer
+## Audio
 
-Most summarizers stop at text. tldr goes further: press `a` after any summary to hear it spoken aloud. But this isn't text-to-speech bolted on — it rewrites the summary into an engaging, podcast-style script tailored to your cognitive profile, then synthesizes it with natural-sounding voices.
-
-If you think better by listening, this changes everything. See the [Audio guide](docs/audio.md) for voice, speed, and pitch options.
+Press `a` after any summary to listen to it. tldr rewrites the summary into a spoken script tailored to your cognitive profile, then synthesizes it with natural-sounding voices. See the [Audio guide](docs/audio.md) for voice, speed, and pitch options.
 
 ---
 
@@ -37,7 +31,7 @@ If you think better by listening, this changes everything. See the [Audio guide]
 brew install asanmateu/tldr/tldr-cli
 ```
 
-Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to be installed and authenticated. See [Installation guide](docs/installation.md) for standalone binaries and other methods.
+Works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), or bring your own Anthropic API key — see [Providers](docs/providers.md). For standalone binaries and other install methods, see the [Installation guide](docs/installation.md).
 
 ---
 
