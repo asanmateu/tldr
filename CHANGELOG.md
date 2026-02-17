@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-02-17
+
 ### Added
 
 - OpenAI-compatible provider (`openai`) — works with OpenAI, Groq, Together, Fireworks, and any endpoint implementing the OpenAI chat completions API
@@ -20,8 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING:** Renamed provider `api` → `anthropic` and `cli` → `claude-code` — update your `settings.json` if you had `"provider": "api"` or `"provider": "cli"`
 - Interactive model picker now uses a free-text input instead of a fixed Haiku/Sonnet/Opus list, supporting any model ID for any provider
-- Renamed provider `api` → `anthropic` and `cli` → `claude-code` for clarity; updated all internal symbols (`apiProvider` → `anthropicProvider`, `cliProvider` → `claudeCodeProvider`, etc.)
 - Refactored OpenAI provider into factory pattern (`createOpenAICompatibleProvider`) for reuse by xAI
 - Reworked README motivation section: leads with relatable origin story before connecting to the accessibility angle
 - Promoted audio as a key differentiator with dedicated README section
