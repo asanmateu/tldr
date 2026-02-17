@@ -16,7 +16,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): Config {
     ttsSpeed: 1.0,
     pitch: "default",
     volume: "normal",
-    provider: "cli",
+    provider: "claude-code",
     outputDir: "/tmp/tldr-output",
     ...overrides,
   };
@@ -63,17 +63,16 @@ vi.mock("node:child_process", () => ({
   spawn: mockSpawn,
 }));
 
-const { summarizeViaCli, rewriteViaCli, chatViaCli, cliProvider } = await import(
-  "../../lib/providers/cli.js"
-);
+const { summarizeViaClaudeCode, rewriteViaClaudeCode, chatViaClaudeCode, claudeCodeProvider } =
+  await import("../../lib/providers/claude-code.js");
 
-describe("cli provider", () => {
+describe("claude-code provider", () => {
   it("spawns claude with correct args and returns output", async () => {
     const child = createMockChild(0, "Summary output");
     mockSpawn.mockReturnValue(child);
 
     const config = makeTestConfig();
-    const result = await summarizeViaCli(config, "system prompt", "user prompt", () => {});
+    const result = await summarizeViaClaudeCode(config, "system prompt", "user prompt", () => {});
 
     expect(mockSpawn).toHaveBeenCalledWith(
       "claude",
@@ -89,7 +88,7 @@ describe("cli provider", () => {
 
     const chunks: string[] = [];
     const config = makeTestConfig();
-    await summarizeViaCli(config, "sys", "usr", (text) => chunks.push(text));
+    await summarizeViaClaudeCode(config, "sys", "usr", (text) => chunks.push(text));
 
     expect(chunks).toEqual(["chunk data"]);
   });
@@ -99,7 +98,7 @@ describe("cli provider", () => {
     mockSpawn.mockReturnValue(child);
 
     const config = makeTestConfig();
-    await summarizeViaCli(config, "system", "user", () => {});
+    await summarizeViaClaudeCode(config, "system", "user", () => {});
 
     expect(child.stdin.write).toHaveBeenCalledWith("system\n\n---\n\nuser");
     expect(child.stdin.end).toHaveBeenCalled();
@@ -111,7 +110,7 @@ describe("cli provider", () => {
 
     const config = makeTestConfig();
     const image = { base64: "data", mediaType: "image/png" as const, filePath: "/tmp/photo.png" };
-    await summarizeViaCli(config, "system", "user prompt", () => {}, image);
+    await summarizeViaClaudeCode(config, "system", "user prompt", () => {}, image);
 
     const writtenPrompt = child.stdin.write.mock.calls[0]?.[0] as string;
     expect(writtenPrompt).toContain("Please read the image at this path: /tmp/photo.png");
@@ -125,7 +124,7 @@ describe("cli provider", () => {
     mockSpawn.mockReturnValue(child);
 
     const config = makeTestConfig();
-    await expect(summarizeViaCli(config, "sys", "usr", () => {})).rejects.toMatchObject({
+    await expect(summarizeViaClaudeCode(config, "sys", "usr", () => {})).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });
@@ -135,24 +134,24 @@ describe("cli provider", () => {
     mockSpawn.mockReturnValue(child);
 
     const config = makeTestConfig();
-    await expect(summarizeViaCli(config, "sys", "usr", () => {})).rejects.toMatchObject({
+    await expect(summarizeViaClaudeCode(config, "sys", "usr", () => {})).rejects.toMatchObject({
       code: "UNKNOWN",
     });
   });
 
-  it("exports cliProvider conforming to Provider interface", () => {
-    expect(cliProvider).toBeDefined();
-    expect(typeof cliProvider.summarize).toBe("function");
-    expect(typeof cliProvider.rewrite).toBe("function");
-    expect(typeof cliProvider.chat).toBe("function");
+  it("exports claudeCodeProvider conforming to Provider interface", () => {
+    expect(claudeCodeProvider).toBeDefined();
+    expect(typeof claudeCodeProvider.summarize).toBe("function");
+    expect(typeof claudeCodeProvider.rewrite).toBe("function");
+    expect(typeof claudeCodeProvider.chat).toBe("function");
   });
 
-  it("rewriteViaCli sends rewrite prompt and returns output", async () => {
+  it("rewriteViaClaudeCode sends rewrite prompt and returns output", async () => {
     const child = createMockChild(0, "Rewritten audio script");
     mockSpawn.mockReturnValue(child);
 
     const config = makeTestConfig();
-    const result = await rewriteViaCli("## Summary\nKey points.", config, "system prompt");
+    const result = await rewriteViaClaudeCode("## Summary\nKey points.", config, "system prompt");
 
     expect(result).toBe("Rewritten audio script");
     const writtenPrompt = child.stdin.write.mock.calls[0]?.[0] as string;
@@ -160,7 +159,7 @@ describe("cli provider", () => {
     expect(writtenPrompt).toContain("## Summary");
   });
 
-  it("chatViaCli formats conversation and streams output", async () => {
+  it("chatViaClaudeCode formats conversation and streams output", async () => {
     const child = createMockChild(0, "Chat response");
     mockSpawn.mockReturnValue(child);
 
@@ -171,7 +170,9 @@ describe("cli provider", () => {
       { role: "user" as const, content: "Tell me more." },
     ];
     const chunks: string[] = [];
-    const result = await chatViaCli(config, "system prompt", messages, (text) => chunks.push(text));
+    const result = await chatViaClaudeCode(config, "system prompt", messages, (text) =>
+      chunks.push(text),
+    );
 
     expect(result).toBe("Chat response");
     expect(chunks).toEqual(["Chat response"]);

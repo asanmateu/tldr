@@ -1,19 +1,19 @@
 import { execSync, spawn } from "node:child_process";
 import type { ChatMessage, Config, ImageData, Provider } from "../types.js";
 
-export class CliProviderError extends Error {
+export class ClaudeCodeProviderError extends Error {
   constructor(
     message: string,
     public readonly code: "NOT_FOUND" | "TIMEOUT" | "UNKNOWN",
   ) {
     super(message);
-    this.name = "CliProviderError";
+    this.name = "ClaudeCodeProviderError";
   }
 }
 
 const CLI_TIMEOUT_MS = 120_000;
 
-export function isCliAvailable(): boolean {
+export function isClaudeCodeAvailable(): boolean {
   try {
     execSync("claude --version", { stdio: "pipe", timeout: 5_000 });
     return true;
@@ -60,7 +60,7 @@ function runClaude(
       if (!settled) {
         settled = true;
         cleanup();
-        reject(new CliProviderError("Claude CLI timed out after 120s.", "TIMEOUT"));
+        reject(new ClaudeCodeProviderError("Claude CLI timed out after 120s.", "TIMEOUT"));
       }
     }, CLI_TIMEOUT_MS);
 
@@ -81,13 +81,13 @@ function runClaude(
       settled = true;
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
         reject(
-          new CliProviderError(
+          new ClaudeCodeProviderError(
             "Claude CLI not found. Install it with: npm install -g @anthropic-ai/claude-code",
             "NOT_FOUND",
           ),
         );
       } else {
-        reject(new CliProviderError(`CLI error: ${err.message}`, "UNKNOWN"));
+        reject(new ClaudeCodeProviderError(`CLI error: ${err.message}`, "UNKNOWN"));
       }
     });
 
@@ -100,7 +100,7 @@ function runClaude(
         resolve(stdout);
       } else {
         reject(
-          new CliProviderError(
+          new ClaudeCodeProviderError(
             `Claude CLI exited with code ${code}: ${stderr.slice(0, 200)}`,
             "UNKNOWN",
           ),
@@ -113,7 +113,7 @@ function runClaude(
   });
 }
 
-export async function summarizeViaCli(
+export async function summarizeViaClaudeCode(
   config: Config,
   systemPrompt: string,
   userPrompt: string,
@@ -128,7 +128,7 @@ export async function summarizeViaCli(
   return runClaude(combinedPrompt, config.model, onChunk, signal);
 }
 
-export async function rewriteViaCli(
+export async function rewriteViaClaudeCode(
   markdown: string,
   config: Config,
   systemPrompt: string,
@@ -137,7 +137,7 @@ export async function rewriteViaCli(
   return runClaude(combinedPrompt, config.model);
 }
 
-export async function chatViaCli(
+export async function chatViaClaudeCode(
   config: Config,
   systemPrompt: string,
   messages: ChatMessage[],
@@ -150,8 +150,8 @@ export async function chatViaCli(
   return runClaude(combinedPrompt, config.model, onChunk);
 }
 
-export const cliProvider: Provider = {
-  summarize: summarizeViaCli,
-  rewrite: rewriteViaCli,
-  chat: chatViaCli,
+export const claudeCodeProvider: Provider = {
+  summarize: summarizeViaClaudeCode,
+  rewrite: rewriteViaClaudeCode,
+  chat: chatViaClaudeCode,
 };

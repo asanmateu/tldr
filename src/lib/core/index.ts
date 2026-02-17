@@ -15,7 +15,7 @@ export { addEntry, getRecent } from "../history.js";
 export { getSessionPaths, saveSummary } from "../session.js";
 export { generateAudio, playAudio, stopAudio } from "../tts.js";
 export { buildSystemPrompt, buildUserPrompt } from "../prompts.js";
-export { isCliAvailable } from "../providers/cli.js";
+export { isClaudeCodeAvailable } from "../providers/claude-code.js";
 export { importMarkdown } from "../import.js";
 export { chatWithSession, buildChatSystemPrompt } from "../chat.js";
 export { resolveTheme, detectAppearance, DEFAULT_THEME, PALETTES } from "../theme.js";

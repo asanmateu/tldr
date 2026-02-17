@@ -74,7 +74,7 @@ vi.mock("@anthropic-ai/sdk", () => {
 });
 
 const { summarize, rewriteForSpeech } = await import("../lib/summarizer.js");
-const { chatViaApi } = await import("../lib/providers/api.js");
+const { chatViaAnthropic } = await import("../lib/providers/anthropic.js");
 const Anthropic = (await import("@anthropic-ai/sdk")).default;
 
 const TEST_EXTRACTION: ExtractionResult = {
@@ -100,7 +100,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): Config {
     ttsSpeed: 1.0,
     pitch: "default",
     volume: "normal",
-    provider: "api",
+    provider: "anthropic",
     outputDir: "/tmp/tldr-output",
     ...overrides,
   };
@@ -397,7 +397,7 @@ describe("summarize abort", () => {
   });
 });
 
-describe("chatViaApi", () => {
+describe("chatViaAnthropic", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStream._handlers.clear();
@@ -420,7 +420,7 @@ describe("chatViaApi", () => {
     const chunks: string[] = [];
     const messages = [{ role: "user" as const, content: "What is this about?" }];
 
-    const result = await chatViaApi(TEST_CONFIG, "system prompt", messages, (text) =>
+    const result = await chatViaAnthropic(TEST_CONFIG, "system prompt", messages, (text) =>
       chunks.push(text),
     );
 

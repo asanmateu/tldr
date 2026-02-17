@@ -1,20 +1,20 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ChatMessage, Config, ImageData, Provider } from "../types.js";
 
-export class ApiProviderError extends Error {
+export class AnthropicProviderError extends Error {
   constructor(
     message: string,
     public readonly code: "AUTH" | "RATE_LIMIT" | "NETWORK" | "UNKNOWN",
   ) {
     super(message);
-    this.name = "ApiProviderError";
+    this.name = "AnthropicProviderError";
   }
 }
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
-export async function summarizeViaApi(
+export async function summarizeViaAnthropic(
   config: Config,
   systemPrompt: string,
   userPrompt: string,
@@ -70,7 +70,10 @@ export async function summarizeViaApi(
       lastError = error instanceof Error ? error : new Error(String(error));
 
       if (error instanceof Anthropic.AuthenticationError) {
-        throw new ApiProviderError("Invalid API key. Run `tldr config setup` to update.", "AUTH");
+        throw new AnthropicProviderError(
+          "Invalid API key. Run `tldr config setup` to update.",
+          "AUTH",
+        );
       }
 
       if (error instanceof Anthropic.RateLimitError) {
@@ -79,27 +82,27 @@ export async function summarizeViaApi(
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
-        throw new ApiProviderError(
+        throw new AnthropicProviderError(
           "Rate limited by API. Please wait a moment and try again.",
           "RATE_LIMIT",
         );
       }
 
       if (error instanceof Anthropic.APIConnectionError) {
-        throw new ApiProviderError("Network error. Check your connection.", "NETWORK");
+        throw new AnthropicProviderError("Network error. Check your connection.", "NETWORK");
       }
 
-      throw new ApiProviderError(`Summarization failed: ${lastError.message}`, "UNKNOWN");
+      throw new AnthropicProviderError(`Summarization failed: ${lastError.message}`, "UNKNOWN");
     }
   }
 
-  throw new ApiProviderError(
+  throw new AnthropicProviderError(
     `Summarization failed after ${MAX_RETRIES} attempts: ${lastError?.message ?? "unknown error"}`,
     "UNKNOWN",
   );
 }
 
-export async function rewriteViaApi(
+export async function rewriteViaAnthropic(
   markdown: string,
   config: Config,
   systemPrompt: string,
@@ -128,7 +131,7 @@ export async function rewriteViaApi(
   return markdown;
 }
 
-export async function chatViaApi(
+export async function chatViaAnthropic(
   config: Config,
   systemPrompt: string,
   messages: ChatMessage[],
@@ -158,8 +161,8 @@ export async function chatViaApi(
   return chunks.join("");
 }
 
-export const apiProvider: Provider = {
-  summarize: summarizeViaApi,
-  rewrite: rewriteViaApi,
-  chat: chatViaApi,
+export const anthropicProvider: Provider = {
+  summarize: summarizeViaAnthropic,
+  rewrite: rewriteViaAnthropic,
+  chat: chatViaAnthropic,
 };
