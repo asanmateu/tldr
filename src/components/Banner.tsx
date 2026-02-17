@@ -9,18 +9,14 @@ export function Banner() {
 
   return (
     <Box flexDirection="column" marginBottom={1}>
-      <Text color={theme.brandBorder}>{"╭──────────────────────────────────╮"}</Text>
       <Box>
-        <Text color={theme.brandBorder}>{"│"}</Text>
-        <Text color={theme.brandAccent}>{" ✦ "}</Text>
+        <Text color={theme.brandAccent}>{"»  "}</Text>
         <Text color={theme.brand} bold>
           {"tl;dr"}
         </Text>
-        <Text dimColor>{`v${version}`.padStart(25, " ")} </Text>
-        <Text color={theme.brandBorder}>{"│"}</Text>
+        <Text dimColor>{`  v${version}`}</Text>
       </Box>
-      <Text color={theme.brandBorder}>{"╰──────────────────────────────────╯"}</Text>
-      <Text dimColor>{"  less noise, more clarity."}</Text>
+      <Text dimColor>{"   summarize anything."}</Text>
     </Box>
   );
 }

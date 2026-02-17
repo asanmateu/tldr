@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refreshed CLI banner: replaced boxed frame with minimal `»  tl;dr` chevron style
 - Merged `accessibility.md` into `configuration.md` — tones and summary styles now live alongside the settings they configure
 - Grouped configuration settings by category (summary, audio, appearance, general) for easier scanning
 - Streamlined README install block and added "pick your platform" guidance
