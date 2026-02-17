@@ -1,7 +1,7 @@
 {
   "name": "tldr-cli",
   "version": "1.0.0",
-  "description": "CLI summarization tool optimized for dyslexia and ADHD",
+  "description": "CLI summarization tool optimised for neurodiversity",
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",

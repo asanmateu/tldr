@@ -104,7 +104,7 @@ jobs:
           mkdir -p homebrew-tap/Formula
           cat > homebrew-tap/Formula/tldr-cli.rb <<FORMULA
           class TldrCli < Formula
-            desc "CLI summarization tool optimized for dyslexia and ADHD"
+            desc "CLI summarization tool optimised for neurodiversity"
             homepage "https://github.com/asanmateu/tldr"
             version "${VERSION}"
             license "MIT"
