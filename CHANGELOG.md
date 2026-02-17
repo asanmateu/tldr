@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Export `compareSemver` from `lib/core` for reuse by desktop sidecar
+
 ### Changed
 
 - Refreshed CLI banner: replaced boxed frame with minimal `»  tl;dr` chevron style

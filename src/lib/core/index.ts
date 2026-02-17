@@ -20,6 +20,7 @@ export { importMarkdown } from "../import.js";
 export { chatWithSession, buildChatSystemPrompt } from "../chat.js";
 export { resolveTheme, detectAppearance, DEFAULT_THEME, PALETTES } from "../theme.js";
 export { setTheme } from "../config.js";
+export { compareSemver } from "../updateCheck.js";
 
 export type {
   Config,
