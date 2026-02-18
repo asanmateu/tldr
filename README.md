@@ -32,7 +32,7 @@ Press `a` after any summary to listen to it. tldr rewrites the summary into a sp
 brew install asanmateu/tldr/tldr-cli
 ```
 
-Works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), or bring your own API key (Anthropic, OpenAI, Gemini, xAI, Ollama, Codex, etc.) — see [Providers](docs/providers.md). For standalone binaries and other install methods, see the [Installation guide](docs/installation.md).
+Works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), or bring your own API key (Anthropic, OpenAI, Gemini, xAI, Ollama, Codex, etc.) — see [Providers](docs/providers.md). For standalone binaries, building from source, and other install methods, see the [Installation guide](docs/installation.md).
 
 ---
 

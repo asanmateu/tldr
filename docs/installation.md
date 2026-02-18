@@ -35,6 +35,19 @@ curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux
 curl -fsSL https://github.com/asanmateu/tldr/releases/latest/download/tldr-linux-arm64.tar.gz | tar xz && mv tldr-linux-arm64 /usr/local/bin/tldr
 ```
 
+## Build from source
+
+Requires [Bun](https://bun.sh) (v1.0+).
+
+```bash
+git clone https://github.com/asanmateu/tldr.git
+cd tldr
+bun install
+bun link
+```
+
+This registers `tldr` as a global command via Bun's linker. To update later, `git pull && bun install`.
+
 ## Verify installation
 
 ```bash

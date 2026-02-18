@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Homebrew tap repo (`asanmateu/homebrew-tldr`) made public — `brew install` no longer prompts for GitHub credentials
+- Added "Build from source" section to installation docs (`git clone` → `bun install` → `bun link`)
+
 ## [1.1.0] - 2026-02-18
 
 ### Added
