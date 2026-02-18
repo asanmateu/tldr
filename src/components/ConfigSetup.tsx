@@ -682,13 +682,14 @@ export function ConfigSetup({
 
             return (
               <Box key={item.key} flexDirection="column">
-                {showHeader && (
-                  <Text bold color={theme.brand} {...(i > 0 ? {} : {})}>
+                {showHeader && item.section && (
+                  <Text bold color={theme.brand}>
                     {i > 0 ? "\n" : ""}
                     {item.section}
                   </Text>
                 )}
                 <Text {...(i === editMenuNav.index ? { color: theme.accent } : {})}>
+                  {!item.section && i > 0 ? "\n" : ""}
                   {i === editMenuNav.index ? ">" : " "} {item.label}
                   {item.key !== "save" && <Text dimColor> ({current})</Text>}
                 </Text>
