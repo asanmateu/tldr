@@ -37,6 +37,7 @@ describe("extractFromUrl", () => {
       body: ARTICLE_HTML,
       contentType: "text/html",
       url: "https://example.com/article",
+      status: 200,
     });
 
     const result = await extractFromUrl("https://example.com/article", { fetchFn });
@@ -52,6 +53,7 @@ describe("extractFromUrl", () => {
       body: ARTICLE_HTML,
       contentType: "text/html",
       url: "https://example.com/article",
+      status: 200,
     });
 
     const result = await extractFromUrl("https://example.com/article", { fetchFn });
@@ -71,6 +73,7 @@ describe("extractFromUrl", () => {
       body: tinyArticleInLargeHtml,
       contentType: "text/html",
       url: "https://example.com/paywalled",
+      status: 200,
     });
 
     const result = await extractFromUrl("https://example.com/paywalled", { fetchFn });
@@ -86,6 +89,7 @@ describe("extractFromUrl", () => {
       body: "<html><body></body></html>",
       contentType: "text/html",
       url: "https://example.com/empty",
+      status: 200,
     });
 
     const result = await extractFromUrl("https://example.com/empty", { fetchFn });

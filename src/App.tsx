@@ -136,6 +136,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
 
   const processInput = useCallback(async (rawInput: string, cfg: Config) => {
     const activeConfig = cfg;
+    abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     const { signal } = controller;

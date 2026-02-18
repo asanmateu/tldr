@@ -4,6 +4,7 @@ export interface FetchResult {
   body: string;
   contentType: string;
   url: string;
+  status: number;
 }
 
 export class FetchError extends Error {
@@ -117,6 +118,7 @@ export async function safeFetch(
       body,
       contentType,
       url: currentUrl,
+      status: response.status,
     };
   }
 

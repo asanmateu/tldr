@@ -28,6 +28,7 @@ describe("safeFetch", () => {
     expect(result.body).toBe("<html><body>OK</body></html>");
     expect(result.contentType).toBe("text/html");
     expect(result.url).toBe("https://example.com");
+    expect(result.status).toBe(200);
   });
 
   describe("SSRF protection", () => {
@@ -104,6 +105,25 @@ describe("safeFetch", () => {
         }),
       ).rejects.toMatchObject({ code: "REDIRECT_LIMIT" });
     });
+  });
+
+  it("passes through non-2xx status without throwing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("Not Found", {
+          status: 404,
+          headers: { "content-type": "text/plain" },
+        }),
+      ),
+    );
+
+    const result = await safeFetch("https://example.com/missing", {
+      resolveHostname: mockResolve,
+    });
+
+    expect(result.status).toBe(404);
+    expect(result.body).toBe("Not Found");
   });
 
   describe("timeout", () => {

@@ -22,7 +22,17 @@ export async function extractFromGitHub(
     [string, string, string, string, string, string];
   const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${filePath}`;
   const fetchFn = options.fetchFn ?? defaultSafeFetch;
-  const result = await fetchFn(rawUrl);
+
+  let result: FetchResult;
+  try {
+    result = await fetchFn(rawUrl);
+  } catch {
+    return extractFromUrl(url);
+  }
+
+  if (result.status < 200 || result.status >= 300 || result.contentType.includes("text/html")) {
+    return extractFromUrl(url);
+  }
 
   const filename = filePath.split("/").pop() ?? filePath;
   const wordCount = result.body.split(/\s+/).filter(Boolean).length;

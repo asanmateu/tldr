@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- GitHub blob extractor falls back to web extractor on non-2xx or HTML responses (e.g. private repos returning 404 or login redirects)
+- Fixed concurrent processing when input is submitted rapidly in interactive mode (previous extraction is now aborted)
 - Homebrew tap repo (`asanmateu/homebrew-tldr`) made public — `brew install` no longer prompts for GitHub credentials
 - Added "Build from source" section to installation docs (`git clone` → `bun install` → `bun link`)
 
