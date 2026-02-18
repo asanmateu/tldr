@@ -19,6 +19,22 @@ tldr config set tts-provider edge-tts   # back to default
 
 You can also change the TTS provider in the profile editor (`tldr profile edit` / `/config`).
 
+### TTS Model
+
+When using OpenAI TTS, you can choose which model to use:
+
+```bash
+tldr config set tts-model tts-1-hd
+```
+
+| Model | Cost | Notes |
+|-------|------|-------|
+| tts-1 (default) | ~$0.01/summary | Faster, lower cost |
+| tts-1-hd | ~$0.02/summary | Higher audio quality |
+| gpt-4o-mini-tts | ~$0.01/summary | Newest, supports instructions |
+
+See [Providers > TTS Model](providers.md#tts-model) for more details.
+
 ## How It Works
 
 Press `a` in the result view to generate and play audio. When a summary first appears, an accent-colored hint reminds you about this shortcut (auto-dismisses after 5 seconds).

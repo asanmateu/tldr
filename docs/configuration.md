@@ -43,6 +43,8 @@ tldr --style quick "https://example.com/article"
 
 | Key | Values | Example |
 |-----|--------|---------|
+| `tts-provider` | `edge-tts`, `openai` | `tldr config set tts-provider openai` |
+| `tts-model` | Any OpenAI TTS model ID | `tldr config set tts-model tts-1-hd` |
 | `voice` | TTS voice name | `tldr config set voice en-US-GuyNeural` |
 | `tts-speed` | Positive number | `tldr config set tts-speed 1.25` |
 | `pitch` | `low`, `default`, `high` | `tldr config set pitch high` |
@@ -62,7 +64,9 @@ Three themes: **coral** (warm reds, default), **ocean** (cool blues), **forest**
 
 Three appearance modes: **auto** (detects system setting, default), **dark**, **light**.
 
-## General
+## Global Settings
+
+These are top-level settings, not profile-specific. They are not available in the interactive profile editor.
 
 | Key | Values | Example |
 |-----|--------|---------|
@@ -175,6 +179,8 @@ Settings are resolved in this order (first wins):
 | TTS speed | `1.0x` |
 | Pitch | `default` |
 | Volume | `normal` |
+| TTS provider | `edge-tts` |
+| TTS model | `tts-1` |
 | Save audio | `false` |
 | Theme | `coral` |
 | Appearance | `auto` |

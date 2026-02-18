@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - "Save & exit" in profile editor visually separated from the Appearance section
 
+### Changed
+
+- Docs: add missing `tts-provider` and `tts-model` keys to configuration reference
+- Docs: rename "General" → "Global Settings" section with note about interactive editor
+- Docs: add TTS Model subsection to audio guide with model comparison table
+
 ## [1.3.0] - 2026-02-18
 
 ### Added
