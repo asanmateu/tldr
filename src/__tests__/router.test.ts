@@ -90,6 +90,41 @@ describe("classify", () => {
         value: "https://arxiv.org/abs/2401.12345",
       });
     });
+
+    it("classifies GitHub blob URLs", () => {
+      expect(classify("https://github.com/owner/repo/blob/main/README.md")).toEqual({
+        type: "url:github",
+        value: "https://github.com/owner/repo/blob/main/README.md",
+      });
+    });
+
+    it("classifies GitHub repo URLs", () => {
+      expect(classify("https://github.com/owner/repo")).toEqual({
+        type: "url:github",
+        value: "https://github.com/owner/repo",
+      });
+    });
+
+    it("classifies GitHub issue URLs", () => {
+      expect(classify("https://github.com/owner/repo/issues/42")).toEqual({
+        type: "url:github",
+        value: "https://github.com/owner/repo/issues/42",
+      });
+    });
+
+    it("classifies GitHub PR URLs", () => {
+      expect(classify("https://github.com/owner/repo/pull/99")).toEqual({
+        type: "url:github",
+        value: "https://github.com/owner/repo/pull/99",
+      });
+    });
+
+    it("classifies www.github.com URLs", () => {
+      expect(classify("https://www.github.com/owner/repo")).toEqual({
+        type: "url:github",
+        value: "https://www.github.com/owner/repo",
+      });
+    });
   });
 
   describe("image URLs", () => {

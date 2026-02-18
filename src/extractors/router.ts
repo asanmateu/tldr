@@ -8,6 +8,7 @@ const PLATFORM_PATTERNS: Array<{ pattern: RegExp; type: InputType }> = [
   { pattern: /^https?:\/\/([^/]*\.)?(youtube\.com|youtu\.be)\//i, type: "url:youtube" },
   { pattern: /^https?:\/\/([^/]*\.)?notion\.so\//i, type: "url:notion" },
   { pattern: /^https?:\/\/([^/]*\.)?arxiv\.org\//i, type: "url:arxiv" },
+  { pattern: /^https?:\/\/(www\.)?github\.com\//i, type: "url:github" },
 ];
 
 const PDF_URL_PATTERN = /\.pdf(\?.*)?$/i;

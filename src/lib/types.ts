@@ -6,6 +6,7 @@ export type InputType =
   | "url:youtube"
   | "url:notion"
   | "url:arxiv"
+  | "url:github"
   | "file"
   | "file:pdf"
   | "file:image"

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GitHub URL support: blob URLs (`github.com/.../blob/...`) now fetch raw file content directly instead of scraping GitHub's HTML page
+
 ### Fixed
 
 - Homebrew tap repo (`asanmateu/homebrew-tldr`) made public — `brew install` no longer prompts for GitHub credentials

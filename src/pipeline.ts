@@ -61,6 +61,10 @@ export async function extract(input: string, signal?: AbortSignal): Promise<Extr
       const { extractFromNotion } = await import("./extractors/notion.js");
       return extractFromNotion(classified.value);
     }
+    case "url:github": {
+      const { extractFromGitHub } = await import("./extractors/github.js");
+      return extractFromGitHub(classified.value);
+    }
     case "text": {
       const wordCount = classified.value.split(/\s+/).filter(Boolean).length;
       return {
