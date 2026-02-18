@@ -2,6 +2,7 @@ import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 import { useTheme } from "../lib/ThemeContext.js";
 import type { ExtractionResult } from "../lib/types.js";
+import { SummaryContent } from "./SummaryContent.js";
 
 interface SummaryViewProps {
   extraction: ExtractionResult;
@@ -17,13 +18,7 @@ interface SummaryViewProps {
   saveAudio: boolean;
   isSavingAudio: boolean;
   showAudioHint?: boolean | undefined;
-}
-
-function estimateTimeSaved(wordCount: number): string {
-  const readingWpm = 200;
-  const minutesSaved = Math.round(wordCount / readingWpm);
-  if (minutesSaved < 1) return "<1 min saved";
-  return `~${minutesSaved} min saved`;
+  summaryPinned?: boolean | undefined;
 }
 
 export function SummaryView({
@@ -40,73 +35,64 @@ export function SummaryView({
   saveAudio,
   isSavingAudio,
   showAudioHint,
+  summaryPinned,
 }: SummaryViewProps) {
   const theme = useTheme();
-  const summaryWords = summary.split(/\s+/).filter(Boolean).length;
-  const domain = extraction.source.replace(/^https?:\/\//, "").split("/")[0] ?? extraction.source;
-  const isImage = !!extraction.image;
 
   return (
-    <Box flexDirection="column" paddingX={1}>
-      <Box>
-        <Text dimColor>
-          {isImage
-            ? `${domain} · image (${extraction.image?.mediaType.split("/")[1]}) → ${summaryWords} words`
-            : `${domain} · ${extraction.wordCount.toLocaleString()} → ${summaryWords} words · ${estimateTimeSaved(extraction.wordCount)}`}
-        </Text>
-      </Box>
-      {sessionDir && (
-        <Box>
-          <Text color={theme.success}>Saved to {sessionDir}</Text>
-        </Box>
+    <Box flexDirection="column">
+      {!summaryPinned && (
+        <SummaryContent
+          extraction={extraction}
+          summary={summary}
+          isStreaming={isStreaming}
+          sessionDir={sessionDir}
+        />
       )}
-      <Box marginTop={1}>
-        <Text>{summary}</Text>
-        {isStreaming && <Text color={theme.accent}>▊</Text>}
-      </Box>
-      <Box marginTop={1}>
-        <Text dimColor>─────────────────────────────────</Text>
-      </Box>
-      {audioError && (
-        <Box>
-          <Text color={theme.error}>Audio failed: {audioError}</Text>
-        </Box>
-      )}
-      {discardPending && (
-        <Box>
-          <Text color={theme.warning}>[q] press again to discard</Text>
-        </Box>
-      )}
-      {showAudioHint && !isGeneratingAudio && !isPlaying && !isSavingAudio && (
-        <Box>
-          <Text color={theme.accent}>Press [a] to listen to this summary</Text>
-        </Box>
-      )}
-      <Box>
-        {isSavingAudio ? (
-          <Text>
-            <Text color={theme.accent}>
-              <Spinner type="dots" />
-            </Text>
-            <Text color={theme.warning}> Saving with audio...</Text>
-          </Text>
-        ) : isGeneratingAudio ? (
-          <Text>
-            <Text color={theme.accent}>
-              <Spinner type="dots" />
-            </Text>
-            <Text color={theme.warning}> Generating audio...</Text>
-          </Text>
-        ) : isPlaying ? (
-          <Text color={theme.success}>Playing audio... [s] stop</Text>
-        ) : (
-          <Text dimColor>
-            {saveAudio ? "[Enter] save + audio · [w] save only" : "[Enter] save · [w] save + audio"}{" "}
-            · [a] audio
-            {voiceLabel ? ` (${voiceLabel}${ttsSpeed != null ? `, ${ttsSpeed}x` : ""})` : ""} · [c]
-            copy · [t] talk · [r] re-summarize · [q] discard
-          </Text>
+      <Box flexDirection="column" paddingX={1}>
+        {audioError && (
+          <Box>
+            <Text color={theme.error}>Audio failed: {audioError}</Text>
+          </Box>
         )}
+        {discardPending && (
+          <Box>
+            <Text color={theme.warning}>[q] press again to discard</Text>
+          </Box>
+        )}
+        {showAudioHint && !isGeneratingAudio && !isPlaying && !isSavingAudio && (
+          <Box>
+            <Text color={theme.accent}>Press [a] to listen to this summary</Text>
+          </Box>
+        )}
+        <Box>
+          {isSavingAudio ? (
+            <Text>
+              <Text color={theme.accent}>
+                <Spinner type="dots" />
+              </Text>
+              <Text color={theme.warning}> Saving with audio...</Text>
+            </Text>
+          ) : isGeneratingAudio ? (
+            <Text>
+              <Text color={theme.accent}>
+                <Spinner type="dots" />
+              </Text>
+              <Text color={theme.warning}> Generating audio...</Text>
+            </Text>
+          ) : isPlaying ? (
+            <Text color={theme.success}>Playing audio... [s] stop</Text>
+          ) : (
+            <Text dimColor>
+              {saveAudio
+                ? "[Enter] save + audio · [w] save only"
+                : "[Enter] save · [w] save + audio"}{" "}
+              · [a] audio
+              {voiceLabel ? ` (${voiceLabel}${ttsSpeed != null ? `, ${ttsSpeed}x` : ""})` : ""} ·
+              [c] copy · [t] talk · [r] re-summarize · [q] discard
+            </Text>
+          )}
+        </Box>
       </Box>
     </Box>
   );

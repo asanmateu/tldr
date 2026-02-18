@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Audio generation spinner no longer causes screen strobe on long summaries (summary pinned to Ink `<Static>` during spinner animation)
+
 ## [1.3.1] - 2026-02-18
 
 ### Fixed
