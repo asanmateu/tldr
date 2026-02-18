@@ -59,7 +59,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const { exit } = useApp();
   const { stdout } = useStdout();
   const clearScreen = useCallback(() => {
-    stdout.write("\x1B[2J\x1B[H");
+    stdout.write("\x1B[2J\x1B[3J\x1B[H");
   }, [stdout]);
 
   const [state, setState] = useState<AppState>(showConfig ? "config" : "idle");
@@ -531,6 +531,10 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           // Already saved — single tap exits, clean up all state
           if (audioProcess) stopAudio(audioProcess);
           clearScreen();
+          if (initialInput) {
+            exit();
+            return;
+          }
           setSummaryPinned(false);
           setPinnedSummaries([]);
           setState("idle");
@@ -552,6 +556,10 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             setDiscardPending(false);
             if (audioProcess) stopAudio(audioProcess);
             clearScreen();
+            if (initialInput) {
+              exit();
+              return;
+            }
             setSummaryPinned(false);
             setPinnedSummaries([]);
             setPendingResult(undefined);

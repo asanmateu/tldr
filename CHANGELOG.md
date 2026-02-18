@@ -14,9 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Exiting result view (`q`) now clears the scrollback buffer, preventing stale summary content from lingering when scrolling up
 - Audio generation spinner no longer causes screen strobe on long summaries (summary pinned to Ink `<Static>` during spinner animation)
 - Audio failure during save-with-audio now shown in save toast instead of silently swallowed
 - Help view (`/help`) now lists `w` shortcut
+- App exits directly when pressing `q` in result view if launched with a positional argument (`tldr <url>`), instead of returning to the interactive prompt
 
 ### Changed
 

@@ -486,7 +486,7 @@ describe("App", () => {
       instance.unmount();
     });
 
-    it("double-tap 'q' discards and returns to idle", async () => {
+    it("double-tap 'q' exits app when initialInput provided", async () => {
       const instance = render(<App initialInput="https://example.com/article" />);
 
       await vi.waitFor(
@@ -509,12 +509,12 @@ describe("App", () => {
       // Let useEffect flush so useInput handler ref captures discardPending=true
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // Second q — discard
+      // Second q — app should exit (not return to idle prompt)
       instance.stdin.write("q");
 
       await vi.waitFor(
         () => {
-          expect(instance.lastFrame()).toContain("tl;dr");
+          expect(instance.lastFrame()).not.toContain("tl;dr");
         },
         { timeout: 2000 },
       );
@@ -546,7 +546,7 @@ describe("App", () => {
       instance.unmount();
     });
 
-    it("single-tap q exits after save", async () => {
+    it("single-tap q exits app after save when initialInput provided", async () => {
       const instance = render(<App initialInput="https://example.com/article" />);
 
       await vi.waitFor(
@@ -569,7 +569,8 @@ describe("App", () => {
 
       await vi.waitFor(
         () => {
-          expect(instance.lastFrame()).toContain("tl;dr");
+          // App should exit (not return to idle prompt)
+          expect(instance.lastFrame()).not.toContain("tl;dr");
         },
         { timeout: 2000 },
       );
