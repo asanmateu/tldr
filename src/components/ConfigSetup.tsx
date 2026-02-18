@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useListNavigation } from "../hooks/useListNavigation.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { resolveConfig } from "../lib/config.js";
+import { getVoicesForProvider } from "../lib/tts/voices.js";
 import type {
   AppearanceMode,
   CognitiveTrait,
@@ -16,6 +17,7 @@ import type {
   ThemeName,
   TldrSettings,
   Tone,
+  TtsProvider,
   VolumePreset,
 } from "../lib/types.js";
 import { SelectionList } from "./SelectionList.js";
@@ -37,6 +39,7 @@ type EditMenuItem =
   | "style"
   | "model"
   | "provider"
+  | "ttsProvider"
   | "voice"
   | "ttsSpeed"
   | "pitch"
@@ -67,12 +70,9 @@ const ALL_STYLES: { value: SummaryStyle; label: string; hint: string }[] = [
   { value: "study-notes", label: "Study Notes", hint: "concepts + review questions" },
 ];
 
-const VOICES = [
-  { value: "en-US-JennyNeural", label: "Jenny", hint: "friendly, warm" },
-  { value: "en-US-GuyNeural", label: "Guy", hint: "professional, clear" },
-  { value: "en-US-AriaNeural", label: "Aria", hint: "positive, conversational" },
-  { value: "en-GB-SoniaNeural", label: "Sonia", hint: "clear, British" },
-  { value: "en-AU-NatashaNeural", label: "Natasha", hint: "bright, Australian" },
+const ALL_TTS_PROVIDERS: { value: TtsProvider; label: string; hint: string }[] = [
+  { value: "edge-tts", label: "Edge TTS", hint: "free, Microsoft Neural voices" },
+  { value: "openai", label: "OpenAI TTS", hint: "high quality, requires OPENAI_API_KEY" },
 ];
 
 const ALL_PITCHES: { value: PitchPreset; label: string; hint: string }[] = [
@@ -116,6 +116,7 @@ const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string }[] = [
   { key: "style", label: "Summary style" },
   { key: "model", label: "Model" },
   { key: "provider", label: "Provider" },
+  { key: "ttsProvider", label: "TTS Provider" },
   { key: "voice", label: "TTS Voice" },
   { key: "ttsSpeed", label: "TTS Speed" },
   { key: "pitch", label: "Pitch" },
@@ -165,6 +166,7 @@ export function ConfigSetup({
   const [pitch, setPitch] = useState<PitchPreset>(defaults.pitch);
   const [volume, setVolume] = useState<VolumePreset>(defaults.volume);
   const [provider, setProvider] = useState<SummarizationProvider>(defaults.provider);
+  const [ttsProvider, setTtsProvider] = useState<TtsProvider>(defaults.ttsProvider);
   const [saveAudio, setSaveAudio] = useState(defaults.saveAudio);
 
   // Model state — free-text input, pre-filled with current model
@@ -192,10 +194,17 @@ export function ConfigSetup({
     ),
   });
   const traitNav = useListNavigation({ itemCount: ALL_TRAITS.length });
+
+  // Compute voices dynamically based on selected TTS provider
+  const voices = getVoicesForProvider(ttsProvider).map((v) => ({
+    value: v.id,
+    label: v.label,
+    hint: v.hint,
+  }));
   const voiceNav = useListNavigation({
-    itemCount: VOICES.length,
+    itemCount: voices.length,
     initialIndex: Math.max(
-      VOICES.findIndex((v) => v.value === defaults.voice),
+      voices.findIndex((v) => v.value === defaults.voice),
       0,
     ),
   });
@@ -217,6 +226,13 @@ export function ConfigSetup({
     itemCount: ALL_PROVIDERS.length,
     initialIndex: Math.max(
       ALL_PROVIDERS.findIndex((p) => p.value === defaults.provider),
+      0,
+    ),
+  });
+  const ttsProviderNav = useListNavigation({
+    itemCount: ALL_TTS_PROVIDERS.length,
+    initialIndex: Math.max(
+      ALL_TTS_PROVIDERS.findIndex((p) => p.value === defaults.ttsProvider),
       0,
     ),
   });
@@ -246,8 +262,10 @@ export function ConfigSetup({
 
   const buildConfig = useCallback((): Config => {
     const resolvedApiKey = hasEnvApiKey ? (process.env.ANTHROPIC_API_KEY ?? "") : apiKey;
-    const voice = VOICES[voiceNav.index]?.value ?? "en-US-JennyNeural";
+    const voice =
+      voices[voiceNav.index]?.value ?? (ttsProvider === "openai" ? "alloy" : "en-US-JennyNeural");
     const ttsSpeed = Number.parseFloat(ttsSpeedInput) || 1.0;
+    const defaultVoice = ttsProvider === "openai" ? "alloy" : "en-US-JennyNeural";
 
     const profile: Profile = {
       cognitiveTraits: [...selectedTraits],
@@ -255,11 +273,12 @@ export function ConfigSetup({
       summaryStyle: style,
       customInstructions: customInstructions || undefined,
       model: selectedModel || undefined,
-      voice: voice !== "en-US-JennyNeural" ? voice : undefined,
+      voice: voice !== defaultVoice ? voice : undefined,
       ttsSpeed: ttsSpeed !== 1.0 ? ttsSpeed : undefined,
       pitch: pitch !== "default" ? pitch : undefined,
       volume: volume !== "normal" ? volume : undefined,
       provider: provider !== "claude-code" ? provider : undefined,
+      ttsProvider: ttsProvider !== "edge-tts" ? ttsProvider : undefined,
       saveAudio: saveAudio || undefined,
     };
 
@@ -273,11 +292,13 @@ export function ConfigSetup({
   }, [
     hasEnvApiKey,
     apiKey,
+    voices,
     voiceNav.index,
     ttsSpeedInput,
     pitch,
     volume,
     provider,
+    ttsProvider,
     selectedModel,
     selectedTraits,
     tone,
@@ -491,6 +512,21 @@ export function ConfigSetup({
         return;
       }
 
+      if (editingField === "ttsProvider") {
+        if (key.upArrow) ttsProviderNav.handleUp();
+        if (key.downArrow) ttsProviderNav.handleDown();
+        if (key.return) {
+          const selected = ALL_TTS_PROVIDERS[ttsProviderNav.index];
+          if (selected) {
+            setTtsProvider(selected.value);
+            // Reset voice index when switching TTS providers
+            voiceNav.setIndex(0);
+          }
+          setEditingField(null);
+        }
+        return;
+      }
+
       if (editingField === "saveAudio") {
         if (key.return) {
           setSaveAudio((prev) => !prev);
@@ -604,7 +640,8 @@ export function ConfigSetup({
             if (item.key === "style") current = style;
             if (item.key === "model") current = selectedModel;
             if (item.key === "provider") current = provider;
-            if (item.key === "voice") current = VOICES[voiceNav.index]?.label ?? "";
+            if (item.key === "ttsProvider") current = ttsProvider;
+            if (item.key === "voice") current = voices[voiceNav.index]?.label ?? "";
             if (item.key === "ttsSpeed") current = `${ttsSpeedInput}x`;
             if (item.key === "pitch") current = pitch;
             if (item.key === "volume") current = volume;
@@ -661,10 +698,18 @@ export function ConfigSetup({
           />
         )}
 
+        {editingField === "ttsProvider" && (
+          <SelectionList
+            title="TTS Provider (Enter to confirm):"
+            items={ALL_TTS_PROVIDERS}
+            selectedIndex={ttsProviderNav.index}
+          />
+        )}
+
         {editingField === "voice" && (
           <SelectionList
             title="TTS Voice (Enter to confirm):"
-            items={VOICES}
+            items={voices}
             selectedIndex={voiceNav.index}
           />
         )}

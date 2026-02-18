@@ -22,7 +22,7 @@ I had a pile of to-reads growing at work and it was overwhelming — not because
 
 ## Audio
 
-Press `a` after any summary to listen to it. tldr rewrites the summary into a spoken script tailored to your cognitive profile, then synthesizes it with natural-sounding voices. See the [Audio guide](docs/audio.md) for voice, speed, and pitch options.
+Press `a` after any summary to listen to it. tldr rewrites the summary into a spoken script tailored to your cognitive profile, then synthesizes it with natural-sounding voices. Free by default with Edge TTS, or upgrade to OpenAI TTS for higher quality (`tldr config set tts-provider openai`). See the [Audio guide](docs/audio.md) for voice, speed, and provider options.
 
 ---
 

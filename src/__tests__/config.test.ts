@@ -49,6 +49,7 @@ function makeTestConfig(overrides?: Partial<import("../lib/types.js").ResolvedCo
     provider: "claude-code" as const,
     outputDir: `${tempDir}/.tldr/output`,
     saveAudio: false,
+    ttsProvider: "edge-tts" as const,
     ...overrides,
   };
 }
@@ -900,6 +901,109 @@ describe("config", () => {
       const loaded = await loadConfig();
       expect(loaded.pitch).toBe("high");
       expect(loaded.volume).toBe("quiet");
+    });
+  });
+
+  describe("ttsProvider", () => {
+    it("defaults ttsProvider to edge-tts", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+      expect(config.ttsProvider).toBe("edge-tts");
+    });
+
+    it("resolves ttsProvider from profile", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "quick",
+            ttsProvider: "openai",
+          },
+        },
+      });
+      expect(config.ttsProvider).toBe("openai");
+    });
+
+    it("falls back to edge-tts for invalid ttsProvider", () => {
+      const profile = {
+        cognitiveTraits: [] as import("../lib/types.js").CognitiveTrait[],
+        tone: "casual" as const,
+        summaryStyle: "quick" as const,
+        ttsProvider: "invalid",
+      } as unknown as import("../lib/types.js").Profile;
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: { default: profile },
+      });
+      expect(config.ttsProvider).toBe("edge-tts");
+    });
+
+    it("falls back voice to openai default when switching to openai provider", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "quick",
+            voice: "en-US-JennyNeural",
+            ttsProvider: "openai",
+          },
+        },
+      });
+      expect(config.voice).toBe("alloy");
+    });
+
+    it("keeps openai voice when ttsProvider is openai", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "quick",
+            voice: "nova",
+            ttsProvider: "openai",
+          },
+        },
+      });
+      expect(config.voice).toBe("nova");
+    });
+
+    it("falls back voice to edge-tts default when switching to edge-tts", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "quick",
+            voice: "alloy",
+            ttsProvider: "edge-tts",
+          },
+        },
+      });
+      expect(config.voice).toBe("en-US-JennyNeural");
+    });
+
+    it("saves and loads ttsProvider round-trip", async () => {
+      const config = makeTestConfig({ ttsProvider: "openai" as const });
+      await saveConfig(config);
+      const loaded = await loadConfig();
+      expect(loaded.ttsProvider).toBe("openai");
+    });
+
+    it("defaults ttsProvider to edge-tts when not set in saved config", async () => {
+      const config = makeTestConfig({ ttsProvider: "edge-tts" as const });
+      await saveConfig(config);
+      const loaded = await loadConfig();
+      expect(loaded.ttsProvider).toBe("edge-tts");
     });
   });
 

@@ -50,6 +50,22 @@ export type SummaryStyle = "quick" | "standard" | "detailed" | "study-notes";
 export type ModelTier = "haiku" | "sonnet" | "opus";
 export type PitchPreset = "low" | "default" | "high";
 export type VolumePreset = "quiet" | "normal" | "loud";
+export type TtsProvider = "edge-tts" | "openai";
+
+export interface TtsGenerateOptions {
+  voice: string;
+  speed?: number | undefined;
+  pitch?: PitchPreset | undefined;
+  volume?: VolumePreset | undefined;
+  outputPath?: string | undefined;
+}
+
+export interface TtsProviderInterface {
+  generateAudio(text: string, options: TtsGenerateOptions): Promise<string>;
+  voices: ReadonlyArray<{ id: string; label: string; hint: string }>;
+  getVoiceDisplayName(voiceId: string): string;
+}
+
 export type SummarizationProvider =
   | "anthropic"
   | "claude-code"
@@ -71,6 +87,7 @@ export interface Profile {
   pitch?: PitchPreset | undefined;
   volume?: VolumePreset | undefined;
   provider?: SummarizationProvider | undefined;
+  ttsProvider?: TtsProvider | undefined;
   saveAudio?: boolean | undefined;
 }
 
@@ -100,6 +117,7 @@ export interface ResolvedConfig {
   pitch: PitchPreset;
   volume: VolumePreset;
   provider: SummarizationProvider;
+  ttsProvider: TtsProvider;
   outputDir: string;
   saveAudio: boolean;
 }

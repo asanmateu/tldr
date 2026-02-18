@@ -19,6 +19,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): Config {
     provider: "claude-code",
     outputDir: "/tmp/tldr-output",
     saveAudio: false,
+    ttsProvider: "edge-tts" as const,
     ...overrides,
   };
 }

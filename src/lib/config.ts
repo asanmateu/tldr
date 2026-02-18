@@ -15,6 +15,7 @@ import type {
   ThemeName,
   TldrSettings,
   Tone,
+  TtsProvider,
   VolumePreset,
 } from "./types.js";
 
@@ -148,6 +149,7 @@ export const VALID_VOICES = new Set([
   "en-GB-SoniaNeural",
   "en-AU-NatashaNeural",
 ]);
+export const VALID_TTS_PROVIDERS = new Set(["edge-tts", "openai"]);
 
 function parseProfile(raw: unknown): Profile {
   if (typeof raw !== "object" || raw === null) {
@@ -197,6 +199,10 @@ function parseProfile(raw: unknown): Profile {
     provider:
       typeof obj.provider === "string" && VALID_PROVIDERS.has(obj.provider)
         ? (obj.provider as SummarizationProvider)
+        : undefined,
+    ttsProvider:
+      typeof obj.ttsProvider === "string" && VALID_TTS_PROVIDERS.has(obj.ttsProvider)
+        ? (obj.ttsProvider as TtsProvider)
         : undefined,
     saveAudio: typeof obj.saveAudio === "boolean" ? obj.saveAudio : undefined,
   };
@@ -309,6 +315,28 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
 
   const outputDir = settings.outputDir ?? join(homedir(), "Documents", "tldr");
 
+  // TTS provider resolution
+  const ttsProvider: TtsProvider =
+    profile.ttsProvider && VALID_TTS_PROVIDERS.has(profile.ttsProvider)
+      ? profile.ttsProvider
+      : "edge-tts";
+
+  // Voice resolution: fall back to provider default when voice doesn't belong to the provider
+  let voice = profile.voice ?? "en-US-JennyNeural";
+  if (ttsProvider === "openai") {
+    const openaiVoices = new Set(["alloy", "echo", "fable", "onyx", "nova", "shimmer"]);
+    if (!openaiVoices.has(voice)) voice = "alloy";
+  } else {
+    const edgeVoices = new Set([
+      "en-US-JennyNeural",
+      "en-US-GuyNeural",
+      "en-US-AriaNeural",
+      "en-GB-SoniaNeural",
+      "en-AU-NatashaNeural",
+    ]);
+    if (!edgeVoices.has(voice)) voice = "en-US-JennyNeural";
+  }
+
   return {
     apiKey,
     baseUrl,
@@ -319,11 +347,12 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
     summaryStyle,
     model,
     customInstructions: profile.customInstructions,
-    voice: profile.voice ?? "en-US-JennyNeural",
+    voice,
     ttsSpeed: profile.ttsSpeed ?? 1.0,
     pitch: profile.pitch && VALID_PITCHES.has(profile.pitch) ? profile.pitch : "default",
     volume: profile.volume && VALID_VOLUMES.has(profile.volume) ? profile.volume : "normal",
     provider,
+    ttsProvider,
     outputDir,
     saveAudio: profile.saveAudio ?? false,
   };
@@ -362,6 +391,7 @@ export async function saveConfig(config: ResolvedConfig): Promise<void> {
     pitch: config.pitch !== "default" ? config.pitch : undefined,
     volume: config.volume !== "normal" ? config.volume : undefined,
     provider: config.provider !== "claude-code" ? config.provider : undefined,
+    ttsProvider: config.ttsProvider !== "edge-tts" ? config.ttsProvider : undefined,
     saveAudio: config.saveAudio || undefined,
   };
 

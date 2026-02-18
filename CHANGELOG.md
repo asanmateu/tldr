@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - GitHub URL support: blob URLs (`github.com/.../blob/...`) now fetch raw file content directly instead of scraping GitHub's HTML page
+- TTS provider abstraction: choose between Edge TTS (free, default) and OpenAI TTS (high quality, requires `OPENAI_API_KEY`)
+- `tts-provider` config key: `tldr config set tts-provider openai` / `edge-tts`
+- TTS Provider selector in profile editor (`tldr profile edit` / `/config`)
+- OpenAI TTS voices: Alloy, Echo, Fable, Onyx, Nova, Shimmer
+- Voice list in profile editor now updates dynamically when switching TTS providers
+- Audio hint: accent-colored "Press [a] to listen" appears for 5 seconds when a summary first appears
+- Spinner animation during audio generation and save-with-audio (matches processing view style)
+
+### Changed
+
+- Footer reordered: `[a] audio` moved before `[c] copy` for better discoverability
+- Voice validation relaxed in `config set voice` — any string is now accepted (voices are provider-dependent)
 
 ### Fixed
 

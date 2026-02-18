@@ -47,6 +47,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): Config {
     provider: "anthropic",
     outputDir: "/tmp/tldr-output",
     saveAudio: false,
+    ttsProvider: "edge-tts" as const,
     ...overrides,
   };
 }

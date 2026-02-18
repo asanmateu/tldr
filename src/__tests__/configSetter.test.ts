@@ -52,6 +52,7 @@ describe("configSetter", () => {
       expect(keys).toContain("theme");
       expect(keys).toContain("appearance");
       expect(keys).toContain("tts-speed");
+      expect(keys).toContain("tts-provider");
       expect(keys).toContain("save-audio");
       expect(keys).toContain("output-dir");
     });
@@ -241,28 +242,16 @@ describe("configSetter", () => {
       expect(settings.profiles.default?.voice).toBe("en-US-GuyNeural");
     });
 
-    it("sets default voice (stores undefined)", async () => {
+    it("sets any voice string (provider-dependent)", async () => {
       await seedSettings();
-      await applyConfigSet("voice", "en-US-JennyNeural", [
+      await applyConfigSet("voice", "en-US-RobotNeural", [
         "config",
         "set",
         "voice",
-        "en-US-JennyNeural",
+        "en-US-RobotNeural",
       ]);
       const settings = await loadSettings();
-      expect(settings.profiles.default?.voice).toBeUndefined();
-    });
-
-    it("rejects invalid voice", async () => {
-      await seedSettings();
-      await expect(
-        applyConfigSet("voice", "en-US-RobotNeural", [
-          "config",
-          "set",
-          "voice",
-          "en-US-RobotNeural",
-        ]),
-      ).rejects.toThrow("Invalid voice");
+      expect(settings.profiles.default?.voice).toBe("en-US-RobotNeural");
     });
 
     it("sets pitch", async () => {
@@ -396,6 +385,40 @@ describe("configSetter", () => {
       await expect(
         applyConfigSet("custom-instructions", "", ["config", "set", "custom-instructions"]),
       ).rejects.toThrow("Usage");
+    });
+  });
+
+  describe("tts-provider", () => {
+    it("sets ttsProvider to openai", async () => {
+      await seedSettings();
+      const msg = await applyConfigSet("tts-provider", "openai", [
+        "config",
+        "set",
+        "tts-provider",
+        "openai",
+      ]);
+      expect(msg).toContain("openai");
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.ttsProvider).toBe("openai");
+    });
+
+    it("sets default tts-provider (stores undefined)", async () => {
+      await seedSettings();
+      await applyConfigSet("tts-provider", "edge-tts", [
+        "config",
+        "set",
+        "tts-provider",
+        "edge-tts",
+      ]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.ttsProvider).toBeUndefined();
+    });
+
+    it("rejects invalid tts-provider", async () => {
+      await seedSettings();
+      await expect(
+        applyConfigSet("tts-provider", "banana", ["config", "set", "tts-provider", "banana"]),
+      ).rejects.toThrow("Invalid tts-provider");
     });
   });
 

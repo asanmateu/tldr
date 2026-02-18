@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import Spinner from "ink-spinner";
 import { useTheme } from "../lib/ThemeContext.js";
 import type { ExtractionResult } from "../lib/types.js";
 
@@ -15,6 +16,7 @@ interface SummaryViewProps {
   ttsSpeed?: number | undefined;
   saveAudio: boolean;
   isSavingAudio: boolean;
+  showAudioHint?: boolean | undefined;
 }
 
 function estimateTimeSaved(wordCount: number): string {
@@ -37,6 +39,7 @@ export function SummaryView({
   ttsSpeed,
   saveAudio,
   isSavingAudio,
+  showAudioHint,
 }: SummaryViewProps) {
   const theme = useTheme();
   const summaryWords = summary.split(/\s+/).filter(Boolean).length;
@@ -74,19 +77,34 @@ export function SummaryView({
           <Text color={theme.warning}>[q] press again to discard</Text>
         </Box>
       )}
+      {showAudioHint && !isGeneratingAudio && !isPlaying && !isSavingAudio && (
+        <Box>
+          <Text color={theme.accent}>Press [a] to listen to this summary</Text>
+        </Box>
+      )}
       <Box>
         {isSavingAudio ? (
-          <Text color={theme.warning}>Saving with audio...</Text>
+          <Text>
+            <Text color={theme.accent}>
+              <Spinner type="dots" />
+            </Text>
+            <Text color={theme.warning}> Saving with audio...</Text>
+          </Text>
         ) : isGeneratingAudio ? (
-          <Text color={theme.warning}>Generating audio...</Text>
+          <Text>
+            <Text color={theme.accent}>
+              <Spinner type="dots" />
+            </Text>
+            <Text color={theme.warning}> Generating audio...</Text>
+          </Text>
         ) : isPlaying ? (
           <Text color={theme.success}>Playing audio... [s] stop</Text>
         ) : (
           <Text dimColor>
             {saveAudio ? "[Enter] save + audio · [w] save only" : "[Enter] save · [w] save + audio"}{" "}
-            · [c] copy · [a] audio
-            {voiceLabel ? ` (${voiceLabel}${ttsSpeed != null ? `, ${ttsSpeed}x` : ""})` : ""} · [t]
-            talk · [r] re-summarize · [q] discard
+            · [a] audio
+            {voiceLabel ? ` (${voiceLabel}${ttsSpeed != null ? `, ${ttsSpeed}x` : ""})` : ""} · [c]
+            copy · [t] talk · [r] re-summarize · [q] discard
           </Text>
         )}
       </Box>

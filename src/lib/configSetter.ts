@@ -6,7 +6,7 @@ import {
   VALID_THEME_NAMES,
   VALID_TONES,
   VALID_TRAITS,
-  VALID_VOICES,
+  VALID_TTS_PROVIDERS,
   VALID_VOLUMES,
   loadSettings,
   saveSettings,
@@ -92,8 +92,12 @@ const CONFIG_KEYS: Record<string, ConfigKeyDescriptor> = {
   voice: {
     target: "profile",
     property: "voice",
-    validValues: VALID_VOICES,
-    defaultValue: "en-US-JennyNeural",
+  },
+  "tts-provider": {
+    target: "profile",
+    property: "ttsProvider",
+    validValues: VALID_TTS_PROVIDERS,
+    defaultValue: "edge-tts",
   },
   "tts-speed": {
     target: "profile",

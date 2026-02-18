@@ -253,4 +253,39 @@ describe("tts", () => {
       expect(killFn).not.toHaveBeenCalled();
     });
   });
+
+  describe("ttsProvider facade param", () => {
+    it("defaults to edge-tts when no provider specified", async () => {
+      await generateAudio("Hello", "en-US-JennyNeural");
+      expect(mockEdgeTTSConstructor).toHaveBeenCalledWith("Hello", "en-US-JennyNeural", undefined);
+    });
+
+    it("uses edge-tts when explicitly specified", async () => {
+      await generateAudio(
+        "Hello",
+        "en-US-JennyNeural",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "edge-tts",
+      );
+      expect(mockEdgeTTSConstructor).toHaveBeenCalledWith("Hello", "en-US-JennyNeural", undefined);
+    });
+  });
+
+  describe("getVoiceDisplayName with ttsProvider", () => {
+    it("returns edge-tts name by default", () => {
+      expect(getVoiceDisplayName("en-US-JennyNeural")).toBe("Jenny");
+    });
+
+    it("returns openai name when provider is openai", () => {
+      expect(getVoiceDisplayName("alloy", "openai")).toBe("Alloy");
+      expect(getVoiceDisplayName("nova", "openai")).toBe("Nova");
+    });
+
+    it("returns raw ID for unknown openai voice", () => {
+      expect(getVoiceDisplayName("custom", "openai")).toBe("custom");
+    });
+  });
 });

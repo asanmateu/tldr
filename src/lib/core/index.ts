@@ -14,6 +14,7 @@ export {
 export { addEntry, getRecent, removeEntry } from "../history.js";
 export { getSessionPaths, saveAudioFile, saveSummary } from "../session.js";
 export { generateAudio, getVoiceDisplayName, playAudio, stopAudio } from "../tts.js";
+export { getTtsProvider, getVoicesForProvider, getDefaultVoiceForProvider } from "../tts/index.js";
 export { buildSystemPrompt, buildUserPrompt } from "../prompts.js";
 export { isClaudeCodeAvailable } from "../providers/claude-code.js";
 export { importMarkdown } from "../import.js";
@@ -44,4 +45,7 @@ export type {
   PitchPreset,
   VolumePreset,
   SummarizationProvider,
+  TtsProvider,
+  TtsProviderInterface,
+  TtsGenerateOptions,
 } from "../types.js";

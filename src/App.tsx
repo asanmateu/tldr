@@ -81,9 +81,11 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [cachedSpeechText, setCachedSpeechText] = useState<string | undefined>(undefined);
   const [isSavingAudio, setIsSavingAudio] = useState(false);
   const [profiles, setProfiles] = useState<{ name: string; active: boolean }[]>([]);
+  const [showAudioHint, setShowAudioHint] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const audioHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load config and history on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
@@ -208,6 +210,14 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
       // Defer persistence — store result for saving on Enter
       setPendingResult(tldrResult);
       setState("result");
+
+      // Show audio hint for 5 seconds
+      setShowAudioHint(true);
+      if (audioHintTimerRef.current) clearTimeout(audioHintTimerRef.current);
+      audioHintTimerRef.current = setTimeout(() => {
+        setShowAudioHint(false);
+        audioHintTimerRef.current = null;
+      }, 5000);
     } catch (err) {
       setIsStreaming(false);
       // Silently return to idle on abort (ESC pressed)
@@ -339,6 +349,15 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   // Key bindings for result state
   useInput(
     (ch, key) => {
+      // Clear audio hint on any keypress
+      if (showAudioHint) {
+        setShowAudioHint(false);
+        if (audioHintTimerRef.current) {
+          clearTimeout(audioHintTimerRef.current);
+          audioHintTimerRef.current = null;
+        }
+      }
+
       if (state === "result" && extraction) {
         if (ch === "c") {
           writeClipboard(summary);
@@ -359,21 +378,29 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                   config.ttsSpeed,
                   config.pitch,
                   config.volume,
+                  undefined,
+                  config.ttsProvider,
                 );
                 setTempAudioPath(path);
                 setIsGeneratingAudio(false);
                 const proc = playAudio(path);
                 setAudioProcess(proc);
                 proc.on("exit", () => setAudioProcess(undefined));
-              } catch {
-                // edge-tts failed — fall back to system TTS
+              } catch (ttsErr) {
                 setIsGeneratingAudio(false);
-                const proc = speakFallback(speechText);
-                if (proc) {
-                  setAudioProcess(proc);
-                  proc.on("exit", () => setAudioProcess(undefined));
+                // OpenAI TTS: show error directly (no system fallback)
+                if (config.ttsProvider === "openai") {
+                  const msg = ttsErr instanceof Error ? ttsErr.message : "OpenAI TTS failed";
+                  setAudioError(msg);
                 } else {
-                  setAudioError("No TTS available");
+                  // edge-tts failed — fall back to system TTS
+                  const proc = speakFallback(speechText);
+                  if (proc) {
+                    setAudioProcess(proc);
+                    proc.on("exit", () => setAudioProcess(undefined));
+                  } else {
+                    setAudioError("No TTS available");
+                  }
                 }
               }
             } catch (err) {
@@ -432,6 +459,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                         config.ttsSpeed,
                         config.pitch,
                         config.volume,
+                        undefined,
+                        config.ttsProvider,
                       );
                       await saveAudioFile(saved, audioPath);
                     }
@@ -587,10 +616,11 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             audioError={audioError}
             sessionDir={pendingResult ? undefined : currentSession?.sessionDir}
             discardPending={discardPending}
-            voiceLabel={config ? getVoiceDisplayName(config.voice) : undefined}
+            voiceLabel={config ? getVoiceDisplayName(config.voice, config.ttsProvider) : undefined}
             ttsSpeed={config?.ttsSpeed}
             saveAudio={config?.saveAudio ?? false}
             isSavingAudio={isSavingAudio}
+            showAudioHint={!!pendingResult && showAudioHint}
           />
         )}
         {state === "chat" && config && (
