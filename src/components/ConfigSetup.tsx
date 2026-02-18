@@ -110,10 +110,11 @@ const ALL_APPEARANCES: { value: AppearanceMode; label: string; hint: string }[] 
 ];
 
 const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string; section: string }[] = [
+  // Accessibility
+  { key: "traits", label: "Cognitive traits", section: "Accessibility" },
   // Summary
   { key: "tone", label: "Tone", section: "Summary" },
   { key: "style", label: "Summary style", section: "Summary" },
-  { key: "traits", label: "Cognitive traits", section: "Summary" },
   { key: "provider", label: "AI Provider", section: "Summary" },
   { key: "model", label: "Model", section: "Summary" },
   { key: "customInstructions", label: "Custom instructions", section: "Summary" },

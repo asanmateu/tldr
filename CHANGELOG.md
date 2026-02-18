@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-02-19
+
 ### Added
 
 - Chat panel: bordered card in result view with `[t] start chatting` (moved from footer shortcut)
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Cognitive traits moved to their own "Accessibility" section in the profile editor (previously grouped under "Summary")
 - Save flow stays on result view; footer shows "Saved" status; single-tap `q` to exit after save
 - `[t] talk` moved from footer into dedicated Chat panel
 - `[w]` hidden from audio panel after save
