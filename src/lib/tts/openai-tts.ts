@@ -17,7 +17,7 @@ export const openaiTtsProvider: TtsProviderInterface = {
 
   async generateAudio(text: string, options: TtsGenerateOptions): Promise<string> {
     const { default: OpenAI } = await import("openai");
-    const { voice, speed, outputPath } = options;
+    const { voice, speed, outputPath, ttsModel } = options;
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -26,7 +26,7 @@ export const openaiTtsProvider: TtsProviderInterface = {
 
     const client = new OpenAI({ apiKey });
     const response = await client.audio.speech.create({
-      model: "tts-1",
+      model: ttsModel ?? "tts-1",
       voice: voice as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer",
       input: text,
       ...(speed && speed !== 1.0 ? { speed } : {}),

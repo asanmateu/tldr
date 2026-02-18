@@ -188,3 +188,19 @@ tldr --provider ollama "https://example.com/article"
 ## Provider for Audio
 
 The same provider is used to rewrite summaries as audio scripts when you press `a` in the result view.
+
+### TTS Model
+
+By default, OpenAI TTS uses `tts-1`. Change the model:
+
+```bash
+tldr config set tts-model tts-1-hd
+```
+
+Known OpenAI TTS models:
+
+| Model | Cost | Notes |
+|-------|------|-------|
+| tts-1 (default) | ~$0.01/summary | Faster, lower cost |
+| tts-1-hd | ~$0.02/summary | Higher audio quality |
+| gpt-4o-mini-tts | ~$0.01/summary | Newest, supports instructions |

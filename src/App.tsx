@@ -380,6 +380,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                   config.volume,
                   undefined,
                   config.ttsProvider,
+                  config.ttsModel,
                 );
                 setTempAudioPath(path);
                 setIsGeneratingAudio(false);
@@ -461,6 +462,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                         config.volume,
                         undefined,
                         config.ttsProvider,
+                        config.ttsModel,
                       );
                       await saveAudioFile(saved, audioPath);
                     }

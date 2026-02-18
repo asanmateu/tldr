@@ -50,6 +50,7 @@ function makeTestConfig(overrides?: Partial<import("../lib/types.js").ResolvedCo
     outputDir: `${tempDir}/.tldr/output`,
     saveAudio: false,
     ttsProvider: "edge-tts" as const,
+    ttsModel: "tts-1",
     ...overrides,
   };
 }
@@ -1004,6 +1005,47 @@ describe("config", () => {
       await saveConfig(config);
       const loaded = await loadConfig();
       expect(loaded.ttsProvider).toBe("edge-tts");
+    });
+  });
+
+  describe("ttsModel", () => {
+    it("defaults ttsModel to tts-1 when not set", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+      expect(config.ttsModel).toBe("tts-1");
+    });
+
+    it("resolves ttsModel from profile", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "quick",
+            ttsModel: "tts-1-hd",
+          },
+        },
+      });
+      expect(config.ttsModel).toBe("tts-1-hd");
+    });
+
+    it("saves and loads ttsModel round-trip", async () => {
+      const config = makeTestConfig({ ttsModel: "gpt-4o-mini-tts" });
+      await saveConfig(config);
+      const loaded = await loadConfig();
+      expect(loaded.ttsModel).toBe("gpt-4o-mini-tts");
+    });
+
+    it("defaults ttsModel to tts-1 when not set in saved config", async () => {
+      const config = makeTestConfig({ ttsModel: "tts-1" });
+      await saveConfig(config);
+      const loaded = await loadConfig();
+      expect(loaded.ttsModel).toBe("tts-1");
     });
   });
 

@@ -99,6 +99,11 @@ const CONFIG_KEYS: Record<string, ConfigKeyDescriptor> = {
     validValues: VALID_TTS_PROVIDERS,
     defaultValue: "edge-tts",
   },
+  "tts-model": {
+    target: "profile",
+    property: "ttsModel",
+    defaultValue: "tts-1",
+  },
   "tts-speed": {
     target: "profile",
     property: "ttsSpeed",

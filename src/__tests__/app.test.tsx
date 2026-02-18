@@ -137,6 +137,7 @@ const TEST_CONFIG: Config = {
   outputDir: "/tmp/tldr-test",
   saveAudio: false,
   ttsProvider: "edge-tts",
+  ttsModel: "tts-1",
 };
 
 const TEST_EXTRACTION: ExtractionResult = {

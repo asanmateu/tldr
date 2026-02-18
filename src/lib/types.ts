@@ -58,6 +58,7 @@ export interface TtsGenerateOptions {
   pitch?: PitchPreset | undefined;
   volume?: VolumePreset | undefined;
   outputPath?: string | undefined;
+  ttsModel?: string | undefined;
 }
 
 export interface TtsProviderInterface {
@@ -88,6 +89,7 @@ export interface Profile {
   volume?: VolumePreset | undefined;
   provider?: SummarizationProvider | undefined;
   ttsProvider?: TtsProvider | undefined;
+  ttsModel?: string | undefined;
   saveAudio?: boolean | undefined;
 }
 
@@ -118,6 +120,7 @@ export interface ResolvedConfig {
   volume: VolumePreset;
   provider: SummarizationProvider;
   ttsProvider: TtsProvider;
+  ttsModel: string;
   outputDir: string;
   saveAudio: boolean;
 }

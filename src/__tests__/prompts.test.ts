@@ -27,6 +27,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): ResolvedConfig {
     outputDir: "/tmp/tldr-output",
     saveAudio: false,
     ttsProvider: "edge-tts" as const,
+    ttsModel: "tts-1",
     ...overrides,
   };
 }

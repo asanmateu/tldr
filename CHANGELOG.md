@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Configurable TTS model for OpenAI TTS — free-text input, defaults to `tts-1`
+- `tts-model` config key: `tldr config set tts-model tts-1-hd`
+- TTS Model selector in profile editor (visible only when OpenAI TTS is selected)
+
 ### Changed
 
-- Profile editor menu reorganized into sections: Summary, Audio, Appearance, General
+- "Provider" renamed to "AI Provider" and moved from General to Summary section
+- Profile editor menu reorganized into sections: Summary, Audio, Appearance
 - Pitch and Volume hidden from profile editor when using OpenAI TTS (unsupported by the API)
 
 ## [1.2.0] - 2026-02-18

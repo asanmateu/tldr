@@ -167,6 +167,23 @@ describe("tts providers", () => {
       vi.unstubAllEnvs();
     });
 
+    it("uses custom ttsModel when provided", async () => {
+      vi.stubEnv("OPENAI_API_KEY", "test-key");
+      const provider = await getTtsProvider("openai");
+      await provider.generateAudio("Hello", {
+        voice: "alloy",
+        ttsModel: "tts-1-hd",
+      });
+
+      expect(mockSpeechCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: "tts-1-hd",
+          voice: "alloy",
+        }),
+      );
+      vi.unstubAllEnvs();
+    });
+
     it("throws when OPENAI_API_KEY is missing", async () => {
       const original = process.env.OPENAI_API_KEY;
       process.env.OPENAI_API_KEY = "";

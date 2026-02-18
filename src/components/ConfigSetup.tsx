@@ -40,6 +40,7 @@ type EditMenuItem =
   | "model"
   | "provider"
   | "ttsProvider"
+  | "ttsModel"
   | "voice"
   | "ttsSpeed"
   | "pitch"
@@ -114,10 +115,12 @@ const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string; section: string }[] =
   { key: "tone", label: "Tone", section: "Summary" },
   { key: "style", label: "Summary style", section: "Summary" },
   { key: "traits", label: "Cognitive traits", section: "Summary" },
+  { key: "provider", label: "AI Provider", section: "Summary" },
   { key: "model", label: "Model", section: "Summary" },
   { key: "customInstructions", label: "Custom instructions", section: "Summary" },
   // Audio
   { key: "ttsProvider", label: "TTS Provider", section: "Audio" },
+  { key: "ttsModel", label: "TTS Model", section: "Audio" },
   { key: "voice", label: "Voice", section: "Audio" },
   { key: "ttsSpeed", label: "Speed", section: "Audio" },
   { key: "pitch", label: "Pitch", section: "Audio" },
@@ -125,8 +128,6 @@ const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string; section: string }[] =
   { key: "saveAudio", label: "Auto-save audio", section: "Audio" },
   // Appearance
   { key: "theme", label: "Theme", section: "Appearance" },
-  // General
-  { key: "provider", label: "Provider", section: "General" },
   // ---
   { key: "save", label: "Save & exit", section: "" },
 ];
@@ -177,6 +178,10 @@ export function ConfigSetup({
   // Model state — free-text input, pre-filled with current model
   const [modelInput, setModelInput] = useState(defaults.model);
   const [selectedModel, setSelectedModel] = useState(defaults.model);
+
+  // TTS model state — free-text input, pre-filled with current ttsModel
+  const [ttsModelInput, setTtsModelInput] = useState(defaults.ttsModel);
+  const [selectedTtsModel, setSelectedTtsModel] = useState(defaults.ttsModel);
 
   // Theme state
   const [themeName, setThemeName] = useState<ThemeName>(themeConfig?.name ?? "coral");
@@ -256,11 +261,12 @@ export function ConfigSetup({
     ),
   });
   // Hide pitch/volume when OpenAI TTS is selected (unsupported by the API)
+  // Hide ttsModel when not using OpenAI TTS (only OpenAI supports model selection)
   const editMenuItems = useMemo(
     () =>
       ttsProvider === "openai"
         ? EDIT_MENU_ITEMS.filter((item) => item.key !== "pitch" && item.key !== "volume")
-        : EDIT_MENU_ITEMS,
+        : EDIT_MENU_ITEMS.filter((item) => item.key !== "ttsModel"),
     [ttsProvider],
   );
   const editMenuNav = useListNavigation({ itemCount: editMenuItems.length });
@@ -292,6 +298,7 @@ export function ConfigSetup({
       volume: volume !== "normal" ? volume : undefined,
       provider: provider !== "claude-code" ? provider : undefined,
       ttsProvider: ttsProvider !== "edge-tts" ? ttsProvider : undefined,
+      ttsModel: selectedTtsModel !== "tts-1" ? selectedTtsModel : undefined,
       saveAudio: saveAudio || undefined,
     };
 
@@ -313,6 +320,7 @@ export function ConfigSetup({
     provider,
     ttsProvider,
     selectedModel,
+    selectedTtsModel,
     selectedTraits,
     tone,
     style,
@@ -555,6 +563,7 @@ export function ConfigSetup({
 
       if (
         editingField === "model" ||
+        editingField === "ttsModel" ||
         editingField === "ttsSpeed" ||
         editingField === "customInstructions"
       ) {
@@ -662,6 +671,7 @@ export function ConfigSetup({
             if (item.key === "model") current = selectedModel;
             if (item.key === "provider") current = provider;
             if (item.key === "ttsProvider") current = ttsProvider;
+            if (item.key === "ttsModel") current = selectedTtsModel;
             if (item.key === "voice") current = voices[voiceNav.index]?.label ?? "";
             if (item.key === "ttsSpeed") current = `${ttsSpeedInput}x`;
             if (item.key === "pitch") current = pitch;
@@ -733,6 +743,21 @@ export function ConfigSetup({
             items={ALL_TTS_PROVIDERS}
             selectedIndex={ttsProviderNav.index}
           />
+        )}
+
+        {editingField === "ttsModel" && (
+          <Box flexDirection="column">
+            <Text>TTS Model (Enter to confirm):</Text>
+            <Text dimColor>e.g. tts-1, tts-1-hd, gpt-4o-mini-tts</Text>
+            <TextInput
+              value={ttsModelInput}
+              onChange={setTtsModelInput}
+              onSubmit={(value) => {
+                if (value.trim()) setSelectedTtsModel(value.trim());
+                setEditingField(null);
+              }}
+            />
+          </Box>
         )}
 
         {editingField === "voice" && (

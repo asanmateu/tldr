@@ -10,9 +10,10 @@ export async function generateAudio(
   volume?: VolumePreset,
   outputPath?: string,
   ttsProvider?: TtsProvider,
+  ttsModel?: string,
 ): Promise<string> {
   const provider = await getTtsProvider(ttsProvider ?? "edge-tts");
-  return provider.generateAudio(text, { voice, speed, pitch, volume, outputPath });
+  return provider.generateAudio(text, { voice, speed, pitch, volume, outputPath, ttsModel });
 }
 
 export function getVoiceDisplayName(voiceId: string, ttsProvider?: TtsProvider): string {

@@ -52,6 +52,7 @@ describe("configSetter", () => {
       expect(keys).toContain("theme");
       expect(keys).toContain("appearance");
       expect(keys).toContain("tts-speed");
+      expect(keys).toContain("tts-model");
       expect(keys).toContain("tts-provider");
       expect(keys).toContain("save-audio");
       expect(keys).toContain("output-dir");
@@ -385,6 +386,40 @@ describe("configSetter", () => {
       await expect(
         applyConfigSet("custom-instructions", "", ["config", "set", "custom-instructions"]),
       ).rejects.toThrow("Usage");
+    });
+  });
+
+  describe("tts-model", () => {
+    it("sets ttsModel on active profile", async () => {
+      await seedSettings();
+      const msg = await applyConfigSet("tts-model", "tts-1-hd", [
+        "config",
+        "set",
+        "tts-model",
+        "tts-1-hd",
+      ]);
+      expect(msg).toContain("tts-1-hd");
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.ttsModel).toBe("tts-1-hd");
+    });
+
+    it("sets default tts-model (stores undefined)", async () => {
+      await seedSettings();
+      await applyConfigSet("tts-model", "tts-1", ["config", "set", "tts-model", "tts-1"]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.ttsModel).toBeUndefined();
+    });
+
+    it("accepts any string (free-text)", async () => {
+      await seedSettings();
+      await applyConfigSet("tts-model", "gpt-4o-mini-tts", [
+        "config",
+        "set",
+        "tts-model",
+        "gpt-4o-mini-tts",
+      ]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.ttsModel).toBe("gpt-4o-mini-tts");
     });
   });
 
