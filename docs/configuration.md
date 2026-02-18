@@ -49,6 +49,8 @@ tldr --style quick "https://example.com/article"
 | `volume` | `quiet`, `normal`, `loud` | `tldr config set volume loud` |
 | `save-audio` | `true`, `false` | `tldr config set save-audio true` |
 
+> **Note:** Pitch and Volume only apply to Edge TTS. They are not supported by OpenAI TTS and will be hidden in the profile editor when OpenAI is selected.
+
 ## Appearance
 
 | Key | Values | Example |

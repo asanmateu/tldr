@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Profile editor menu reorganized into sections: Summary, Audio, Appearance, General
+- Pitch and Volume hidden from profile editor when using OpenAI TTS (unsupported by the API)
+
 ## [1.2.0] - 2026-02-18
 
 ### Added

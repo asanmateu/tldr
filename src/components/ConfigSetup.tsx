@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useListNavigation } from "../hooks/useListNavigation.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { resolveConfig } from "../lib/config.js";
@@ -109,21 +109,26 @@ const ALL_APPEARANCES: { value: AppearanceMode; label: string; hint: string }[] 
   { value: "light", label: "Light", hint: "always light palette" },
 ];
 
-const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string }[] = [
-  { key: "theme", label: "Theme" },
-  { key: "traits", label: "Cognitive traits" },
-  { key: "tone", label: "Tone" },
-  { key: "style", label: "Summary style" },
-  { key: "model", label: "Model" },
-  { key: "provider", label: "Provider" },
-  { key: "ttsProvider", label: "TTS Provider" },
-  { key: "voice", label: "TTS Voice" },
-  { key: "ttsSpeed", label: "TTS Speed" },
-  { key: "pitch", label: "Pitch" },
-  { key: "volume", label: "Volume" },
-  { key: "saveAudio", label: "Auto-save audio" },
-  { key: "customInstructions", label: "Custom instructions" },
-  { key: "save", label: "Save & exit" },
+const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string; section: string }[] = [
+  // Summary
+  { key: "tone", label: "Tone", section: "Summary" },
+  { key: "style", label: "Summary style", section: "Summary" },
+  { key: "traits", label: "Cognitive traits", section: "Summary" },
+  { key: "model", label: "Model", section: "Summary" },
+  { key: "customInstructions", label: "Custom instructions", section: "Summary" },
+  // Audio
+  { key: "ttsProvider", label: "TTS Provider", section: "Audio" },
+  { key: "voice", label: "Voice", section: "Audio" },
+  { key: "ttsSpeed", label: "Speed", section: "Audio" },
+  { key: "pitch", label: "Pitch", section: "Audio" },
+  { key: "volume", label: "Volume", section: "Audio" },
+  { key: "saveAudio", label: "Auto-save audio", section: "Audio" },
+  // Appearance
+  { key: "theme", label: "Theme", section: "Appearance" },
+  // General
+  { key: "provider", label: "Provider", section: "General" },
+  // ---
+  { key: "save", label: "Save & exit", section: "" },
 ];
 
 function buildDefaultConfig(): Config {
@@ -250,7 +255,15 @@ export function ConfigSetup({
       0,
     ),
   });
-  const editMenuNav = useListNavigation({ itemCount: EDIT_MENU_ITEMS.length });
+  // Hide pitch/volume when OpenAI TTS is selected (unsupported by the API)
+  const editMenuItems = useMemo(
+    () =>
+      ttsProvider === "openai"
+        ? EDIT_MENU_ITEMS.filter((item) => item.key !== "pitch" && item.key !== "volume")
+        : EDIT_MENU_ITEMS,
+    [ttsProvider],
+  );
+  const editMenuNav = useListNavigation({ itemCount: editMenuItems.length });
 
   // First-run step state
   const skipApiKey = hasEnvApiKey || defaults.provider === "claude-code";
@@ -419,7 +432,7 @@ export function ConfigSetup({
         if (key.upArrow) editMenuNav.handleUp();
         if (key.downArrow) editMenuNav.handleDown();
         if (key.return) {
-          const item = EDIT_MENU_ITEMS[editMenuNav.index];
+          const item = editMenuItems[editMenuNav.index];
           if (item?.key === "save") {
             onSave(buildConfig());
           } else if (item) {
@@ -521,6 +534,11 @@ export function ConfigSetup({
             setTtsProvider(selected.value);
             // Reset voice index when switching TTS providers
             voiceNav.setIndex(0);
+            // Reset pitch/volume to defaults when switching to OpenAI (unsupported)
+            if (selected.value === "openai") {
+              setPitch("default");
+              setVolume("normal");
+            }
           }
           setEditingField(null);
         }
@@ -631,7 +649,10 @@ export function ConfigSetup({
 
       <Box marginTop={1} flexDirection="column">
         {!editingField &&
-          EDIT_MENU_ITEMS.map((item, i) => {
+          editMenuItems.map((item, i) => {
+            const prevSection = i > 0 ? editMenuItems[i - 1]?.section : undefined;
+            const showHeader = item.section && item.section !== prevSection;
+
             let current = "";
             if (item.key === "theme") current = `${themeName} / ${appearance}`;
             if (item.key === "traits")
@@ -650,10 +671,18 @@ export function ConfigSetup({
               current = customInstructions ? `"${customInstructions.slice(0, 30)}..."` : "none";
 
             return (
-              <Text key={item.key} {...(i === editMenuNav.index ? { color: theme.accent } : {})}>
-                {i === editMenuNav.index ? ">" : " "} {item.label}
-                {item.key !== "save" && <Text dimColor> ({current})</Text>}
-              </Text>
+              <Box key={item.key} flexDirection="column">
+                {showHeader && (
+                  <Text bold color={theme.brand} {...(i > 0 ? {} : {})}>
+                    {i > 0 ? "\n" : ""}
+                    {item.section}
+                  </Text>
+                )}
+                <Text {...(i === editMenuNav.index ? { color: theme.accent } : {})}>
+                  {i === editMenuNav.index ? ">" : " "} {item.label}
+                  {item.key !== "save" && <Text dimColor> ({current})</Text>}
+                </Text>
+              </Box>
             );
           })}
 
