@@ -7,9 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Chat panel: bordered card in result view with `[t] start chatting` (moved from footer shortcut)
+- Audio panel: persistent bordered card in result view showing audio shortcuts, playback state, and generation progress (replaces 8-second auto-dismiss hint)
+
 ### Fixed
 
 - Audio generation spinner no longer causes screen strobe on long summaries (summary pinned to Ink `<Static>` during spinner animation)
+- Audio failure during save-with-audio now shown in save toast instead of silently swallowed
+- Help view (`/help`) now lists `w` shortcut
+
+### Changed
+
+- Save flow stays on result view; footer shows "Saved" status; single-tap `q` to exit after save
+- `[t] talk` moved from footer into dedicated Chat panel
+- `[w]` hidden from audio panel after save
+- Audio panel is now persistent — adapts content for idle, generating, playing, and saving states
+- Audio error moved inside the audio panel; audio shortcuts ([a], [w], [s]) moved from footer into panel
+- Playback footer shows voice name and speed: `♪ Playing (Jenny, 1.0x)`
+- Save toast differentiates "Saved" vs "Saved with audio" vs "Saved (audio failed)"
+- Docs: restructure audio guide to lead with workflow narrative and explain save-with-audio
+- Docs: expand README audio section to highlight cognitive-profile-aware script rewriting
+- Docs: add voice personality tables and cross-links between audio, config, and provider docs
+
+### Removed
+
+- `save-audio` config setting and profile editor toggle — `Enter` always saves without audio, `[w]` always saves with audio
 
 ## [1.3.1] - 2026-02-18
 

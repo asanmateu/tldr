@@ -135,7 +135,6 @@ const TEST_CONFIG: Config = {
   volume: "normal",
   provider: "anthropic",
   outputDir: "/tmp/tldr-test",
-  saveAudio: false,
   ttsProvider: "edge-tts",
   ttsModel: "tts-1",
 };
@@ -238,7 +237,7 @@ describe("App", () => {
       instance.unmount();
     });
 
-    it("saves on Enter and returns to idle", async () => {
+    it("saves on Enter and stays on result view", async () => {
       const instance = render(<App initialInput="https://example.com/article" />);
 
       await vi.waitFor(
@@ -264,9 +263,13 @@ describe("App", () => {
         { timeout: 2000 },
       );
 
+      // Should stay on result view with "Saved" in footer
       await vi.waitFor(
         () => {
-          expect(instance.lastFrame()).toContain("tl;dr");
+          const frame = instance.lastFrame();
+          expect(frame).toContain("TL;DR");
+          expect(frame).toContain("Saved");
+          expect(frame).not.toContain("[Enter] save");
         },
         { timeout: 2000 },
       );
@@ -518,6 +521,148 @@ describe("App", () => {
 
       instance.unmount();
     });
+
+    it("shows save toast in result view", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Saved to");
+          expect(frame).toContain("TL;DR");
+        },
+        { timeout: 3000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("single-tap q exits after save", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Saved");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("q");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("tl;dr");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("Enter is no-op after save", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Saved");
+        },
+        { timeout: 2000 },
+      );
+
+      // Press Enter again — should be a no-op
+      instance.stdin.write("\r");
+
+      // Small delay to ensure no re-save happens
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(mocks.saveSummary).toHaveBeenCalledTimes(1);
+
+      instance.unmount();
+    });
+
+    it("re-summarize after save creates fresh unsaved result", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Saved");
+        },
+        { timeout: 2000 },
+      );
+
+      // Re-summarize
+      instance.stdin.write("r");
+
+      await vi.waitFor(
+        () => {
+          expect(mocks.extract).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 2000 },
+      );
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("TL;DR");
+          expect(frame).toContain("[Enter] save");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows Chat panel in result view", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Chat");
+          expect(frame).toContain("follow-up questions");
+          expect(frame).toContain("[t] start chatting");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -642,6 +787,159 @@ describe("App", () => {
       await vi.waitFor(
         () => {
           expect(instance.lastFrame()).toContain("Codex CLI is not installed");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Group 8: Audio UX
+  // -----------------------------------------------------------------------
+  describe("audio UX", () => {
+    it("shows bordered audio panel on result", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Audio");
+          expect(frame).toContain("rewritten as a spoken");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("audio panel shows generating state on 'a' keypress", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("rewritten as a spoken");
+        },
+        { timeout: 2000 },
+      );
+
+      // Mock generateAudio to hang so we stay in generating state
+      mocks.rewriteForSpeech.mockResolvedValue("speech text");
+      mocks.generateAudio.mockImplementation(() => new Promise(() => {}));
+
+      instance.stdin.write("a");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Generating audio");
+          expect(frame).not.toContain("rewritten as a spoken");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("footer does not contain [a] or [w] shortcuts", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      const frame = instance.lastFrame();
+      // Find the footer line (dimColor text with [Enter])
+      const footerLine = frame
+        ?.split("\n")
+        .find((line) => line.includes("[Enter]") && line.includes("[c]"));
+      expect(footerLine).toBeDefined();
+      expect(footerLine).not.toContain("[a]");
+      expect(footerLine).not.toContain("[w]");
+
+      instance.unmount();
+    });
+
+    it("save toast says 'Saved with audio' on successful audio save", async () => {
+      mocks.rewriteForSpeech.mockResolvedValue("speech text");
+      mocks.generateAudio.mockResolvedValue("/tmp/audio.mp3");
+      mocks.saveAudioFile.mockResolvedValue(undefined);
+
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("w");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Saved with audio");
+        },
+        { timeout: 3000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("save toast says '(audio failed)' when audio generation fails", async () => {
+      mocks.rewriteForSpeech.mockResolvedValue("speech text");
+      mocks.generateAudio.mockRejectedValue(new Error("TTS failed"));
+
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("w");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("(audio failed)");
+        },
+        { timeout: 3000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("HelpView shows 'w' shortcut and 'Save with audio'", async () => {
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("tl;dr");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("/help");
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("/help");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Slash Commands");
+          expect(frame).toContain("Save with audio");
         },
         { timeout: 2000 },
       );

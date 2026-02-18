@@ -206,7 +206,6 @@ function parseProfile(raw: unknown): Profile {
         : undefined,
     ttsModel:
       typeof obj.ttsModel === "string" && obj.ttsModel.length > 0 ? obj.ttsModel : undefined,
-    saveAudio: typeof obj.saveAudio === "boolean" ? obj.saveAudio : undefined,
   };
 }
 
@@ -357,7 +356,6 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
     ttsProvider,
     ttsModel: profile.ttsModel ?? "tts-1",
     outputDir,
-    saveAudio: profile.saveAudio ?? false,
   };
 }
 
@@ -396,7 +394,6 @@ export async function saveConfig(config: ResolvedConfig): Promise<void> {
     provider: config.provider !== "claude-code" ? config.provider : undefined,
     ttsProvider: config.ttsProvider !== "edge-tts" ? config.ttsProvider : undefined,
     ttsModel: config.ttsModel !== "tts-1" ? config.ttsModel : undefined,
-    saveAudio: config.saveAudio || undefined,
   };
 
   await saveSettings(settings);

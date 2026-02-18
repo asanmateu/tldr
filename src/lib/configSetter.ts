@@ -141,15 +141,6 @@ const CONFIG_KEYS: Record<string, ConfigKeyDescriptor> = {
       return traits;
     },
   },
-  "save-audio": {
-    target: "profile",
-    property: "saveAudio",
-    transform: (v) => {
-      if (v === "true") return true;
-      if (v === "false") return undefined;
-      throw new ConfigSetError("Invalid save-audio. Use 'true' or 'false'.");
-    },
-  },
   "custom-instructions": {
     target: "profile",
     property: "customInstructions",

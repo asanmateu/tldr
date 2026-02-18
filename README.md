@@ -22,7 +22,9 @@ I had a pile of to-reads growing at work and it was overwhelming — not because
 
 ## Audio
 
-Press `a` after any summary to listen to it. tldr rewrites the summary into a spoken script tailored to your cognitive profile, then synthesizes it with natural-sounding voices. Free by default with Edge TTS, or upgrade to OpenAI TTS for higher quality (`tldr config set tts-provider openai`). See the [Audio guide](docs/audio.md) for voice, speed, and provider options.
+Summaries aren't just read aloud. They're **rewritten as podcast-style scripts** adapted to your cognitive profile. ADHD mode leads with hooks. Dyslexia mode uses short punchy sentences. The result sounds like a brief podcast, not a screen reader.
+
+Press **`a`** to listen. Press **`w`** to save the audio alongside your summary. Free with Edge TTS by default, or switch to OpenAI TTS for higher quality. See the [Audio guide](docs/audio.md) for voices, save-with-audio, and provider options.
 
 ---
 
@@ -50,7 +52,7 @@ YouTube, Slack threads, and Notion pages also work — just paste the URL.
 
 In interactive mode, you can drag and drop files from Finder directly into the terminal — paths from iTerm2, Terminal.app, and other emulators are automatically recognized.
 
-After a summary, use the keyboard shortcuts shown at the bottom: copy, listen to audio, chat about it, or start a new one. You'll be notified in the prompt when a new version is available.
+After a summary, use the keyboard shortcuts shown at the bottom: save, save with audio, listen, copy, chat, re-summarize, or discard. You'll be notified in the prompt when a new version is available.
 
 Type `/` in interactive mode to access commands like `/history`, `/setup`, `/config`, `/theme`, and `/help`.
 
@@ -112,7 +114,7 @@ By default tldr uses Claude Code (`claude-code`). You can also use the Anthropic
 - [Installation](docs/installation.md) — Homebrew, standalone binaries, prerequisites
 - [Configuration](docs/configuration.md) — settings, profiles, tones, summary styles
 - [Providers](docs/providers.md) — Claude Code, Anthropic API, Gemini, xAI, Ollama, Codex, and OpenAI-compatible setup
-- [Audio](docs/audio.md) — text-to-speech options
+- [Audio](docs/audio.md) — listening to summaries, voices, save with audio
 
 ---
 

@@ -53,6 +53,12 @@ export function HelpView({ onClose }: HelpViewProps) {
         </Text>
         <Text>
           {"  "}
+          <Text color={theme.accent}>w</Text>
+          {"  "}
+          <Text dimColor>Save with audio</Text>
+        </Text>
+        <Text>
+          {"  "}
           <Text color={theme.accent}>s</Text>
           {"  "}
           <Text dimColor>Stop audio playback</Text>
@@ -73,13 +79,13 @@ export function HelpView({ onClose }: HelpViewProps) {
           {"  "}
           <Text color={theme.accent}>Enter</Text>
           {"  "}
-          <Text dimColor>Save & new summary</Text>
+          <Text dimColor>Save summary</Text>
         </Text>
         <Text>
           {"  "}
           <Text color={theme.accent}>q</Text>
           {"  "}
-          <Text dimColor>Discard (double-tap)</Text>
+          <Text dimColor>Exit (single-tap after save, double-tap to discard)</Text>
         </Text>
       </Box>
 

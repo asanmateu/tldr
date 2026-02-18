@@ -1,5 +1,5 @@
 import type { ChildProcess } from "node:child_process";
-import { Box, Static, Text, useApp, useInput } from "ink";
+import { Box, Static, Text, useApp, useInput, useStdout } from "ink";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatView } from "./components/ChatView.js";
 import { ConfigSetup } from "./components/ConfigSetup.js";
@@ -57,6 +57,10 @@ const MAX_INPUT_WORDS = 100_000;
 
 export function App({ initialInput, showConfig, editProfile, overrides }: AppProps) {
   const { exit } = useApp();
+  const { stdout } = useStdout();
+  const clearScreen = useCallback(() => {
+    stdout.write("\x1B[2J\x1B[H");
+  }, [stdout]);
 
   const [state, setState] = useState<AppState>(showConfig ? "config" : "idle");
   const [config, setConfig] = useState<Config | undefined>(undefined);
@@ -82,7 +86,6 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [cachedSpeechText, setCachedSpeechText] = useState<string | undefined>(undefined);
   const [isSavingAudio, setIsSavingAudio] = useState(false);
   const [profiles, setProfiles] = useState<{ name: string; active: boolean }[]>([]);
-  const [showAudioHint, setShowAudioHint] = useState(false);
   const [summaryPinned, setSummaryPinned] = useState(false);
   const [pinnedSummaries, setPinnedSummaries] = useState<
     { id: string; extraction: ExtractionResult; summary: string; sessionDir: string | undefined }[]
@@ -90,7 +93,6 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const abortRef = useRef<AbortController | null>(null);
   const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const audioHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load config and history on mount
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
@@ -156,6 +158,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
       setExtraction(undefined);
       setPendingResult(undefined);
       setSummaryPinned(false);
+      setPinnedSummaries([]);
 
       const result = await extract(rawInput, signal);
 
@@ -216,14 +219,6 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
       // Defer persistence — store result for saving on Enter
       setPendingResult(tldrResult);
       setState("result");
-
-      // Show audio hint for 5 seconds
-      setShowAudioHint(true);
-      if (audioHintTimerRef.current) clearTimeout(audioHintTimerRef.current);
-      audioHintTimerRef.current = setTimeout(() => {
-        setShowAudioHint(false);
-        audioHintTimerRef.current = null;
-      }, 5000);
     } catch (err) {
       setIsStreaming(false);
       // Silently return to idle on abort (ESC pressed)
@@ -311,6 +306,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
     setCurrentSession(undefined);
     setPendingResult(undefined);
     setSummaryPinned(false);
+    setPinnedSummaries([]);
     setState("result");
   }, []);
 
@@ -356,15 +352,6 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   // Key bindings for result state
   useInput(
     (ch, key) => {
-      // Clear audio hint on any keypress
-      if (showAudioHint) {
-        setShowAudioHint(false);
-        if (audioHintTimerRef.current) {
-          clearTimeout(audioHintTimerRef.current);
-          audioHintTimerRef.current = null;
-        }
-      }
-
       if (state === "result" && extraction) {
         if (ch === "c") {
           writeClipboard(summary);
@@ -448,10 +435,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           }
           return;
         }
-        if ((key.return || ch === "w") && !isSavingAudio) {
-          const withAudio = key.return
-            ? (config?.saveAudio ?? false)
-            : !(config?.saveAudio ?? false);
+        if ((key.return || ch === "w") && !isSavingAudio && pendingResult) {
+          const withAudio = ch === "w";
 
           // Stop any playing audio
           if (audioProcess) {
@@ -459,29 +444,27 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             setAudioProcess(undefined);
           }
 
+          if (withAudio && !summaryPinned) {
+            setPinnedSummaries((prev) => [
+              ...prev,
+              { id: String(Date.now()), extraction, summary, sessionDir: undefined },
+            ]);
+            setSummaryPinned(true);
+          }
+          if (withAudio) setIsSavingAudio(true);
+
           if (pendingResult && currentSession) {
-            if (withAudio && !summaryPinned) {
-              setPinnedSummaries((prev) => [
-                ...prev,
-                {
-                  id: String(Date.now()),
-                  extraction,
-                  summary,
-                  sessionDir: undefined,
-                },
-              ]);
-              setSummaryPinned(true);
-            }
             (async () => {
               try {
                 const saved = await saveSummary(currentSession, pendingResult.summary);
                 setCurrentSession(saved);
 
+                let audioSaved = false;
                 if (withAudio) {
-                  setIsSavingAudio(true);
                   try {
                     if (tempAudioPath) {
                       await saveAudioFile(saved, tempAudioPath);
+                      audioSaved = true;
                     } else if (config) {
                       const speechText =
                         cachedSpeechText ?? (await rewriteForSpeech(summary, config));
@@ -496,6 +479,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                         config.ttsModel,
                       );
                       await saveAudioFile(saved, audioPath);
+                      audioSaved = true;
                     }
                   } catch {
                     // Audio failure is non-fatal — summary still saved
@@ -504,7 +488,13 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                 }
 
                 // Show save toast
-                setToast(`Saved to ${saved.sessionDir}`);
+                setToast(
+                  withAudio && !audioSaved
+                    ? `Saved to ${saved.sessionDir} (audio failed)`
+                    : audioSaved
+                      ? `Saved with audio to ${saved.sessionDir}`
+                      : `Saved to ${saved.sessionDir}`,
+                );
                 if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
                 toastTimerRef.current = setTimeout(() => {
                   setToast(undefined);
@@ -512,31 +502,19 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                 }, 3000);
               } catch {
                 // Non-fatal
+                if (withAudio) setIsSavingAudio(false);
               }
               await addEntry(pendingResult);
               const updated = await getRecent(100);
               setHistory(updated);
 
+              // Stay on result — mark as saved
               setPendingResult(undefined);
-              setState("idle");
-              setSummary("");
-              setExtraction(undefined);
-              setInput("");
-              setCurrentSession(undefined);
-              setTempAudioPath(undefined);
-              setCachedSpeechText(undefined);
-              setSummaryPinned(false);
             })();
           } else {
+            // No session — mark as saved and stay on result
+            if (withAudio) setIsSavingAudio(false);
             setPendingResult(undefined);
-            setState("idle");
-            setSummary("");
-            setExtraction(undefined);
-            setInput("");
-            setCurrentSession(undefined);
-            setTempAudioPath(undefined);
-            setCachedSpeechText(undefined);
-            setSummaryPinned(false);
           }
           return;
         }
@@ -549,6 +527,21 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           exit();
           return;
         }
+        if (state === "result" && !pendingResult) {
+          // Already saved — single tap exits, clean up all state
+          if (audioProcess) stopAudio(audioProcess);
+          clearScreen();
+          setSummaryPinned(false);
+          setPinnedSummaries([]);
+          setState("idle");
+          setSummary("");
+          setExtraction(undefined);
+          setInput("");
+          setCurrentSession(undefined);
+          setTempAudioPath(undefined);
+          setCachedSpeechText(undefined);
+          return;
+        }
         if (state === "result") {
           if (discardPending) {
             // Second press — discard and return to idle
@@ -558,6 +551,9 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             }
             setDiscardPending(false);
             if (audioProcess) stopAudio(audioProcess);
+            clearScreen();
+            setSummaryPinned(false);
+            setPinnedSummaries([]);
             setPendingResult(undefined);
             setState("idle");
             setSummary("");
@@ -566,7 +562,6 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             setCurrentSession(undefined);
             setTempAudioPath(undefined);
             setCachedSpeechText(undefined);
-            setSummaryPinned(false);
           } else {
             // First press — start discard timer
             setDiscardPending(true);
@@ -595,13 +590,14 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
     <ThemeProvider palette={themePalette}>
       <Static items={pinnedSummaries}>
         {(item) => (
-          <SummaryContent
-            key={item.id}
-            extraction={item.extraction}
-            summary={item.summary}
-            isStreaming={false}
-            sessionDir={item.sessionDir}
-          />
+          <Box key={item.id}>
+            <SummaryContent
+              extraction={item.extraction}
+              summary={item.summary}
+              isStreaming={false}
+              sessionDir={item.sessionDir}
+            />
+          </Box>
         )}
       </Static>
       <Box flexDirection="column" marginTop={1}>
@@ -665,9 +661,9 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             discardPending={discardPending}
             voiceLabel={config ? getVoiceDisplayName(config.voice, config.ttsProvider) : undefined}
             ttsSpeed={config?.ttsSpeed}
-            saveAudio={config?.saveAudio ?? false}
             isSavingAudio={isSavingAudio}
-            showAudioHint={!!pendingResult && showAudioHint}
+            toast={toast}
+            isSaved={!pendingResult}
             summaryPinned={summaryPinned}
           />
         )}

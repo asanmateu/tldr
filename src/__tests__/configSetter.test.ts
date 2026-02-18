@@ -54,7 +54,6 @@ describe("configSetter", () => {
       expect(keys).toContain("tts-speed");
       expect(keys).toContain("tts-model");
       expect(keys).toContain("tts-provider");
-      expect(keys).toContain("save-audio");
       expect(keys).toContain("output-dir");
     });
   });
@@ -281,35 +280,6 @@ describe("configSetter", () => {
       await applyConfigSet("volume", "normal", ["config", "set", "volume", "normal"]);
       const settings = await loadSettings();
       expect(settings.profiles.default?.volume).toBeUndefined();
-    });
-  });
-
-  describe("save-audio", () => {
-    it("sets saveAudio to true", async () => {
-      await seedSettings();
-      const msg = await applyConfigSet("save-audio", "true", [
-        "config",
-        "set",
-        "save-audio",
-        "true",
-      ]);
-      expect(msg).toContain("true");
-      const settings = await loadSettings();
-      expect(settings.profiles.default?.saveAudio).toBe(true);
-    });
-
-    it("sets saveAudio to false (stores undefined)", async () => {
-      await seedSettings();
-      await applyConfigSet("save-audio", "false", ["config", "set", "save-audio", "false"]);
-      const settings = await loadSettings();
-      expect(settings.profiles.default?.saveAudio).toBeUndefined();
-    });
-
-    it("rejects invalid save-audio value", async () => {
-      await seedSettings();
-      await expect(
-        applyConfigSet("save-audio", "yes", ["config", "set", "save-audio", "yes"]),
-      ).rejects.toThrow("Invalid save-audio");
     });
   });
 

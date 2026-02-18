@@ -90,7 +90,6 @@ export interface Profile {
   provider?: SummarizationProvider | undefined;
   ttsProvider?: TtsProvider | undefined;
   ttsModel?: string | undefined;
-  saveAudio?: boolean | undefined;
 }
 
 export interface TldrSettings {
@@ -122,7 +121,6 @@ export interface ResolvedConfig {
   ttsProvider: TtsProvider;
   ttsModel: string;
   outputDir: string;
-  saveAudio: boolean;
 }
 
 export type Config = ResolvedConfig;

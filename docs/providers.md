@@ -187,7 +187,7 @@ tldr --provider ollama "https://example.com/article"
 
 ## Provider for Audio
 
-The same provider is used to rewrite summaries as audio scripts when you press `a` in the result view.
+The same provider is used to rewrite summaries as audio scripts when you press `a` in the result view. See the [Audio guide](audio.md) for details on how the rewrite works and voice options.
 
 ### TTS Model
 

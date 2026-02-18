@@ -1,6 +1,48 @@
-# Audio (TTS)
+# Audio
 
-tldr can read summaries aloud using text-to-speech.
+Summaries aren't just read aloud. They're **rewritten as podcast-style audio scripts** by the same AI provider you use for summarizing. The script adapts to your cognitive traits and tone setting. The result sounds like a brief podcast, not a screen reader.
+
+## How audio works
+
+Three things happen when you press `a`:
+
+1. Your **summary** is sent to the AI provider (same one used for summarizing).
+2. The AI **rewrites it as a spoken script** — conversational, with hooks and natural transitions.
+3. The script is sent to a **TTS voice** (Edge TTS or OpenAI) for synthesis and playback.
+
+The rewrite adapts to your **cognitive traits**:
+
+| Trait | How the audio script changes |
+|-------|------------------------------|
+| **ADHD** | Leads with a hook. High energy. Mini-takeaway per segment. |
+| **Dyslexia** | Short punchy sentences. Key terms repeated naturally. |
+| **Autism** | Direct and precise. No idioms or implied meanings. |
+| **ESL** | Common vocabulary. Specialized terms explained inline. |
+| **Visual thinker** | Spatial language. Word pictures. Narrative structure. |
+
+Your **tone** setting also shapes the script (casual, professional, academic, eli5).
+
+This costs one extra API call, which is why it sounds natural instead of robotic.
+
+A bordered **Audio** panel is always visible in the result view, adapting its content based on audio state — showing shortcuts when idle, a spinner during generation or saving, and playback info while playing.
+
+## Listening to a summary
+
+1. Summary appears. A bordered Audio panel shows **`[a] listen · [w] save + audio`**.
+2. Press **`a`**. A spinner shows "Generating audio..." then audio plays.
+3. Press **`s`** to stop playback.
+4. Press **`a`** again. Cached audio replays instantly — no re-generation.
+
+## Saving with audio
+
+**Why save audio?** Listen later — on a commute, at the gym, or to revisit without regenerating.
+
+Press **`w`** instead of Enter. Saves both `summary.md` and `audio.mp3`. Press **Enter** to save the summary only.
+
+After saving, you stay on the result view — you can still copy, chat, re-listen, or re-summarize. The footer shows "Saved" and `[q]` exits with a single tap (no confirmation needed since nothing will be lost).
+
+- If you already pressed `a`, the cached audio is reused — no extra API call.
+- Audio failures are non-fatal. The summary always saves.
 
 ## TTS Providers
 
@@ -35,19 +77,30 @@ tldr config set tts-model tts-1-hd
 
 See [Providers > TTS Model](providers.md#tts-model) for more details.
 
-## How It Works
-
-Press `a` in the result view to generate and play audio. When a summary first appears, an accent-colored hint reminds you about this shortcut (auto-dismisses after 5 seconds).
-
-When you press `a`, tldr uses your configured summarization provider (API or CLI) to rewrite the summary as an engaging, podcast-style audio script tailored to your cognitive profile. This costs one API call (or CLI invocation) but produces natural-sounding, accessible audio. The rewritten text is then sent to the selected TTS provider for synthesis.
-
 ## Voices
 
-Each TTS provider has its own set of voices:
+Each TTS provider has its own set of voices.
 
-**Edge TTS voices:** `en-US-JennyNeural` (default), `en-US-GuyNeural`, `en-US-AriaNeural`, `en-GB-SoniaNeural`, `en-AU-NatashaNeural`
+**Edge TTS voices:**
 
-**OpenAI TTS voices:** `alloy` (default), `echo`, `fable`, `onyx`, `nova`, `shimmer`
+| Voice | ID | Style |
+|-------|----|-------|
+| Jenny (default) | `en-US-JennyNeural` | Friendly, warm |
+| Guy | `en-US-GuyNeural` | Professional, clear |
+| Aria | `en-US-AriaNeural` | Positive, conversational |
+| Sonia | `en-GB-SoniaNeural` | Clear, British |
+| Natasha | `en-AU-NatashaNeural` | Bright, Australian |
+
+**OpenAI TTS voices:**
+
+| Voice | ID | Style |
+|-------|----|-------|
+| Alloy (default) | `alloy` | Neutral, balanced |
+| Echo | `echo` | Warm, engaging |
+| Fable | `fable` | Expressive, British |
+| Onyx | `onyx` | Deep, authoritative |
+| Nova | `nova` | Friendly, upbeat |
+| Shimmer | `shimmer` | Clear, gentle |
 
 ```bash
 # Set voice via CLI
@@ -73,7 +126,7 @@ tldr config set volume quiet          # softer
 
 Speed works with both providers. Pitch and volume presets only apply to Edge TTS — they are silently ignored when using OpenAI TTS.
 
-## Session Output
+## Session output
 
 Audio files are saved alongside summaries in the session output directory:
 
@@ -90,35 +143,12 @@ Change the output directory:
 tldr config set output-dir ~/summaries
 ```
 
-## Auto-save Audio
-
-By default, pressing Enter saves only the summary. You can enable automatic audio saving:
-
-```bash
-tldr config set save-audio true
-```
-
-When `save-audio` is enabled, pressing Enter generates audio and saves both `summary.md` and `audio.mp3` to the session directory. If you've already previewed audio with `a`, the cached audio is reused (no re-generation).
-
-You can also toggle this in the profile editor (`tldr profile edit` / `/config`).
-
-### Per-save Override
-
-The `[w]` key inverts the default behavior for a single save:
-
-| `save-audio` setting | `[Enter]` | `[w]` |
-|---------------------|-----------|-------|
-| `false` (default) | Save summary only | Save summary + audio |
-| `true` | Save summary + audio | Save summary only |
-
-Audio failures are non-fatal — the summary is always saved even if audio generation fails.
-
-## Keyboard Shortcuts
+## Keyboard shortcuts
 
 | Key | Action |
 |-----|--------|
 | `a` | Generate and play audio |
 | `s` | Stop audio playback |
-| `w` | Save with audio override (inverts `save-audio` setting) |
-
-The result view footer shows the active voice name and TTS speed next to the `[a]` shortcut (e.g. `[a] audio (Jenny, 1.0x)`).
+| `Enter` | Save summary |
+| `w` | Save with audio |
+| `q` | Exit (single-tap after save, double-tap to discard unsaved) |

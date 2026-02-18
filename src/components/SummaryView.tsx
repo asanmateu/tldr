@@ -15,9 +15,9 @@ interface SummaryViewProps {
   discardPending?: boolean | undefined;
   voiceLabel?: string | undefined;
   ttsSpeed?: number | undefined;
-  saveAudio: boolean;
   isSavingAudio: boolean;
-  showAudioHint?: boolean | undefined;
+  toast?: string | undefined;
+  isSaved?: boolean | undefined;
   summaryPinned?: boolean | undefined;
 }
 
@@ -32,9 +32,9 @@ export function SummaryView({
   discardPending,
   voiceLabel,
   ttsSpeed,
-  saveAudio,
   isSavingAudio,
-  showAudioHint,
+  toast,
+  isSaved,
   summaryPinned,
 }: SummaryViewProps) {
   const theme = useTheme();
@@ -50,22 +50,20 @@ export function SummaryView({
         />
       )}
       <Box flexDirection="column" paddingX={1}>
-        {audioError && (
-          <Box>
-            <Text color={theme.error}>Audio failed: {audioError}</Text>
-          </Box>
-        )}
         {discardPending && (
           <Box>
             <Text color={theme.warning}>[q] press again to discard</Text>
           </Box>
         )}
-        {showAudioHint && !isGeneratingAudio && !isPlaying && !isSavingAudio && (
-          <Box>
-            <Text color={theme.accent}>Press [a] to listen to this summary</Text>
-          </Box>
-        )}
-        <Box>
+        <Box
+          flexDirection="column"
+          borderStyle="round"
+          borderColor={theme.brandBorder}
+          paddingX={1}
+        >
+          <Text bold color={theme.accent}>
+            Audio
+          </Text>
           {isSavingAudio ? (
             <Text>
               <Text color={theme.accent}>
@@ -81,16 +79,62 @@ export function SummaryView({
               <Text color={theme.warning}> Generating audio...</Text>
             </Text>
           ) : isPlaying ? (
-            <Text color={theme.success}>Playing audio... [s] stop</Text>
-          ) : (
-            <Text dimColor>
-              {saveAudio
-                ? "[Enter] save + audio · [w] save only"
-                : "[Enter] save · [w] save + audio"}{" "}
-              · [a] audio
-              {voiceLabel ? ` (${voiceLabel}${ttsSpeed != null ? `, ${ttsSpeed}x` : ""})` : ""} ·
-              [c] copy · [t] talk · [r] re-summarize · [q] discard
+            <Text color={theme.success}>
+              ♪ Playing ({voiceLabel}
+              {ttsSpeed != null ? `, ${ttsSpeed}x` : ""}){"  "}
+              <Text dimColor>[s] stop</Text>
             </Text>
+          ) : (
+            <>
+              {audioError && <Text color={theme.error}>Audio failed: {audioError}</Text>}
+              <Text dimColor>
+                Your summary was rewritten as a spoken{"\n"}
+                script tailored to your profile.
+              </Text>
+              <Text>
+                <Text color={theme.accent}>[a]</Text>
+                <Text dimColor> {audioError ? "retry" : "listen"}</Text>
+                {!isSaved && (
+                  <>
+                    <Text dimColor> · </Text>
+                    <Text color={theme.accent}>[w]</Text>
+                    <Text dimColor> save + audio</Text>
+                  </>
+                )}
+              </Text>
+            </>
+          )}
+        </Box>
+        <Box
+          flexDirection="column"
+          borderStyle="round"
+          borderColor={theme.brandBorder}
+          paddingX={1}
+        >
+          <Text bold color={theme.accent}>
+            Chat
+          </Text>
+          <Text dimColor>
+            Ask follow-up questions about this{"\n"}
+            summary with your AI provider.
+          </Text>
+          <Text>
+            <Text color={theme.accent}>[t]</Text>
+            <Text dimColor> start chatting</Text>
+          </Text>
+        </Box>
+        {toast && (
+          <Box>
+            <Text color={theme.success}>{toast}</Text>
+          </Box>
+        )}
+        <Box>
+          {isSaved ? (
+            <Text dimColor>
+              <Text color={theme.success}>Saved</Text> · [c] copy · [r] re-summarize · [q] exit
+            </Text>
+          ) : (
+            <Text dimColor>[Enter] save · [c] copy · [r] re-summarize · [q] discard</Text>
           )}
         </Box>
       </Box>
