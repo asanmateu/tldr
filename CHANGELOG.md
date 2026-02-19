@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - App exits directly when pressing Esc during extraction/summarization if launched with a positional argument (`tldr <url>`), instead of returning to the interactive prompt
+- Audio save with `[w]` after fallback TTS (macOS `say`) no longer silently retries broken edge-tts; shows clear error instead
+- Audio save errors are now surfaced in the audio panel instead of being silently swallowed
+- `[w] save + audio` hidden when system TTS fallback was used (no MP3 file to save)
 
 ## [2.0.0] - 2026-02-19
 

@@ -83,6 +83,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [discardPending, setDiscardPending] = useState(false);
   const [toast, setToast] = useState<string | undefined>(undefined);
   const [tempAudioPath, setTempAudioPath] = useState<string | undefined>(undefined);
+  const [audioIsFallback, setAudioIsFallback] = useState(false);
   const [cachedSpeechText, setCachedSpeechText] = useState<string | undefined>(undefined);
   const [isSavingAudio, setIsSavingAudio] = useState(false);
   const [profiles, setProfiles] = useState<{ name: string; active: boolean }[]>([]);
@@ -397,6 +398,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                   config.ttsModel,
                 );
                 setTempAudioPath(path);
+                setAudioIsFallback(false);
                 setIsGeneratingAudio(false);
                 const proc = playAudio(path);
                 setAudioProcess(proc);
@@ -408,7 +410,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                   const msg = ttsErr instanceof Error ? ttsErr.message : "OpenAI TTS failed";
                   setAudioError(msg);
                 } else {
-                  // edge-tts failed — fall back to system TTS
+                  // edge-tts failed — fall back to system TTS (no MP3 file produced)
+                  setAudioIsFallback(true);
                   const proc = speakFallback(speechText);
                   if (proc) {
                     setAudioProcess(proc);
@@ -438,6 +441,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         if (ch === "r") {
           if (config) {
             setTempAudioPath(undefined);
+            setAudioIsFallback(false);
             setCachedSpeechText(undefined);
             processInput(input, config);
           }
@@ -473,6 +477,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                     if (tempAudioPath) {
                       await saveAudioFile(saved, tempAudioPath);
                       audioSaved = true;
+                    } else if (audioIsFallback) {
+                      setAudioError("System TTS has no MP3 file to save");
                     } else if (config) {
                       const speechText =
                         cachedSpeechText ?? (await rewriteForSpeech(summary, config));
@@ -489,8 +495,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
                       await saveAudioFile(saved, audioPath);
                       audioSaved = true;
                     }
-                  } catch {
-                    // Audio failure is non-fatal — summary still saved
+                  } catch (err) {
+                    setAudioError(err instanceof Error ? err.message : "Audio save failed");
                   }
                   setIsSavingAudio(false);
                 }
@@ -551,6 +557,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           setInput("");
           setCurrentSession(undefined);
           setTempAudioPath(undefined);
+          setAudioIsFallback(false);
           setCachedSpeechText(undefined);
           return;
         }
@@ -577,6 +584,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             setInput("");
             setCurrentSession(undefined);
             setTempAudioPath(undefined);
+            setAudioIsFallback(false);
             setCachedSpeechText(undefined);
           } else {
             // First press — start discard timer
@@ -680,6 +688,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             isSavingAudio={isSavingAudio}
             toast={toast}
             isSaved={!pendingResult}
+            audioIsFallback={audioIsFallback}
             summaryPinned={summaryPinned}
           />
         )}

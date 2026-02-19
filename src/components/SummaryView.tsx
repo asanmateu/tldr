@@ -18,6 +18,7 @@ interface SummaryViewProps {
   isSavingAudio: boolean;
   toast?: string | undefined;
   isSaved?: boolean | undefined;
+  audioIsFallback?: boolean | undefined;
   summaryPinned?: boolean | undefined;
 }
 
@@ -35,6 +36,7 @@ export function SummaryView({
   isSavingAudio,
   toast,
   isSaved,
+  audioIsFallback,
   summaryPinned,
 }: SummaryViewProps) {
   const theme = useTheme();
@@ -94,7 +96,7 @@ export function SummaryView({
               <Text>
                 <Text color={theme.accent}>[a]</Text>
                 <Text dimColor> {audioError ? "retry" : "listen"}</Text>
-                {!isSaved && (
+                {!isSaved && !audioIsFallback && (
                   <>
                     <Text dimColor> · </Text>
                     <Text color={theme.accent}>[w]</Text>

@@ -916,6 +916,123 @@ describe("App", () => {
       instance.unmount();
     });
 
+    it("'w' after successful 'a' saves with audio using temp path", async () => {
+      mocks.rewriteForSpeech.mockResolvedValue("speech text");
+      mocks.generateAudio.mockResolvedValue("/tmp/audio.mp3");
+      mocks.saveAudioFile.mockResolvedValue(undefined);
+      const fakeProc = { on: vi.fn((_e: string, cb: () => void) => cb()), kill: vi.fn() };
+      mocks.playAudio.mockReturnValue(fakeProc);
+
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      // Press 'a' to generate and play audio
+      instance.stdin.write("a");
+
+      await vi.waitFor(
+        () => {
+          expect(mocks.generateAudio).toHaveBeenCalled();
+        },
+        { timeout: 2000 },
+      );
+
+      // Now press 'w' to save with audio — should use tempAudioPath
+      instance.stdin.write("w");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Saved with audio");
+        },
+        { timeout: 3000 },
+      );
+
+      expect(mocks.saveAudioFile).toHaveBeenCalledWith(TEST_SESSION, "/tmp/audio.mp3");
+
+      instance.unmount();
+    });
+
+    it("'w' after fallback TTS shows audio failed", async () => {
+      mocks.rewriteForSpeech.mockResolvedValue("speech text");
+      mocks.generateAudio.mockRejectedValue(new Error("edge-tts failed"));
+      const fakeProc = { on: vi.fn((_e: string, cb: () => void) => cb()), kill: vi.fn() };
+      mocks.speakFallback.mockReturnValue(fakeProc);
+
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      // Press 'a' — edge-tts fails, falls back to system TTS
+      instance.stdin.write("a");
+
+      await vi.waitFor(
+        () => {
+          expect(mocks.speakFallback).toHaveBeenCalled();
+        },
+        { timeout: 2000 },
+      );
+
+      // [w] should be hidden when audioIsFallback is true
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).not.toContain("[w]");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("'w' surfaces saveAudioFile errors", async () => {
+      mocks.rewriteForSpeech.mockResolvedValue("speech text");
+      mocks.generateAudio.mockResolvedValue("/tmp/audio.mp3");
+      mocks.saveAudioFile.mockRejectedValue(new Error("ENOSPC: disk full"));
+      const fakeProc = { on: vi.fn((_e: string, cb: () => void) => cb()), kill: vi.fn() };
+      mocks.playAudio.mockReturnValue(fakeProc);
+
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      // Press 'a' first so tempAudioPath is set
+      instance.stdin.write("a");
+
+      await vi.waitFor(
+        () => {
+          expect(mocks.generateAudio).toHaveBeenCalled();
+        },
+        { timeout: 2000 },
+      );
+
+      // Press 'w' — saveAudioFile will reject
+      instance.stdin.write("w");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("ENOSPC: disk full");
+        },
+        { timeout: 3000 },
+      );
+
+      instance.unmount();
+    });
+
     it("HelpView shows 'w' shortcut and 'Save with audio'", async () => {
       const instance = render(<App />);
 
