@@ -143,98 +143,106 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
     })();
   }, []);
 
-  const processInput = useCallback(async (rawInput: string, cfg: Config) => {
-    const activeConfig = cfg;
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    const { signal } = controller;
+  const processInput = useCallback(
+    async (rawInput: string, cfg: Config) => {
+      const activeConfig = cfg;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const { signal } = controller;
 
-    try {
-      // Extraction phase
-      setState("extracting");
-      setInput(rawInput);
-      setSummary("");
-      setExtraction(undefined);
-      setPendingResult(undefined);
-      setSummaryPinned(false);
-      setPinnedSummaries([]);
-
-      const result = await extract(rawInput, signal);
-
-      if (!result.content && !result.image) {
-        setError({
-          message: "Couldn't extract content from this input.",
-          hint: result.partial
-            ? "This content may be behind a paywall. Try pasting the text directly."
-            : undefined,
-        });
-        setState("error");
-        return;
-      }
-
-      setExtraction(result);
-
-      // Truncation for very long content (skip for images)
-      let effectiveConfig = activeConfig;
-      if (!result.image) {
-        let content = result.content;
-        const words = content.split(/\s+/);
-        if (words.length > MAX_INPUT_WORDS) {
-          content = words.slice(0, MAX_INPUT_WORDS).join(" ");
-          result.content = content;
-        }
-
-        // Scale max_tokens for long content
-        if (words.length > 10_000) {
-          effectiveConfig = {
-            ...activeConfig,
-            maxTokens: Math.min(activeConfig.maxTokens * 2, 4096),
-          };
-        }
-      }
-
-      // Summarization phase
-      setState("summarizing");
-      setIsStreaming(true);
-
-      const tldrResult = await summarize(
-        result,
-        effectiveConfig,
-        (chunk) => setSummary((prev) => prev + chunk),
-        signal,
-      );
-
-      setIsStreaming(false);
-
-      // Compute session paths BEFORE transitioning to result state
-      // so that currentSession.audioPath is available if user presses 'a' quickly
       try {
-        const sessionPaths = getSessionPaths(activeConfig.outputDir, result, tldrResult.summary);
-        setCurrentSession(sessionPaths);
-      } catch {
-        // Non-fatal
-      }
-
-      // Defer persistence — store result for saving on Enter
-      setPendingResult(tldrResult);
-      setState("result");
-    } catch (err) {
-      setIsStreaming(false);
-      // Silently return to idle on abort (ESC pressed)
-      if (signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
-        setState("idle");
+        // Extraction phase
+        setState("extracting");
+        setInput(rawInput);
         setSummary("");
         setExtraction(undefined);
-        return;
+        setPendingResult(undefined);
+        setSummaryPinned(false);
+        setPinnedSummaries([]);
+
+        const result = await extract(rawInput, signal);
+
+        if (!result.content && !result.image) {
+          setError({
+            message: "Couldn't extract content from this input.",
+            hint: result.partial
+              ? "This content may be behind a paywall. Try pasting the text directly."
+              : undefined,
+          });
+          setState("error");
+          return;
+        }
+
+        setExtraction(result);
+
+        // Truncation for very long content (skip for images)
+        let effectiveConfig = activeConfig;
+        if (!result.image) {
+          let content = result.content;
+          const words = content.split(/\s+/);
+          if (words.length > MAX_INPUT_WORDS) {
+            content = words.slice(0, MAX_INPUT_WORDS).join(" ");
+            result.content = content;
+          }
+
+          // Scale max_tokens for long content
+          if (words.length > 10_000) {
+            effectiveConfig = {
+              ...activeConfig,
+              maxTokens: Math.min(activeConfig.maxTokens * 2, 4096),
+            };
+          }
+        }
+
+        // Summarization phase
+        setState("summarizing");
+        setIsStreaming(true);
+
+        const tldrResult = await summarize(
+          result,
+          effectiveConfig,
+          (chunk) => setSummary((prev) => prev + chunk),
+          signal,
+        );
+
+        setIsStreaming(false);
+
+        // Compute session paths BEFORE transitioning to result state
+        // so that currentSession.audioPath is available if user presses 'a' quickly
+        try {
+          const sessionPaths = getSessionPaths(activeConfig.outputDir, result, tldrResult.summary);
+          setCurrentSession(sessionPaths);
+        } catch {
+          // Non-fatal
+        }
+
+        // Defer persistence — store result for saving on Enter
+        setPendingResult(tldrResult);
+        setState("result");
+      } catch (err) {
+        setIsStreaming(false);
+        // Silently return on abort (ESC pressed)
+        if (signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
+          if (initialInput) {
+            clearScreen();
+            exit();
+            return;
+          }
+          setState("idle");
+          setSummary("");
+          setExtraction(undefined);
+          return;
+        }
+        const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+        setError({ message });
+        setState("error");
+      } finally {
+        abortRef.current = null;
       }
-      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
-      setError({ message });
-      setState("error");
-    } finally {
-      abortRef.current = null;
-    }
-  }, []);
+    },
+    [clearScreen, exit, initialInput],
+  );
 
   const handleThemeChange = useCallback(async (newThemeConfig: ThemeConfig) => {
     setThemeConfig(newThemeConfig);

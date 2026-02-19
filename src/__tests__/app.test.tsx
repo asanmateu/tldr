@@ -282,7 +282,7 @@ describe("App", () => {
   // Group 2: Abort with ESC
   // -----------------------------------------------------------------------
   describe("abort with ESC", () => {
-    it("ESC during extraction returns to idle", async () => {
+    it("ESC during extraction exits app when initialInput provided", async () => {
       mocks.extract.mockImplementation(
         (_input: string, signal?: AbortSignal) =>
           new Promise((_resolve, reject) => {
@@ -305,7 +305,7 @@ describe("App", () => {
 
       await vi.waitFor(
         () => {
-          expect(instance.lastFrame()).toContain("tl;dr");
+          expect(instance.lastFrame()).not.toContain("tl;dr");
         },
         { timeout: 2000 },
       );
@@ -313,7 +313,7 @@ describe("App", () => {
       instance.unmount();
     });
 
-    it("ESC during summarization returns to idle", async () => {
+    it("ESC during summarization exits app when initialInput provided", async () => {
       mocks.summarize.mockImplementation(
         (
           _result: ExtractionResult,
@@ -341,7 +341,7 @@ describe("App", () => {
 
       await vi.waitFor(
         () => {
-          expect(instance.lastFrame()).toContain("tl;dr");
+          expect(instance.lastFrame()).not.toContain("tl;dr");
         },
         { timeout: 2000 },
       );
