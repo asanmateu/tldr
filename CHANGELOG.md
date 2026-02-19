@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-02-19
+
 ### Fixed
 
 - App exits directly when pressing Esc during extraction/summarization if launched with a positional argument (`tldr <url>`), instead of returning to the interactive prompt
