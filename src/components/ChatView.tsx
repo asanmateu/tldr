@@ -110,7 +110,7 @@ export function ChatView({
     : "[Esc] back · [q] back (when empty) · [Ctrl+s] save chat";
 
   return (
-    <Box flexDirection="column" paddingX={1}>
+    <Box flexDirection="column" paddingX={1} borderStyle="round" borderColor={theme.brandBorder}>
       <Box marginBottom={1}>
         <Text bold color={theme.accent}>
           Chat — ask questions about this summary
@@ -118,21 +118,25 @@ export function ChatView({
       </Box>
 
       {messages.map((msg, i) => (
-        <Box key={`msg-${i}-${msg.role}`} marginBottom={msg.role === "assistant" ? 1 : 0}>
-          <Text bold color={msg.role === "user" ? theme.warning : theme.success}>
-            {msg.role === "user" ? "You: " : "AI: "}
+        <Box key={`msg-${i}-${msg.role}`} marginBottom={1}>
+          <Text wrap="wrap">
+            <Text bold color={msg.role === "user" ? theme.warning : theme.success}>
+              {msg.role === "user" ? "› " : "◆ "}
+            </Text>
+            {msg.content}
           </Text>
-          <Text wrap="wrap">{msg.content}</Text>
         </Box>
       ))}
 
       {isStreaming && (
         <Box marginBottom={1}>
-          <Text bold color={theme.success}>
-            AI:{" "}
+          <Text wrap="wrap">
+            <Text bold color={theme.success}>
+              {"◆ "}
+            </Text>
+            {streamingResponse}
+            <Text color={theme.accent}>▊</Text>
           </Text>
-          <Text wrap="wrap">{streamingResponse}</Text>
-          <Text color={theme.accent}>▊</Text>
         </Box>
       )}
 

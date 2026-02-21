@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Chat export: press `Ctrl+s` in chat view to save the conversation as `chat.md` in the session directory; auto-saves on every subsequent message
 
+### Changed
+
+- Chat view: role labels changed from "You"/"AI" to `›`/`◆` symbols, messages wrapped in bordered card, consistent spacing between messages
+
 ## [2.1.0] - 2026-02-21
 
 ### Added
