@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Pretty markdown rendering in CLI — headings, bold, bullets, checkboxes, numbered lists, and tables are now styled with theme colors
+
 ## [2.0.1] - 2026-02-19
 
 ### Fixed

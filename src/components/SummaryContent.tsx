@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
 import { useTheme } from "../lib/ThemeContext.js";
 import type { ExtractionResult } from "../lib/types.js";
+import { MarkdownText } from "./MarkdownText.js";
 
 interface SummaryContentProps {
   extraction: ExtractionResult;
@@ -41,8 +42,8 @@ export function SummaryContent({
           <Text color={theme.success}>Saved to {sessionDir}</Text>
         </Box>
       )}
-      <Box marginTop={1}>
-        <Text>{summary}</Text>
+      <Box marginTop={1} flexDirection="column">
+        <MarkdownText markdown={summary} isStreaming={isStreaming} />
         {isStreaming && <Text color={theme.accent}>▊</Text>}
       </Box>
       <Box marginTop={1}>
