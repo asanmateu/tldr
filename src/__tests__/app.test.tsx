@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   deduplicateBySource: vi.fn((e: TldrResult[]) => e),
   saveSummary: vi.fn(),
   saveAudioFile: vi.fn(),
+  saveChat: vi.fn(),
   getSessionPaths: vi.fn(),
   generateAudio: vi.fn(),
   playAudio: vi.fn(),
@@ -68,6 +69,7 @@ vi.mock("../lib/history.js", () => ({
 vi.mock("../lib/session.js", () => ({
   saveSummary: mocks.saveSummary,
   saveAudioFile: mocks.saveAudioFile,
+  saveChat: mocks.saveChat,
   getSessionPaths: mocks.getSessionPaths,
 }));
 vi.mock("../lib/tts.js", () => ({
@@ -156,6 +158,7 @@ const TEST_SESSION: SessionPaths = {
   sessionDir: "/tmp/tldr-test/2026-02-18-test-article",
   summaryPath: "/tmp/tldr-test/2026-02-18-test-article/summary.md",
   audioPath: "/tmp/tldr-test/2026-02-18-test-article/audio.mp3",
+  chatPath: "/tmp/tldr-test/2026-02-18-test-article/chat.md",
 };
 
 // ---------------------------------------------------------------------------
@@ -182,6 +185,7 @@ describe("App", () => {
     mocks.checkForUpdate.mockResolvedValue(null);
     mocks.deduplicateBySource.mockImplementation((e: TldrResult[]) => e);
     mocks.addEntry.mockResolvedValue(undefined);
+    mocks.saveChat.mockResolvedValue(undefined);
     mocks.getSessionPaths.mockReturnValue(TEST_SESSION);
     mocks.saveSummary.mockResolvedValue(TEST_SESSION);
     mocks.extract.mockResolvedValue(TEST_EXTRACTION);
@@ -642,6 +646,54 @@ describe("App", () => {
           const frame = instance.lastFrame();
           expect(frame).toContain("TL;DR");
           expect(frame).toContain("[Enter] save");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("Ctrl+S in chat triggers saveChat", async () => {
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("TL;DR");
+        },
+        { timeout: 2000 },
+      );
+
+      // Enter chat mode
+      instance.stdin.write("t");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Chat");
+          expect(instance.lastFrame()).toContain("Ctrl+s");
+          expect(instance.lastFrame()).toContain("save chat");
+        },
+        { timeout: 2000 },
+      );
+
+      // Let effects flush before sending Ctrl+S
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Press Ctrl+S (raw mode: \x13)
+      instance.stdin.write("\x13");
+
+      await vi.waitFor(
+        () => {
+          // Since there's a pending result, saveSummary is called first, then saveChat
+          expect(mocks.saveSummary).toHaveBeenCalled();
+          expect(mocks.saveChat).toHaveBeenCalled();
+        },
+        { timeout: 3000 },
+      );
+
+      // Toast should appear
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Chat saved");
         },
         { timeout: 2000 },
       );

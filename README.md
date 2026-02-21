@@ -52,7 +52,7 @@ YouTube, Slack threads, and Notion pages also work — just paste the URL.
 
 In interactive mode, you can drag and drop files from Finder directly into the terminal — paths from iTerm2, Terminal.app, and other emulators are automatically recognized.
 
-After a summary, use the keyboard shortcuts shown at the bottom: save, save with audio, listen, copy, chat, re-summarize, or discard. You'll be notified in the prompt when a new version is available.
+After a summary, use the keyboard shortcuts shown at the bottom: save, save with audio, listen, copy, chat, re-summarize, or discard. In chat mode, press `Ctrl+s` to save the conversation — subsequent messages auto-save. You'll be notified in the prompt when a new version is available.
 
 Type `/` in interactive mode to access commands like `/history`, `/setup`, `/config`, `/theme`, and `/help`.
 

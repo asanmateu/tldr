@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "../lib/ThemeContext.js";
 import { chatWithSession } from "../lib/chat.js";
 import type { ChatMessage, Config } from "../lib/types.js";
@@ -8,15 +8,45 @@ import type { ChatMessage, Config } from "../lib/types.js";
 interface ChatViewProps {
   config: Config;
   summaryContent: string;
+  messages: ChatMessage[];
+  onMessagesChange: (messages: ChatMessage[]) => void;
+  chatSaveEnabled: boolean;
+  onSave: (messages: ChatMessage[]) => Promise<void>;
+  onAutoSave: (messages: ChatMessage[]) => Promise<void>;
   onExit: () => void;
 }
 
-export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
+export function ChatView({
+  config,
+  summaryContent,
+  messages,
+  onMessagesChange,
+  chatSaveEnabled,
+  onSave,
+  onAutoSave,
+  onExit,
+}: ChatViewProps) {
   const theme = useTheme();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingResponse, setStreamingResponse] = useState("");
+  const [toast, setToast] = useState<string | undefined>(undefined);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToast(undefined);
+      toastTimerRef.current = null;
+    }, 3000);
+  }, []);
 
   const handleSubmit = useCallback(
     async (value: string) => {
@@ -25,7 +55,7 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
 
       const userMessage: ChatMessage = { role: "user", content: trimmed };
       const updatedMessages = [...messages, userMessage];
-      setMessages(updatedMessages);
+      onMessagesChange(updatedMessages);
       setInputValue("");
       setIsStreaming(true);
       setStreamingResponse("");
@@ -36,19 +66,29 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
         );
 
         const assistantMessage: ChatMessage = { role: "assistant", content: response };
-        setMessages((prev) => [...prev, assistantMessage]);
+        const newMessages = [...updatedMessages, assistantMessage];
+        onMessagesChange(newMessages);
+
+        if (chatSaveEnabled) {
+          onAutoSave(newMessages);
+        }
       } catch {
         const errorMessage: ChatMessage = {
           role: "assistant",
           content: "Sorry, something went wrong. Try again.",
         };
-        setMessages((prev) => [...prev, errorMessage]);
+        const newMessages = [...updatedMessages, errorMessage];
+        onMessagesChange(newMessages);
+
+        if (chatSaveEnabled) {
+          onAutoSave(newMessages);
+        }
       } finally {
         setIsStreaming(false);
         setStreamingResponse("");
       }
     },
-    [messages, isStreaming, config, summaryContent],
+    [messages, isStreaming, config, summaryContent, onMessagesChange, chatSaveEnabled, onAutoSave],
   );
 
   useInput((ch, key) => {
@@ -56,10 +96,18 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
       onExit();
       return;
     }
+    if (key.ctrl && ch === "s" && !isStreaming) {
+      onSave(messages).then(() => showToast("Chat saved"));
+      return;
+    }
     if (ch === "q" && !isStreaming && inputValue === "") {
       onExit();
     }
   });
+
+  const footerHint = chatSaveEnabled
+    ? "[Esc] back · [q] back (when empty) · auto-saving chat"
+    : "[Esc] back · [q] back (when empty) · [Ctrl+s] save chat";
 
   return (
     <Box flexDirection="column" paddingX={1}>
@@ -105,8 +153,14 @@ export function ChatView({ config, summaryContent, onExit }: ChatViewProps) {
         )}
       </Box>
 
+      {toast && (
+        <Box>
+          <Text color={theme.success}>{toast}</Text>
+        </Box>
+      )}
+
       <Box>
-        <Text dimColor>{isStreaming ? "" : "[Esc] back · [q] back (when empty)"}</Text>
+        <Text dimColor>{isStreaming ? "" : footerHint}</Text>
       </Box>
     </Box>
   );

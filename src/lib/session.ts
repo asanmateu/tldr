@@ -1,6 +1,6 @@
 import { copyFile, mkdir, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { ExtractionResult, SessionPaths } from "./types.js";
+import type { ChatMessage, ExtractionResult, SessionPaths } from "./types.js";
 
 export function slugify(text: string): string {
   return text
@@ -37,6 +37,7 @@ export function getSessionPaths(
     sessionDir,
     summaryPath: join(sessionDir, "summary.md"),
     audioPath: join(sessionDir, "audio.mp3"),
+    chatPath: join(sessionDir, "chat.md"),
   };
 }
 
@@ -60,6 +61,7 @@ export async function saveSummary(paths: SessionPaths, markdown: string): Promis
     sessionDir,
     summaryPath: join(sessionDir, "summary.md"),
     audioPath: join(sessionDir, "audio.mp3"),
+    chatPath: join(sessionDir, "chat.md"),
   };
   await mkdir(resolved.sessionDir, { recursive: true });
   await writeFile(resolved.summaryPath, markdown, "utf-8");
@@ -68,4 +70,18 @@ export async function saveSummary(paths: SessionPaths, markdown: string): Promis
 
 export async function saveAudioFile(paths: SessionPaths, sourcePath: string): Promise<void> {
   await copyFile(sourcePath, paths.audioPath);
+}
+
+export function formatChatAsMarkdown(messages: ChatMessage[]): string {
+  if (messages.length === 0) return "# Chat\n";
+  const lines = ["# Chat", ""];
+  for (const msg of messages) {
+    const label = msg.role === "user" ? "You" : "AI";
+    lines.push(`**${label}:** ${msg.content}`, "");
+  }
+  return lines.join("\n");
+}
+
+export async function saveChat(paths: SessionPaths, messages: ChatMessage[]): Promise<void> {
+  await writeFile(paths.chatPath, formatChatAsMarkdown(messages), "utf-8");
 }

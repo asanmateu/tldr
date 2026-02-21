@@ -105,6 +105,12 @@ export function HelpView({ onClose }: HelpViewProps) {
           {"  "}
           <Text dimColor>Back (when input is empty)</Text>
         </Text>
+        <Text>
+          {"  "}
+          <Text color={theme.accent}>Ctrl+s</Text>
+          {"  "}
+          <Text dimColor>Save chat (auto-saves after)</Text>
+        </Text>
       </Box>
 
       <Box marginTop={1}>

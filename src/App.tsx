@@ -24,7 +24,7 @@ import {
 import { addEntry, deduplicateBySource, getRecent, removeEntry } from "./lib/history.js";
 import { isClaudeCodeAvailable } from "./lib/providers/claude-code.js";
 import { isCodexAvailable } from "./lib/providers/codex.js";
-import { getSessionPaths, saveAudioFile, saveSummary } from "./lib/session.js";
+import { getSessionPaths, saveAudioFile, saveChat, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
 import { resolveTheme } from "./lib/theme.js";
 import {
@@ -36,6 +36,7 @@ import {
 } from "./lib/tts.js";
 import type {
   AppState,
+  ChatMessage,
   Config,
   ConfigOverrides,
   ExtractionResult,
@@ -87,6 +88,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
   const [cachedSpeechText, setCachedSpeechText] = useState<string | undefined>(undefined);
   const [isSavingAudio, setIsSavingAudio] = useState(false);
   const [profiles, setProfiles] = useState<{ name: string; active: boolean }[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatSaveEnabled, setChatSaveEnabled] = useState(false);
   const [summaryPinned, setSummaryPinned] = useState(false);
   const [pinnedSummaries, setPinnedSummaries] = useState<
     { id: string; extraction: ExtractionResult; summary: string; sessionDir: string | undefined }[]
@@ -161,6 +164,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         setPendingResult(undefined);
         setSummaryPinned(false);
         setPinnedSummaries([]);
+        setChatMessages([]);
+        setChatSaveEnabled(false);
 
         const result = await extract(rawInput, signal);
 
@@ -252,6 +257,37 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
     settings.theme = newThemeConfig;
     await saveSettings(settings);
   }, []);
+
+  const handleChatSave = useCallback(
+    async (messages: ChatMessage[]) => {
+      if (!config || !extraction) return;
+      let session = currentSession;
+      // Ensure session dir exists — save summary if not saved yet
+      if (pendingResult && session) {
+        const saved = await saveSummary(session, pendingResult.summary);
+        setCurrentSession(saved);
+        session = saved;
+        await addEntry(pendingResult);
+        const updated = await getRecent(100);
+        setHistory(updated);
+        setPendingResult(undefined);
+      }
+      if (session) {
+        await saveChat(session, messages);
+        setChatSaveEnabled(true);
+      }
+    },
+    [config, extraction, currentSession, pendingResult],
+  );
+
+  const handleChatAutoSave = useCallback(
+    async (messages: ChatMessage[]) => {
+      if (chatSaveEnabled && currentSession) {
+        await saveChat(currentSession, messages);
+      }
+    },
+    [chatSaveEnabled, currentSession],
+  );
 
   const handleConfigSave = useCallback(
     async (newConfig: Config) => {
@@ -429,7 +465,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           })();
           return;
         }
-        if (ch === "s" && audioProcess) {
+        if (ch === "s" && !key.ctrl && audioProcess) {
           stopAudio(audioProcess);
           setAudioProcess(undefined);
           return;
@@ -551,6 +587,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           }
           setSummaryPinned(false);
           setPinnedSummaries([]);
+          setChatMessages([]);
+          setChatSaveEnabled(false);
           setState("idle");
           setSummary("");
           setExtraction(undefined);
@@ -577,6 +615,8 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
             }
             setSummaryPinned(false);
             setPinnedSummaries([]);
+            setChatMessages([]);
+            setChatSaveEnabled(false);
             setPendingResult(undefined);
             setState("idle");
             setSummary("");
@@ -693,7 +733,16 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           />
         )}
         {state === "chat" && config && (
-          <ChatView config={config} summaryContent={summary} onExit={() => setState("result")} />
+          <ChatView
+            config={config}
+            summaryContent={summary}
+            messages={chatMessages}
+            onMessagesChange={setChatMessages}
+            chatSaveEnabled={chatSaveEnabled}
+            onSave={handleChatSave}
+            onAutoSave={handleChatAutoSave}
+            onExit={() => setState("result")}
+          />
         )}
         {state === "history" && (
           <HistoryView

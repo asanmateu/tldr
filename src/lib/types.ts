@@ -138,6 +138,7 @@ export interface SessionPaths {
   sessionDir: string;
   summaryPath: string;
   audioPath: string;
+  chatPath: string;
 }
 
 // --- Theme configuration ---

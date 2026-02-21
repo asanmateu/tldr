@@ -4,13 +4,15 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   buildSessionName,
+  formatChatAsMarkdown,
   getSessionPaths,
   parseTitleFromSummary,
   saveAudioFile,
+  saveChat,
   saveSummary,
   slugify,
 } from "../lib/session.js";
-import type { ExtractionResult } from "../lib/types.js";
+import type { ChatMessage, ExtractionResult } from "../lib/types.js";
 
 let tempDir: string;
 
@@ -127,6 +129,7 @@ describe("getSessionPaths", () => {
     expect(paths.sessionDir).toMatch(/^\/out\//);
     expect(paths.summaryPath).toContain("summary.md");
     expect(paths.audioPath).toContain("audio.mp3");
+    expect(paths.chatPath).toContain("chat.md");
   });
 });
 
@@ -137,6 +140,7 @@ describe("saveSummary", () => {
       sessionDir,
       summaryPath: join(sessionDir, "summary.md"),
       audioPath: join(sessionDir, "audio.mp3"),
+      chatPath: join(sessionDir, "chat.md"),
     };
 
     const saved = await saveSummary(paths, "# Hello\nWorld");
@@ -155,6 +159,7 @@ describe("saveSummary", () => {
       sessionDir,
       summaryPath: join(sessionDir, "summary.md"),
       audioPath: join(sessionDir, "audio.mp3"),
+      chatPath: join(sessionDir, "chat.md"),
     };
 
     const first = await saveSummary(paths, "first");
@@ -178,6 +183,7 @@ describe("saveAudioFile", () => {
       sessionDir,
       summaryPath: join(sessionDir, "summary.md"),
       audioPath: join(sessionDir, "audio.mp3"),
+      chatPath: join(sessionDir, "chat.md"),
     };
 
     // Create the session directory first (as saveSummary would)
@@ -199,6 +205,7 @@ describe("saveAudioFile", () => {
       sessionDir,
       summaryPath: join(sessionDir, "summary.md"),
       audioPath: join(sessionDir, "audio.mp3"),
+      chatPath: join(sessionDir, "chat.md"),
     };
 
     // Create two sessions to trigger dedup
@@ -219,5 +226,88 @@ describe("saveAudioFile", () => {
     // Verify audio is in the same dir as the summary
     const summaryContent = await readFile(second.summaryPath, "utf-8");
     expect(summaryContent).toBe("second");
+  });
+});
+
+describe("formatChatAsMarkdown", () => {
+  it("returns header only for empty messages", () => {
+    expect(formatChatAsMarkdown([])).toBe("# Chat\n");
+  });
+
+  it("formats a multi-turn conversation", () => {
+    const messages: ChatMessage[] = [
+      { role: "user", content: "What is this about?" },
+      { role: "assistant", content: "It's about testing." },
+      { role: "user", content: "Thanks!" },
+      { role: "assistant", content: "You're welcome." },
+    ];
+    const result = formatChatAsMarkdown(messages);
+    expect(result).toBe(
+      [
+        "# Chat",
+        "",
+        "**You:** What is this about?",
+        "",
+        "**AI:** It's about testing.",
+        "",
+        "**You:** Thanks!",
+        "",
+        "**AI:** You're welcome.",
+        "",
+      ].join("\n"),
+    );
+  });
+});
+
+describe("saveChat", () => {
+  it("writes chat.md to session directory", async () => {
+    const sessionDir = join(tempDir, "2026-01-01-chat-test");
+    const paths = {
+      sessionDir,
+      summaryPath: join(sessionDir, "summary.md"),
+      audioPath: join(sessionDir, "audio.mp3"),
+      chatPath: join(sessionDir, "chat.md"),
+    };
+
+    // Create session dir first
+    await saveSummary(paths, "# Test");
+
+    const messages: ChatMessage[] = [
+      { role: "user", content: "Hello" },
+      { role: "assistant", content: "Hi there!" },
+    ];
+
+    await saveChat(paths, messages);
+
+    const content = await readFile(paths.chatPath, "utf-8");
+    expect(content).toContain("**You:** Hello");
+    expect(content).toContain("**AI:** Hi there!");
+  });
+
+  it("overwrites on subsequent saves", async () => {
+    const sessionDir = join(tempDir, "2026-01-01-chat-overwrite");
+    const paths = {
+      sessionDir,
+      summaryPath: join(sessionDir, "summary.md"),
+      audioPath: join(sessionDir, "audio.mp3"),
+      chatPath: join(sessionDir, "chat.md"),
+    };
+
+    await saveSummary(paths, "# Test");
+
+    await saveChat(paths, [{ role: "user", content: "First" }]);
+
+    const first = await readFile(paths.chatPath, "utf-8");
+    expect(first).toContain("**You:** First");
+
+    await saveChat(paths, [
+      { role: "user", content: "First" },
+      { role: "assistant", content: "Reply" },
+      { role: "user", content: "Second" },
+    ]);
+
+    const second = await readFile(paths.chatPath, "utf-8");
+    expect(second).toContain("**You:** Second");
+    expect(second).toContain("**AI:** Reply");
   });
 });

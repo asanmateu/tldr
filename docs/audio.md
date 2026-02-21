@@ -41,6 +41,10 @@ Press **`w`** instead of Enter. Saves both `summary.md` and `audio.mp3`. Press *
 
 After saving, you stay on the result view — you can still copy, chat, re-listen, or re-summarize. The footer shows "Saved" and `[q]` exits with a single tap (no confirmation needed since nothing will be lost).
 
+## Saving chat transcripts
+
+Press **`Ctrl+s`** in chat view to save the conversation as `chat.md` in the session directory. After the first save, every completed assistant message auto-saves the full conversation. If the summary hasn't been saved yet, saving the chat also creates the session directory and saves the summary.
+
 - If you already pressed `a`, the cached audio is reused — no extra API call.
 - Audio failures are non-fatal. The summary always saves.
 
