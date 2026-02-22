@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-02-22
+
+### Fixed
+
+- File paths (e.g. `/Users/.../file.md`) dragged onto the input no longer trigger "Unknown command" — they are correctly submitted as input
+
+### Changed
+
+- File detection hint now shows the actual filename and type (e.g. `notes.md — document`) instead of generic "Detected: File"
+- Banner symbol changed from `»` to `◆` for better visual hierarchy next to the `>` input prompt
+
 ## [2.2.0] - 2026-02-22
 
 ### Added

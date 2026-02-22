@@ -10,7 +10,7 @@ export function Banner() {
   return (
     <Box flexDirection="column" marginBottom={1}>
       <Box>
-        <Text color={theme.brandAccent}>{"»  "}</Text>
+        <Text color={theme.brandAccent}>{"◆  "}</Text>
         <Text color={theme.brand} bold>
           {"tl;dr"}
         </Text>

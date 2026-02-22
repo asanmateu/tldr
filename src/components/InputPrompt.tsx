@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -35,15 +36,17 @@ export function InputPrompt({
   const [commandError, setCommandError] = useState<string | undefined>(undefined);
 
   const filteredCommands = useMemo(() => matchCommands(input), [input]);
-  const slashMenuVisible = input.startsWith("/") && filteredCommands.length > 0;
+  const slashMenuVisible =
+    input.startsWith("/") && !looksLikeFilePath(input) && filteredCommands.length > 0;
 
   const fileHint = useMemo(() => {
     if (!input) return undefined;
     if (!looksLikeFilePath(input)) return undefined;
     const normalized = normalizeDraggedPath(input);
-    if (/\.pdf$/i.test(normalized)) return "Detected: PDF document";
-    if (/\.(jpe?g|png|gif|webp)$/i.test(normalized)) return "Detected: Image";
-    return "Detected: File";
+    const name = basename(normalized);
+    if (/\.pdf$/i.test(normalized)) return { name, type: "PDF document" };
+    if (/\.(jpe?g|png|gif|webp)$/i.test(normalized)) return { name, type: "image" };
+    return { name, type: "document" };
   }, [input]);
 
   useEffect(() => {
@@ -77,6 +80,13 @@ export function InputPrompt({
     (value: string) => {
       const trimmed = value.trim();
       if (!trimmed) return;
+
+      // File paths start with / but are not slash commands
+      if (looksLikeFilePath(trimmed)) {
+        onSubmit(normalizeDraggedPath(trimmed));
+        setInput("");
+        return;
+      }
 
       // Check if it's a slash command
       if (trimmed.startsWith("/")) {
@@ -180,7 +190,12 @@ export function InputPrompt({
         <SlashCommandMenu commands={filteredCommands} selectedIndex={slashMenuIndex} />
       )}
       {commandError && !slashMenuVisible && <Text color={theme.error}>{commandError}</Text>}
-      {!slashMenuVisible && !commandError && fileHint && input && <Text dimColor>{fileHint}</Text>}
+      {!slashMenuVisible && !commandError && fileHint && input && (
+        <Text>
+          <Text color={theme.accent}>{fileHint.name}</Text>
+          <Text dimColor>{` — ${fileHint.type}`}</Text>
+        </Text>
+      )}
       {!slashMenuVisible && !commandError && !fileHint && clipboardHint && !input && (
         <Text dimColor>Clipboard: {clipboardHint}</Text>
       )}
