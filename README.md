@@ -16,7 +16,7 @@ A CLI tool that turns articles, PDFs, videos, and more into short, clear summari
 
 ## Why this exists
 
-I had a pile of to-reads growing at work and it was overwhelming — not because the material was hard, but because it was all in the wrong format. The problem isn't reading ability, it's format. That goes double if you're neurodivergent, reading in a second language, or just short on time.
+I had a pile of to-reads growing at work and it was overwhelming — not because the material was hard, but because it was all in the wrong format. That goes double if you're neurodivergent, reading in a second language, or just short on time.
 
 ---
 
