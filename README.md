@@ -22,9 +22,9 @@ I had a pile of to-reads growing at work and it was overwhelming — not because
 
 ## Audio
 
-Summaries aren't just read aloud. They're **rewritten as podcast-style scripts** adapted to your cognitive profile. ADHD mode leads with hooks. Dyslexia mode uses short punchy sentences. The result sounds like a brief podcast, not a screen reader.
+Summaries aren't just read aloud. They're **rewritten as spoken scripts** using a configurable audio mode — podcast, briefing, lecture, storyteller, study-buddy, or calm. Each mode has a distinct persona and delivery style. The script also adapts to your cognitive traits and tone. The result sounds natural, not robotic.
 
-Press **`a`** to listen. Press **`w`** to save the audio alongside your summary. Free with Edge TTS by default, or switch to OpenAI TTS for higher quality. See the [Audio guide](docs/audio.md) for voices, save-with-audio, and provider options.
+Press **`a`** to listen. Press **`w`** to save the audio alongside your summary. Use built-in presets like `morning-brief` or `bedtime-read` for curated listening experiences. Free with Edge TTS by default, or switch to OpenAI TTS for higher quality. See the [Audio guide](docs/audio.md) for modes, voices, and provider options.
 
 ---
 
@@ -62,10 +62,10 @@ Type `/` in interactive mode to access commands like `/history`, `/setup`, `/con
 
 1. You give it something to read (a URL, file, or text)
 2. It extracts the content automatically
-3. Claude generates a structured, learning-focused summary
+3. Your AI provider generates a structured, learning-focused summary
 4. The summary is saved to `~/Documents/tldr/`
 
-Summaries use short sentences, bullet points, bold key terms, and put the most important information first. This isn't just formatting — it's based on how people with dyslexia and ADHD process information.
+Summaries use short sentences, bullet points, bold key terms, and put the most important information first. This isn't just formatting — it's designed around cognitive accessibility research to work better for all types of readers.
 
 ---
 
@@ -81,7 +81,7 @@ tldr --model sonnet "https://..."    # Use a different model
 
 Choose from three color themes (coral, ocean, forest) and auto dark/light mode during setup, or change later with `tldr config set theme`.
 
-You can set up profiles for different contexts (work, study, casual) with different tones, styles, and cognitive trait settings.
+Use built-in presets (morning-brief, deep-study, bedtime-read, etc.) or create your own for different contexts with different tones, styles, audio modes, and cognitive trait settings.
 
 See the [Configuration guide](docs/configuration.md) for details.
 
@@ -99,7 +99,7 @@ Cognitive accessibility is the point, not a feature. Every summary is optimised 
 | **ESL** | Common words only, jargon defined inline |
 | **Visual thinker** | Hierarchical layout, grouped ideas, numbered steps |
 
-Traits stack. Enable multiple with `tldr profile edit`.
+Traits stack. Enable multiple with `tldr preset edit`.
 
 ---
 
@@ -112,9 +112,9 @@ By default tldr uses Claude Code (`claude-code`). You can also use the Anthropic
 ## Documentation
 
 - [Installation](docs/installation.md) — Homebrew, standalone binaries, prerequisites
-- [Configuration](docs/configuration.md) — settings, profiles, tones, summary styles
+- [Configuration](docs/configuration.md) — settings, presets, tones, summary styles, audio modes
 - [Providers](docs/providers.md) — Claude Code, Anthropic API, Gemini, xAI, Ollama, Codex, and OpenAI-compatible setup
-- [Audio](docs/audio.md) — listening to summaries, voices, save with audio
+- [Audio](docs/audio.md) — audio modes, listening to summaries, voices, save with audio
 
 ---
 

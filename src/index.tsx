@@ -47,7 +47,9 @@ if (args.includes("--help") || args.includes("-h")) {
     tldr <url|file|text>              Summarize with active profile
     tldr --style quick <url>          Override style for this run
     tldr --model sonnet <url>         Override model for this run
-    tldr --profile work <url>         Use specific profile for this run
+    tldr --preset morning-brief <url>  Use specific preset for this run
+    tldr --audio-mode briefing <url>  Override audio mode for this run
+    tldr --profile work <url>         Alias for --preset
     tldr --provider openai <url>      Use OpenAI-compatible endpoint
     tldr --provider gemini <url>      Use Google Gemini API
     tldr --provider ollama <url>      Use local Ollama instance
@@ -63,6 +65,7 @@ if (args.includes("--help") || args.includes("-h")) {
     tldr config set tone <tone>            Set tone (casual/professional/academic/eli5)
     tldr config set style <style>          Set summary style (quick/standard/detailed/study-notes)
     tldr config set voice <voice>          Set TTS voice (e.g. en-US-JennyNeural)
+    tldr config set audio-mode <mode>       Set audio mode (podcast/briefing/lecture/storyteller/study-buddy/calm)
     tldr config set tts-speed <number>     Set TTS speed (e.g. 1.0, 1.25)
     tldr config set traits <list>          Set cognitive traits (comma-separated)
     tldr config set custom-instructions <text>  Set custom instructions
@@ -74,12 +77,12 @@ if (args.includes("--help") || args.includes("-h")) {
   ${fmt.label("Import:")}
     tldr import <file.md>             Import existing markdown as a session
 
-  ${fmt.label("Profiles:")}
-    tldr profile list                 List profiles (* marks active)
-    tldr profile create <name>        Create a new profile
-    tldr profile delete <name>        Delete a profile
-    tldr profile use <name>           Set active profile
-    tldr profile edit [name]          Edit profile settings
+  ${fmt.label("Presets:")}
+    tldr preset list                  List presets (* marks active)
+    tldr preset create <name>         Create a new preset
+    tldr preset delete <name>         Delete a preset
+    tldr preset use <name>            Set active preset
+    tldr preset edit [name]           Edit preset settings
 
   ${fmt.label("Keyboard shortcuts (result view):")}
     Enter   New summary
@@ -123,7 +126,7 @@ async function handleConfig() {
     console.log(
       `  ${fmt.label("Theme:")}       ${settings.theme?.name ?? "coral"} / ${settings.theme?.appearance ?? "auto"}`,
     );
-    console.log(`  ${fmt.label("Profile:")}     ${config.profileName}`);
+    console.log(`  ${fmt.label("Preset:")}      ${config.profileName}`);
     console.log(`  ${fmt.label("Provider:")}    ${config.provider}`);
     console.log(
       `  ${fmt.label("API Key:")}     ${config.apiKey ? `${config.apiKey.slice(0, 12)}...` : fmt.warn("not set")}`,
@@ -136,6 +139,7 @@ async function handleConfig() {
     );
     console.log(`  ${fmt.label("Tone:")}        ${config.tone}`);
     console.log(`  ${fmt.label("Style:")}       ${config.summaryStyle}`);
+    console.log(`  ${fmt.label("Audio Mode:")}  ${config.audioMode}`);
     console.log(`  ${fmt.label("Voice:")}       ${config.voice}`);
     console.log(`  ${fmt.label("TTS Speed:")}   ${config.ttsSpeed}x`);
     console.log(`  ${fmt.label("Pitch:")}       ${config.pitch}`);
@@ -197,17 +201,29 @@ async function handleProfile() {
   const sub = args[1];
 
   if (!sub) {
-    console.error("Usage: tldr profile <list|create|delete|use|edit>");
+    console.error("Usage: tldr preset <list|create|delete|use|edit>");
     process.exit(1);
   }
 
   if (sub === "list") {
     const profiles = await listProfiles();
-    console.log("\nProfiles:\n");
-    for (const p of profiles) {
+    const userProfiles = profiles.filter((p) => !p.builtIn);
+    const builtIns = profiles.filter((p) => p.builtIn);
+
+    console.log("\nPresets:\n");
+    for (const p of userProfiles) {
       const marker = p.active ? fmt.green("*") : " ";
       const name = p.active ? p.name : fmt.dim(p.name);
       console.log(`  ${marker} ${name}`);
+    }
+    if (builtIns.length > 0) {
+      console.log(`\n  ${fmt.dim("Built-in:")}`);
+      for (const p of builtIns) {
+        const marker = p.active ? fmt.green("*") : " ";
+        const name = p.active ? p.name : fmt.dim(p.name);
+        const desc = p.description ? fmt.dim(` — ${p.description}`) : "";
+        console.log(`  ${marker} ${name}${desc}`);
+      }
     }
     console.log();
     process.exit(0);
@@ -216,13 +232,13 @@ async function handleProfile() {
   if (sub === "create") {
     const name = args[2];
     if (!name) {
-      console.error("Usage: tldr profile create <name>");
+      console.error("Usage: tldr preset create <name>");
       process.exit(1);
     }
     try {
       await createProfile(name);
-      console.log(`Created profile "${name}".`);
-      console.log(`Run "tldr profile edit ${name}" to configure it.`);
+      console.log(`Created preset "${name}".`);
+      console.log(`Run "tldr preset edit ${name}" to configure it.`);
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
@@ -233,12 +249,12 @@ async function handleProfile() {
   if (sub === "delete") {
     const name = args[2];
     if (!name) {
-      console.error("Usage: tldr profile delete <name>");
+      console.error("Usage: tldr preset delete <name>");
       process.exit(1);
     }
     try {
       await deleteProfile(name);
-      console.log(`Deleted profile "${name}".`);
+      console.log(`Deleted preset "${name}".`);
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
@@ -249,12 +265,12 @@ async function handleProfile() {
   if (sub === "use") {
     const name = args[2];
     if (!name) {
-      console.error("Usage: tldr profile use <name>");
+      console.error("Usage: tldr preset use <name>");
       process.exit(1);
     }
     try {
       await setActiveProfile(name);
-      console.log(`Active profile set to "${name}".`);
+      console.log(`Active preset set to "${name}".`);
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
@@ -270,7 +286,7 @@ async function handleProfile() {
     return;
   }
 
-  console.error(`Unknown profile subcommand: ${sub}`);
+  console.error(`Unknown preset subcommand: ${sub}`);
   process.exit(1);
 }
 
@@ -299,25 +315,27 @@ if (command === "config") {
   handleConfig();
 } else if (command === "import") {
   handleImport();
-} else if (command === "profile") {
+} else if (command === "profile" || command === "preset") {
   handleProfile();
 } else {
-  // Summarization mode — parse --model, --profile, --provider flags
+  // Summarization mode — parse --model, --preset, --profile, --provider, --audio-mode flags
   const overrides: ConfigOverrides = {};
   const modelFlag = getFlag("model");
   if (modelFlag) overrides.model = modelFlag;
   const styleFlag = getFlag("style");
   if (styleFlag) overrides.style = styleFlag;
-  const profileFlag = getFlag("profile");
-  if (profileFlag) overrides.profileName = profileFlag;
+  const presetFlag = getFlag("preset") ?? getFlag("profile");
+  if (presetFlag) overrides.profileName = presetFlag;
   const providerFlag = getFlag("provider");
   if (providerFlag) overrides.provider = providerFlag;
+  const audioModeFlag = getFlag("audio-mode");
+  if (audioModeFlag) overrides.audioMode = audioModeFlag;
 
   // Legacy --config flag
   const showConfig = hasFlag("config");
 
   // Find positional input (not a flag or flag value)
-  const flagNames = new Set(["model", "style", "profile", "provider"]);
+  const flagNames = new Set(["model", "style", "preset", "profile", "provider", "audio-mode"]);
   const skipNext = new Set<number>();
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -329,7 +347,12 @@ if (command === "config") {
     }
   }
   const initialInput = args.find(
-    (a, i) => !a.startsWith("--") && !skipNext.has(i) && a !== "config" && a !== "profile",
+    (a, i) =>
+      !a.startsWith("--") &&
+      !skipNext.has(i) &&
+      a !== "config" &&
+      a !== "profile" &&
+      a !== "preset",
   );
 
   render(<App initialInput={initialInput} showConfig={showConfig} overrides={overrides} />);

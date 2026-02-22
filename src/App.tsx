@@ -325,6 +325,7 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
           setConfigMode("edit");
           setState("config");
           break;
+        case "preset":
         case "profile":
           (async () => {
             const profileList = await listProfiles();

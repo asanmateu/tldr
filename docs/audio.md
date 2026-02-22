@@ -1,16 +1,38 @@
 # Audio
 
-Summaries aren't just read aloud. They're **rewritten as podcast-style audio scripts** by the same AI provider you use for summarizing. The script adapts to your cognitive traits and tone setting. The result sounds like a brief podcast, not a screen reader.
+Summaries aren't just read aloud. They're **rewritten as audio scripts** by the same AI provider you use for summarizing, using a configurable **audio mode** that controls the persona and structure. The script adapts to your cognitive traits and tone setting. The result sounds like a natural spoken piece, not a screen reader.
 
 ## How audio works
 
 Three things happen when you press `a`:
 
 1. Your **summary** is sent to the AI provider (same one used for summarizing).
-2. The AI **rewrites it as a spoken script** — conversational, with hooks and natural transitions.
+2. The AI **rewrites it as a spoken script** using your chosen **audio mode** — each mode has a distinct persona, structure, and delivery style.
 3. The script is sent to a **TTS voice** (Edge TTS or OpenAI) for synthesis and playback.
 
-The rewrite adapts to your **cognitive traits**:
+### Audio modes
+
+Audio modes control how the script is structured and delivered:
+
+| Mode | Persona | Best for |
+|------|---------|----------|
+| **podcast** (default) | Conversational host with hooks and transitions | General listening |
+| **briefing** | Analyst delivering concise, numbered facts | Daily catch-ups |
+| **lecture** | Patient teacher building understanding progressively | Deep learning |
+| **storyteller** | Narrator weaving a compelling narrative | Story-driven content |
+| **study-buddy** | Study partner with quizzes and mnemonics | Exam prep, retention |
+| **calm** | Gentle, soothing narrator | Relaxed / bedtime listening |
+
+```bash
+tldr config set audio-mode briefing           # Change default
+tldr --audio-mode lecture "https://..."        # Override for one run
+```
+
+Built-in presets bundle an audio mode with matching style, tone, and voice settings — see [Presets](configuration.md#presets).
+
+### Cognitive traits
+
+The rewrite also adapts to your **cognitive traits**. These work with any audio mode:
 
 | Trait | How the audio script changes |
 |-------|------------------------------|
@@ -20,7 +42,7 @@ The rewrite adapts to your **cognitive traits**:
 | **ESL** | Common vocabulary. Specialized terms explained inline. |
 | **Visual thinker** | Spatial language. Word pictures. Narrative structure. |
 
-Your **tone** setting also shapes the script (casual, professional, academic, eli5).
+Traits stack — enable multiple with `tldr preset edit`. Your **tone** setting (casual, professional, academic, eli5) also shapes the script.
 
 This costs one extra API call, which is why it sounds natural instead of robotic.
 
@@ -63,7 +85,7 @@ tldr config set tts-provider openai
 tldr config set tts-provider edge-tts   # back to default
 ```
 
-You can also change the TTS provider in the profile editor (`tldr profile edit` / `/config`).
+You can also change the TTS provider in the preset editor (`tldr preset edit` / `/config`).
 
 ### TTS Model
 
@@ -117,8 +139,8 @@ When you switch TTS providers, the voice automatically resets to the new provide
 ## Speed, Pitch & Volume
 
 ```bash
-# Set via profile editor
-tldr profile edit
+# Set via preset editor
+tldr preset edit
 
 # Or via CLI
 tldr config set tts-speed 1.25        # 25% faster

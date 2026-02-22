@@ -42,10 +42,16 @@ describe("matchCommands", () => {
     expect(names).toContain("help");
   });
 
-  it("matches /profile command", () => {
+  it("matches /preset command (and /profile as alias)", () => {
     const result = matchCommands("/pr");
     expect(result).toHaveLength(1);
-    expect(result[0]?.name).toBe("profile");
+    expect(result[0]?.name).toBe("preset");
+  });
+
+  it("matches /profile alias to /preset", () => {
+    const result = matchCommands("/profile");
+    expect(result).toHaveLength(1);
+    expect(result[0]?.name).toBe("preset");
   });
 });
 

@@ -1,8 +1,10 @@
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { BUILT_IN_PRESETS, isBuiltInPreset } from "./presets.js";
 import type {
   AppearanceMode,
+  AudioMode,
   CognitiveTrait,
   ConfigOverrides,
   ModelTier,
@@ -150,6 +152,14 @@ export const VALID_VOICES = new Set([
   "en-AU-NatashaNeural",
 ]);
 export const VALID_TTS_PROVIDERS = new Set(["edge-tts", "openai"]);
+export const VALID_AUDIO_MODES = new Set([
+  "podcast",
+  "briefing",
+  "lecture",
+  "storyteller",
+  "study-buddy",
+  "calm",
+]);
 
 function parseProfile(raw: unknown): Profile {
   if (typeof raw !== "object" || raw === null) {
@@ -206,6 +216,10 @@ function parseProfile(raw: unknown): Profile {
         : undefined,
     ttsModel:
       typeof obj.ttsModel === "string" && obj.ttsModel.length > 0 ? obj.ttsModel : undefined,
+    audioMode:
+      typeof obj.audioMode === "string" && VALID_AUDIO_MODES.has(obj.audioMode)
+        ? (obj.audioMode as AudioMode)
+        : undefined,
   };
 }
 
@@ -276,7 +290,11 @@ export function resolveModelId(input: string): string {
 
 export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverrides): ResolvedConfig {
   const profileName = overrides?.profileName ?? settings.activeProfile;
-  const profile = settings.profiles[profileName] ?? settings.profiles.default ?? DEFAULT_PROFILE;
+  const profile =
+    settings.profiles[profileName] ??
+    BUILT_IN_PRESETS[profileName] ??
+    settings.profiles.default ??
+    DEFAULT_PROFILE;
 
   // Style resolution: CLI override > profile setting
   const summaryStyle: SummaryStyle =
@@ -338,6 +356,14 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
     if (!edgeVoices.has(voice)) voice = "en-US-JennyNeural";
   }
 
+  // Audio mode resolution: CLI override > profile setting > default "podcast"
+  const audioMode: AudioMode =
+    overrides?.audioMode && VALID_AUDIO_MODES.has(overrides.audioMode)
+      ? (overrides.audioMode as AudioMode)
+      : profile.audioMode && VALID_AUDIO_MODES.has(profile.audioMode)
+        ? profile.audioMode
+        : "podcast";
+
   return {
     apiKey,
     baseUrl,
@@ -355,6 +381,7 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
     provider,
     ttsProvider,
     ttsModel: profile.ttsModel ?? "tts-1",
+    audioMode,
     outputDir,
   };
 }
@@ -394,6 +421,7 @@ export async function saveConfig(config: ResolvedConfig): Promise<void> {
     provider: config.provider !== "claude-code" ? config.provider : undefined,
     ttsProvider: config.ttsProvider !== "edge-tts" ? config.ttsProvider : undefined,
     ttsModel: config.ttsModel !== "tts-1" ? config.ttsModel : undefined,
+    audioMode: config.audioMode !== "podcast" ? config.audioMode : undefined,
   };
 
   await saveSettings(settings);
@@ -408,30 +436,60 @@ function resolveModelTier(modelId: string): ModelTier | undefined {
 
 // --- Profile CRUD ---
 
-export async function listProfiles(): Promise<{ name: string; active: boolean }[]> {
+export async function listProfiles(): Promise<
+  { name: string; active: boolean; builtIn: boolean; description?: string }[]
+> {
   const settings = await loadSettings();
-  return Object.keys(settings.profiles).map((name) => ({
+  const userProfiles = Object.keys(settings.profiles).map((name) => ({
     name,
     active: name === settings.activeProfile,
+    builtIn: false,
   }));
+
+  const userNames = new Set(Object.keys(settings.profiles));
+  const builtInProfiles = Object.entries(BUILT_IN_PRESETS)
+    .filter(([name]) => !userNames.has(name))
+    .map(([name, preset]) => ({
+      name,
+      active: name === settings.activeProfile,
+      builtIn: true,
+      description: preset.description,
+    }));
+
+  return [...userProfiles, ...builtInProfiles];
 }
 
 export async function createProfile(name: string, profile?: Partial<Profile>): Promise<void> {
   const settings = await loadSettings();
   if (settings.profiles[name]) {
-    throw new Error(`Profile "${name}" already exists.`);
+    throw new Error(`Preset "${name}" already exists.`);
   }
-  settings.profiles[name] = { ...DEFAULT_PROFILE, ...profile };
+  const base = BUILT_IN_PRESETS[name] ?? DEFAULT_PROFILE;
+  const {
+    builtIn: _,
+    description: __,
+    ...baseFields
+  } = base as Profile & {
+    builtIn?: boolean;
+    description?: string;
+  };
+  settings.profiles[name] = { ...baseFields, ...profile };
   await saveSettings(settings);
 }
 
 export async function deleteProfile(name: string): Promise<void> {
   if (name === "default") {
-    throw new Error('Cannot delete the "default" profile.');
+    throw new Error('Cannot delete the "default" preset.');
+  }
+  if (isBuiltInPreset(name)) {
+    const settings = await loadSettings();
+    if (!settings.profiles[name]) {
+      throw new Error(`"${name}" is a built-in preset and cannot be deleted.`);
+    }
   }
   const settings = await loadSettings();
   if (!settings.profiles[name]) {
-    throw new Error(`Profile "${name}" does not exist.`);
+    throw new Error(`Preset "${name}" does not exist.`);
   }
   delete settings.profiles[name];
   if (settings.activeProfile === name) {
@@ -442,8 +500,8 @@ export async function deleteProfile(name: string): Promise<void> {
 
 export async function setActiveProfile(name: string): Promise<void> {
   const settings = await loadSettings();
-  if (!settings.profiles[name]) {
-    throw new Error(`Profile "${name}" does not exist.`);
+  if (!settings.profiles[name] && !isBuiltInPreset(name)) {
+    throw new Error(`Preset "${name}" does not exist.`);
   }
   settings.activeProfile = name;
   await saveSettings(settings);

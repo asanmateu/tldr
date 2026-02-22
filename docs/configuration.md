@@ -2,7 +2,7 @@
 
 Settings are stored at `~/.tldr/settings.json`. Run `tldr config` to see your current settings.
 
-Most settings are easier to change interactively with `tldr profile edit` or `/config` in interactive mode. The CLI commands below are for when you know exactly what you want.
+Most settings are easier to change interactively with `tldr preset edit` or `/config` in interactive mode. The CLI commands below are for when you know exactly what you want.
 
 ## Summary
 
@@ -43,13 +43,33 @@ tldr --style quick "https://example.com/article"
 
 | Key | Values | Example |
 |-----|--------|---------|
+| `audio-mode` | `podcast`, `briefing`, `lecture`, `storyteller`, `study-buddy`, `calm` | `tldr config set audio-mode briefing` |
 | `tts-provider` | `edge-tts`, `openai` | `tldr config set tts-provider openai` |
 | `tts-model` | Any OpenAI TTS model ID | `tldr config set tts-model tts-1-hd` |
 | `voice` | TTS voice name | `tldr config set voice en-US-GuyNeural` |
 | `tts-speed` | Positive number | `tldr config set tts-speed 1.25` |
 | `pitch` | `low`, `default`, `high` | `tldr config set pitch high` |
 | `volume` | `quiet`, `normal`, `loud` | `tldr config set volume loud` |
-> **Note:** Pitch and Volume only apply to Edge TTS. They are not supported by OpenAI TTS and will be hidden in the profile editor when OpenAI is selected.
+> **Note:** Pitch and Volume only apply to Edge TTS. They are not supported by OpenAI TTS and will be hidden in the preset editor when OpenAI is selected.
+
+### Audio Modes
+
+Audio modes control the persona and structure used when rewriting summaries for spoken playback.
+
+| Mode | Persona | Best for |
+|------|---------|----------|
+| **podcast** (default) | Conversational podcast host | General listening |
+| **briefing** | Concise analyst | Quick daily catch-ups |
+| **lecture** | Patient teacher | Deep learning sessions |
+| **storyteller** | Compelling narrator | Narrative-driven content |
+| **study-buddy** | Smart study partner | Exam prep and retention |
+| **calm** | Gentle, soothing narrator | Relaxed listening |
+
+Override for a single run:
+
+```bash
+tldr --audio-mode briefing "https://example.com/article"
+```
 
 See the [Audio guide](audio.md) for workflow details, voice personalities, and save-with-audio behavior.
 
@@ -66,7 +86,7 @@ Three appearance modes: **auto** (detects system setting, default), **dark**, **
 
 ## Global Settings
 
-These are top-level settings, not profile-specific. They are not available in the interactive profile editor.
+These are top-level settings, not preset-specific. They are not available in the interactive preset editor.
 
 | Key | Values | Example |
 |-----|--------|---------|
@@ -74,22 +94,38 @@ These are top-level settings, not profile-specific. They are not available in th
 | `baseUrl` | Custom API endpoint | `tldr config set baseUrl https://proxy.example.com` |
 | `maxTokens` | Number | `tldr config set maxTokens 2048` |
 | `output-dir` | Path | `tldr config set output-dir ~/summaries` |
-| `activeProfile` | Profile name | `tldr config set activeProfile work` |
+| `activeProfile` | Preset name | `tldr config set activeProfile work` |
 
-## Profiles
+## Presets
 
-Profiles let you save different settings for different contexts (work, study, casual).
+Presets let you save different settings for different contexts. tldr ships with 7 built-in presets you can use out of the box or clone and customise.
+
+### Built-in Presets
+
+| Preset | Audio Mode | Style | Tone | Speed | Voice |
+|--------|-----------|-------|------|-------|-------|
+| **morning-brief** | briefing | quick | professional | 1.15x | Guy |
+| **commute-catch-up** | podcast | standard | casual | 1.0x | Jenny |
+| **deep-study** | lecture | study-notes | academic | 0.9x | Aria |
+| **exam-prep** | study-buddy | study-notes | casual | 0.95x | Jenny |
+| **bedtime-read** | calm | standard | casual | 0.85x | Sonia |
+| **story-mode** | storyteller | detailed | casual | 1.0x | Guy |
+| **team-debrief** | briefing | standard | professional | 1.0x | Jenny |
+
+Built-in presets are read-only. To customise one, create a preset with the same name — the built-in settings are used as a starting point.
+
+### Managing Presets
 
 ```bash
-tldr profile list                 # List profiles (* = active)
-tldr profile create work          # Create a new profile
-tldr profile use work             # Switch active profile
-tldr profile edit work            # Edit profile settings (interactive)
-tldr profile delete work          # Delete a profile
-tldr --profile work <url>         # Use a profile for one run
+tldr preset list                  # List presets (* = active)
+tldr preset create work           # Create a new preset
+tldr preset use work              # Switch active preset
+tldr preset edit work             # Edit preset settings (interactive)
+tldr preset delete work           # Delete a preset
+tldr --preset morning-brief <url> # Use a preset for one run
 ```
 
-In interactive mode, type `/profile` to switch profiles without leaving the TUI.
+In interactive mode, type `/preset` to switch presets without leaving the TUI.
 
 ## Interactive Commands
 
@@ -99,9 +135,9 @@ In interactive mode, type `/` to access commands:
 |---------|-------------|
 | `/history` | Browse and resume past sessions |
 | `/setup` | Re-run the first-time setup wizard |
-| `/config` | Edit current profile settings |
+| `/config` | Edit current preset settings |
 | `/theme` | Change color theme |
-| `/profile` | Switch between profiles |
+| `/preset` | Switch between presets |
 | `/help` | Show shortcuts and commands |
 | `/quit` | Exit the app |
 
@@ -127,7 +163,7 @@ When no `styleModels` are configured, all styles default to Opus.
 
 ## Model Selection
 
-The interactive profile editor (`tldr profile edit` / `/config`) uses a free-text input for the model field. Type any model ID supported by your provider — for example `gpt-4o` for OpenAI, `gemini-2.5-flash` for Gemini, or `llama3.3` for Ollama.
+The interactive preset editor (`tldr preset edit` / `/config`) uses a free-text input for the model field. Type any model ID supported by your provider — for example `gpt-4o` for OpenAI, `gemini-2.5-flash` for Gemini, or `llama3.3` for Ollama.
 
 ### Anthropic Aliases
 
@@ -161,9 +197,9 @@ Environment variables override file settings:
 
 Settings are resolved in this order (first wins):
 
-1. CLI flags (`--model`, `--style`, `--profile`, `--provider`)
+1. CLI flags (`--model`, `--style`, `--preset`, `--provider`, `--audio-mode`)
 2. Environment variables
-3. Profile settings in `settings.json`
+3. Preset/profile settings in `settings.json`
 4. Built-in defaults
 
 ## Defaults
@@ -173,6 +209,7 @@ Settings are resolved in this order (first wins):
 | Provider | `claude-code` (Claude Code) |
 | Summary style | `standard` |
 | Model | Opus (`claude-opus-4-6`) |
+| Audio mode | `podcast` |
 | Cognitive traits | `dyslexia` |
 | Tone | `casual` |
 | Voice | `en-US-JennyNeural` |

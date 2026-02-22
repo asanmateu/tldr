@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Config, ExtractionResult, ImageData, ResolvedConfig } from "../lib/types.js";
+import type {
+  AudioMode,
+  Config,
+  ExtractionResult,
+  ImageData,
+  ResolvedConfig,
+} from "../lib/types.js";
 
 const MAX_RETRIES = 3;
 
@@ -73,7 +79,7 @@ vi.mock("@anthropic-ai/sdk", () => {
   };
 });
 
-const { summarize, rewriteForSpeech } = await import("../lib/summarizer.js");
+const { summarize, rewriteForSpeech, AUDIO_MODE_PROMPTS } = await import("../lib/summarizer.js");
 const { chatViaAnthropic } = await import("../lib/providers/anthropic.js");
 const Anthropic = (await import("@anthropic-ai/sdk")).default;
 
@@ -104,6 +110,7 @@ function makeTestConfig(overrides?: Partial<ResolvedConfig>): Config {
     outputDir: "/tmp/tldr-output",
     ttsProvider: "edge-tts" as const,
     ttsModel: "tts-1",
+    audioMode: "podcast" as const,
     ...overrides,
   };
 }
@@ -382,6 +389,121 @@ describe("summarize", () => {
     expect(callArgs.system).toContain("direct and precise");
     expect(callArgs.system).toContain("common everyday");
     expect(callArgs.system).toContain("word pictures");
+  });
+});
+
+describe("audio modes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockMessagesCreate.mockResolvedValue({
+      content: [{ type: "text", text: "Rewritten." }],
+    });
+  });
+
+  it("AUDIO_MODE_PROMPTS contains all 6 audio modes", () => {
+    const expected: AudioMode[] = [
+      "podcast",
+      "briefing",
+      "lecture",
+      "storyteller",
+      "study-buddy",
+      "calm",
+    ];
+    expect(Object.keys(AUDIO_MODE_PROMPTS).sort()).toEqual(expected.sort());
+  });
+
+  it("rewriteForSpeech uses podcast persona by default", async () => {
+    const config = makeTestConfig({ audioMode: "podcast" });
+    await rewriteForSpeech("Summary text.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("podcast host");
+  });
+
+  it("rewriteForSpeech uses briefing persona", async () => {
+    const config = makeTestConfig({ audioMode: "briefing" });
+    await rewriteForSpeech("Summary text.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("analyst");
+    expect(callArgs.system).toContain("concise brief");
+    expect(callArgs.system).not.toContain("podcast host");
+  });
+
+  it("rewriteForSpeech uses lecture persona", async () => {
+    const config = makeTestConfig({ audioMode: "lecture" });
+    await rewriteForSpeech("Summary text.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("teacher");
+  });
+
+  it("rewriteForSpeech uses storyteller persona", async () => {
+    const config = makeTestConfig({ audioMode: "storyteller" });
+    await rewriteForSpeech("Summary text.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("narrator");
+    expect(callArgs.system).toContain("compelling story");
+  });
+
+  it("rewriteForSpeech uses study-buddy persona", async () => {
+    const config = makeTestConfig({ audioMode: "study-buddy" });
+    await rewriteForSpeech("Summary text.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("review and retain");
+  });
+
+  it("rewriteForSpeech uses calm persona", async () => {
+    const config = makeTestConfig({ audioMode: "calm" });
+    await rewriteForSpeech("Summary text.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("gentle");
+    expect(callArgs.system).toContain("soothing");
+  });
+
+  it("rewriteForSpeech includes tone hints with non-podcast mode", async () => {
+    const config = makeTestConfig({ audioMode: "briefing", tone: "eli5" });
+    await rewriteForSpeech("Summary text.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("analyst");
+    expect(callArgs.system).toContain("super simple and fun");
+  });
+
+  it("rewriteForSpeech includes trait rules with non-podcast mode", async () => {
+    const config = makeTestConfig({
+      audioMode: "calm",
+      cognitiveTraits: ["adhd"],
+    });
+    await rewriteForSpeech("Summary text.", config);
+
+    const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+    expect(callArgs.system).toContain("gentle");
+    expect(callArgs.system).toContain("hook attention");
+  });
+
+  it("all audio mode prompts include shared rules", async () => {
+    const modes: AudioMode[] = [
+      "podcast",
+      "briefing",
+      "lecture",
+      "storyteller",
+      "study-buddy",
+      "calm",
+    ];
+    for (const mode of modes) {
+      mockMessagesCreate.mockClear();
+      const config = makeTestConfig({ audioMode: mode });
+      await rewriteForSpeech("Summary text.", config);
+
+      const callArgs = mockMessagesCreate.mock.calls[0]?.[0];
+      expect(callArgs.system, `${mode} should include shared rules`).toContain(
+        "No markdown formatting",
+      );
+    }
   });
 });
 

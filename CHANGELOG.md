@@ -9,10 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Audio modes: six personas for spoken summaries — podcast, briefing, lecture, storyteller, study-buddy, calm
+- `--audio-mode` CLI flag and `tldr config set audio-mode` command
+- Built-in presets: morning-brief, commute-catch-up, deep-study, exam-prep, bedtime-read, story-mode, team-debrief
+- `--preset` CLI flag and `tldr preset` command (list, create, delete, use, edit)
 - Chat export: press `Ctrl+s` in chat view to save the conversation as `chat.md` in the session directory; auto-saves on every subsequent message
 
 ### Changed
 
+- Renamed "profiles" to "presets" in CLI and docs (`--profile` and `tldr profile` still work as aliases)
+- Audio rewriting uses template-driven prompts instead of hardcoded podcast persona
 - Chat view: role labels changed from "You"/"AI" to `›`/`◆` symbols, messages wrapped in bordered card, consistent spacing between messages
 
 ## [2.1.0] - 2026-02-21

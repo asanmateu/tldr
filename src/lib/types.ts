@@ -51,6 +51,7 @@ export type ModelTier = "haiku" | "sonnet" | "opus";
 export type PitchPreset = "low" | "default" | "high";
 export type VolumePreset = "quiet" | "normal" | "loud";
 export type TtsProvider = "edge-tts" | "openai";
+export type AudioMode = "podcast" | "briefing" | "lecture" | "storyteller" | "study-buddy" | "calm";
 
 export interface TtsGenerateOptions {
   voice: string;
@@ -90,6 +91,9 @@ export interface Profile {
   provider?: SummarizationProvider | undefined;
   ttsProvider?: TtsProvider | undefined;
   ttsModel?: string | undefined;
+  audioMode?: AudioMode | undefined;
+  builtIn?: boolean | undefined;
+  description?: string | undefined;
 }
 
 export interface TldrSettings {
@@ -120,6 +124,7 @@ export interface ResolvedConfig {
   provider: SummarizationProvider;
   ttsProvider: TtsProvider;
   ttsModel: string;
+  audioMode: AudioMode;
   outputDir: string;
 }
 
@@ -132,6 +137,7 @@ export interface ConfigOverrides {
   apiKey?: string | undefined;
   baseUrl?: string | undefined;
   provider?: string | undefined;
+  audioMode?: string | undefined;
 }
 
 export interface SessionPaths {

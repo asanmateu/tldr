@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useTheme } from "../lib/ThemeContext.js";
 
 interface ProfilePickerProps {
-  profiles: { name: string; active: boolean }[];
+  profiles: { name: string; active: boolean; builtIn?: boolean; description?: string }[];
   onSwitch: (name: string) => void;
   onClose: () => void;
 }
@@ -42,7 +42,7 @@ export function ProfilePicker({ profiles, onSwitch, onClose }: ProfilePickerProp
   return (
     <Box flexDirection="column" paddingX={1}>
       <Text bold color={theme.accent}>
-        Profiles
+        Presets
       </Text>
       <Box marginTop={1} flexDirection="column">
         {profiles.map((profile, i) => {
@@ -59,7 +59,9 @@ export function ProfilePicker({ profiles, onSwitch, onClose }: ProfilePickerProp
                   {profile.name}
                 </Text>
               )}
+              {profile.builtIn && <Text dimColor> (built-in)</Text>}
               {profile.active && <Text color={theme.success}> (active)</Text>}
+              {isSelected && profile.description && <Text dimColor> — {profile.description}</Text>}
             </Text>
           );
         })}

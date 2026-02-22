@@ -50,6 +50,7 @@ function makeTestConfig(overrides?: Partial<import("../lib/types.js").ResolvedCo
     outputDir: `${tempDir}/.tldr/output`,
     ttsProvider: "edge-tts" as const,
     ttsModel: "tts-1",
+    audioMode: "podcast" as const,
     ...overrides,
   };
 }
@@ -551,7 +552,7 @@ describe("config", () => {
   });
 
   describe("profile CRUD", () => {
-    it("lists profiles with active marker", async () => {
+    it("lists profiles with active marker and built-in flag", async () => {
       await saveSettings({
         activeProfile: "default",
         profiles: {
@@ -561,11 +562,14 @@ describe("config", () => {
       });
 
       const profiles = await listProfiles();
+      const userProfiles = profiles.filter((p) => !p.builtIn);
 
-      expect(profiles).toEqual([
-        { name: "default", active: true },
-        { name: "work", active: false },
+      expect(userProfiles).toEqual([
+        { name: "default", active: true, builtIn: false },
+        { name: "work", active: false, builtIn: false },
       ]);
+      // Also includes 7 built-in presets
+      expect(profiles.filter((p) => p.builtIn).length).toBe(7);
     });
 
     it("creates a new profile", async () => {
@@ -1004,6 +1008,180 @@ describe("config", () => {
       await saveConfig(config);
       const loaded = await loadConfig();
       expect(loaded.ttsModel).toBe("tts-1");
+    });
+  });
+
+  describe("audioMode", () => {
+    it("defaults audioMode to podcast", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+      expect(config.audioMode).toBe("podcast");
+    });
+
+    it("resolves audioMode from profile", () => {
+      const config = resolveConfig({
+        activeProfile: "default",
+        profiles: {
+          default: {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "quick",
+            audioMode: "briefing",
+          },
+        },
+      });
+      expect(config.audioMode).toBe("briefing");
+    });
+
+    it("CLI override takes precedence for audioMode", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: {
+              cognitiveTraits: [],
+              tone: "casual",
+              summaryStyle: "quick",
+              audioMode: "calm",
+            },
+          },
+        },
+        { audioMode: "lecture" },
+      );
+      expect(config.audioMode).toBe("lecture");
+    });
+
+    it("rejects invalid audioMode override", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: {
+              cognitiveTraits: [],
+              tone: "casual",
+              summaryStyle: "quick",
+              audioMode: "briefing",
+            },
+          },
+        },
+        { audioMode: "invalid" },
+      );
+      expect(config.audioMode).toBe("briefing");
+    });
+
+    it("saves and loads audioMode round-trip", async () => {
+      const config = makeTestConfig({ audioMode: "briefing" as const });
+      await saveConfig(config);
+      const loaded = await loadConfig();
+      expect(loaded.audioMode).toBe("briefing");
+    });
+
+    it("stores podcast audioMode as undefined", async () => {
+      const config = makeTestConfig({ audioMode: "podcast" as const });
+      await saveConfig(config);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.audioMode).toBeUndefined();
+    });
+  });
+
+  describe("built-in presets", () => {
+    it("resolves config from built-in preset", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+          },
+        },
+        { profileName: "morning-brief" },
+      );
+      expect(config.tone).toBe("professional");
+      expect(config.audioMode).toBe("briefing");
+    });
+
+    it("user profile overrides built-in with same name", () => {
+      const config = resolveConfig({
+        activeProfile: "morning-brief",
+        profiles: {
+          "morning-brief": {
+            cognitiveTraits: [],
+            tone: "casual",
+            summaryStyle: "standard",
+          },
+        },
+      });
+      expect(config.tone).toBe("casual");
+    });
+
+    it("listProfiles includes built-in presets", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+
+      const profiles = await listProfiles();
+      const builtIns = profiles.filter((p) => p.builtIn);
+      expect(builtIns.length).toBe(7);
+      expect(builtIns.map((p) => p.name)).toContain("morning-brief");
+    });
+
+    it("listProfiles deduplicates same-named user profile", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+          "morning-brief": { cognitiveTraits: [], tone: "casual", summaryStyle: "standard" },
+        },
+      });
+
+      const profiles = await listProfiles();
+      const morningBriefs = profiles.filter((p) => p.name === "morning-brief");
+      expect(morningBriefs.length).toBe(1);
+      expect(morningBriefs[0]?.builtIn).toBe(false);
+    });
+
+    it("setActiveProfile accepts built-in name", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+
+      await setActiveProfile("morning-brief");
+      const settings = await loadSettings();
+      expect(settings.activeProfile).toBe("morning-brief");
+    });
+
+    it("deleteProfile rejects built-in name", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+
+      await expect(deleteProfile("morning-brief")).rejects.toThrow("built-in preset");
+    });
+
+    it("createProfile clones built-in as base", async () => {
+      await saveSettings({
+        activeProfile: "default",
+        profiles: {
+          default: { cognitiveTraits: [], tone: "casual", summaryStyle: "quick" },
+        },
+      });
+
+      await createProfile("morning-brief");
+      const settings = await loadSettings();
+      expect(settings.profiles["morning-brief"]?.tone).toBe("professional");
+      expect(settings.profiles["morning-brief"]?.audioMode).toBe("briefing");
     });
   });
 

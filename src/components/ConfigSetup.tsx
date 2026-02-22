@@ -7,6 +7,7 @@ import { resolveConfig } from "../lib/config.js";
 import { getVoicesForProvider } from "../lib/tts/voices.js";
 import type {
   AppearanceMode,
+  AudioMode,
   CognitiveTrait,
   Config,
   PitchPreset,
@@ -39,6 +40,7 @@ type EditMenuItem =
   | "style"
   | "model"
   | "provider"
+  | "audioMode"
   | "ttsProvider"
   | "ttsModel"
   | "voice"
@@ -73,6 +75,15 @@ const ALL_STYLES: { value: SummaryStyle; label: string; hint: string }[] = [
 const ALL_TTS_PROVIDERS: { value: TtsProvider; label: string; hint: string }[] = [
   { value: "edge-tts", label: "Edge TTS", hint: "free, Microsoft Neural voices" },
   { value: "openai", label: "OpenAI TTS", hint: "high quality, requires OPENAI_API_KEY" },
+];
+
+const ALL_AUDIO_MODES: { value: AudioMode; label: string; hint: string }[] = [
+  { value: "podcast", label: "Podcast", hint: "conversational, energetic host" },
+  { value: "briefing", label: "Briefing", hint: "concise analyst, pure signal" },
+  { value: "lecture", label: "Lecture", hint: "patient teacher, builds understanding" },
+  { value: "storyteller", label: "Storyteller", hint: "narrative arc, finds the human angle" },
+  { value: "study-buddy", label: "Study Buddy", hint: "quizzes, mnemonics, recall prompts" },
+  { value: "calm", label: "Calm", hint: "gentle, soothing, no urgency" },
 ];
 
 const ALL_PITCHES: { value: PitchPreset; label: string; hint: string }[] = [
@@ -119,6 +130,7 @@ const EDIT_MENU_ITEMS: { key: EditMenuItem; label: string; section: string }[] =
   { key: "model", label: "Model", section: "Summary" },
   { key: "customInstructions", label: "Custom instructions", section: "Summary" },
   // Audio
+  { key: "audioMode", label: "Audio mode", section: "Audio" },
   { key: "ttsProvider", label: "TTS Provider", section: "Audio" },
   { key: "ttsModel", label: "TTS Model", section: "Audio" },
   { key: "voice", label: "Voice", section: "Audio" },
@@ -172,6 +184,8 @@ export function ConfigSetup({
   const [volume, setVolume] = useState<VolumePreset>(defaults.volume);
   const [provider, setProvider] = useState<SummarizationProvider>(defaults.provider);
   const [ttsProvider, setTtsProvider] = useState<TtsProvider>(defaults.ttsProvider);
+  const [audioMode, setAudioMode] = useState<AudioMode>(defaults.audioMode);
+
   // Model state — free-text input, pre-filled with current model
   const [modelInput, setModelInput] = useState(defaults.model);
   const [selectedModel, setSelectedModel] = useState(defaults.model);
@@ -236,6 +250,13 @@ export function ConfigSetup({
       0,
     ),
   });
+  const audioModeNav = useListNavigation({
+    itemCount: ALL_AUDIO_MODES.length,
+    initialIndex: Math.max(
+      ALL_AUDIO_MODES.findIndex((m) => m.value === defaults.audioMode),
+      0,
+    ),
+  });
   const ttsProviderNav = useListNavigation({
     itemCount: ALL_TTS_PROVIDERS.length,
     initialIndex: Math.max(
@@ -296,6 +317,7 @@ export function ConfigSetup({
       provider: provider !== "claude-code" ? provider : undefined,
       ttsProvider: ttsProvider !== "edge-tts" ? ttsProvider : undefined,
       ttsModel: selectedTtsModel !== "tts-1" ? selectedTtsModel : undefined,
+      audioMode: audioMode !== "podcast" ? audioMode : undefined,
     };
 
     const settings: TldrSettings = {
@@ -315,6 +337,7 @@ export function ConfigSetup({
     volume,
     provider,
     ttsProvider,
+    audioMode,
     selectedModel,
     selectedTtsModel,
     selectedTraits,
@@ -528,6 +551,17 @@ export function ConfigSetup({
         return;
       }
 
+      if (editingField === "audioMode") {
+        if (key.upArrow) audioModeNav.handleUp();
+        if (key.downArrow) audioModeNav.handleDown();
+        if (key.return) {
+          const selected = ALL_AUDIO_MODES[audioModeNav.index];
+          if (selected) setAudioMode(selected.value);
+          setEditingField(null);
+        }
+        return;
+      }
+
       if (editingField === "ttsProvider") {
         if (key.upArrow) ttsProviderNav.handleUp();
         if (key.downArrow) ttsProviderNav.handleDown();
@@ -640,7 +674,7 @@ export function ConfigSetup({
   return (
     <Box flexDirection="column" paddingX={1}>
       <Text bold color={theme.accent}>
-        Edit Profile: {defaults.profileName}
+        Edit Preset: {defaults.profileName}
       </Text>
 
       <Box marginTop={1} flexDirection="column">
@@ -657,6 +691,7 @@ export function ConfigSetup({
             if (item.key === "style") current = style;
             if (item.key === "model") current = selectedModel;
             if (item.key === "provider") current = provider;
+            if (item.key === "audioMode") current = audioMode;
             if (item.key === "ttsProvider") current = ttsProvider;
             if (item.key === "ttsModel") current = selectedTtsModel;
             if (item.key === "voice") current = voices[voiceNav.index]?.label ?? "";
@@ -721,6 +756,14 @@ export function ConfigSetup({
             title="Summary style (Enter to confirm):"
             items={ALL_STYLES}
             selectedIndex={styleNav.index}
+          />
+        )}
+
+        {editingField === "audioMode" && (
+          <SelectionList
+            title="Audio Mode (Enter to confirm):"
+            items={ALL_AUDIO_MODES}
+            selectedIndex={audioModeNav.index}
           />
         )}
 

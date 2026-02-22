@@ -1,5 +1,6 @@
 import {
   VALID_APPEARANCES,
+  VALID_AUDIO_MODES,
   VALID_PITCHES,
   VALID_PROVIDERS,
   VALID_STYLES,
@@ -103,6 +104,12 @@ const CONFIG_KEYS: Record<string, ConfigKeyDescriptor> = {
     target: "profile",
     property: "ttsModel",
     defaultValue: "tts-1",
+  },
+  "audio-mode": {
+    target: "profile",
+    property: "audioMode",
+    validValues: VALID_AUDIO_MODES,
+    defaultValue: "podcast",
   },
   "tts-speed": {
     target: "profile",

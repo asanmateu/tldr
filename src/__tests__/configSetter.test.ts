@@ -55,6 +55,7 @@ describe("configSetter", () => {
       expect(keys).toContain("tts-model");
       expect(keys).toContain("tts-provider");
       expect(keys).toContain("output-dir");
+      expect(keys).toContain("audio-mode");
     });
   });
 
@@ -424,6 +425,35 @@ describe("configSetter", () => {
       await expect(
         applyConfigSet("tts-provider", "banana", ["config", "set", "tts-provider", "banana"]),
       ).rejects.toThrow("Invalid tts-provider");
+    });
+  });
+
+  describe("audio-mode", () => {
+    it("sets audio-mode on active profile", async () => {
+      await seedSettings();
+      const msg = await applyConfigSet("audio-mode", "briefing", [
+        "config",
+        "set",
+        "audio-mode",
+        "briefing",
+      ]);
+      expect(msg).toContain("briefing");
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.audioMode).toBe("briefing");
+    });
+
+    it("rejects invalid audio-mode value", async () => {
+      await seedSettings();
+      await expect(
+        applyConfigSet("audio-mode", "invalid", ["config", "set", "audio-mode", "invalid"]),
+      ).rejects.toThrow("Invalid audio-mode");
+    });
+
+    it("stores default audio-mode as undefined", async () => {
+      await seedSettings();
+      await applyConfigSet("audio-mode", "podcast", ["config", "set", "audio-mode", "podcast"]);
+      const settings = await loadSettings();
+      expect(settings.profiles.default?.audioMode).toBeUndefined();
     });
   });
 
