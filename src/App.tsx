@@ -52,11 +52,12 @@ interface AppProps {
   showConfig?: boolean | undefined;
   editProfile?: boolean | undefined;
   overrides?: ConfigOverrides | undefined;
+  onUpdate?: () => void;
 }
 
 const MAX_INPUT_WORDS = 100_000;
 
-export function App({ initialInput, showConfig, editProfile, overrides }: AppProps) {
+export function App({ initialInput, showConfig, editProfile, overrides, onUpdate }: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const clearScreen = useCallback(() => {
@@ -336,13 +337,18 @@ export function App({ initialInput, showConfig, editProfile, overrides }: AppPro
         case "help":
           setState("help");
           break;
+        case "update":
+          if (audioProcess) stopAudio(audioProcess);
+          onUpdate?.();
+          exit();
+          break;
         case "quit":
           if (audioProcess) stopAudio(audioProcess);
           exit();
           break;
       }
     },
-    [audioProcess, exit],
+    [audioProcess, exit, onUpdate],
   );
 
   const handleHistorySelect = useCallback((entry: TldrResult) => {

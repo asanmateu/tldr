@@ -10,7 +10,6 @@ import { looksLikeFilePath, normalizeDraggedPath } from "../lib/paths.js";
 import type { TldrResult } from "../lib/types.js";
 import { Banner } from "./Banner.js";
 import { SlashCommandMenu } from "./SlashCommandMenu.js";
-import { UpdateNotice } from "./UpdateNotice.js";
 
 interface InputPromptProps {
   history: TldrResult[];
@@ -168,8 +167,7 @@ export function InputPrompt({
 
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Banner />
-      {updateInfo && <UpdateNotice update={updateInfo} />}
+      <Banner updateInfo={updateInfo} />
       {toast && (
         <Box>
           <Text color={theme.success}>{toast}</Text>

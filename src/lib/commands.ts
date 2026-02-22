@@ -10,6 +10,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { name: "theme", description: "Change color theme" },
   { name: "preset", description: "Switch between presets" },
   { name: "help", description: "Show shortcuts and commands" },
+  { name: "update", description: "Update to the latest version" },
   { name: "quit", description: "Exit the app" },
 ];
 

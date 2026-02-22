@@ -1,10 +1,15 @@
 import { Box, Text } from "ink";
 import pkg from "../../package.json";
 import { useTheme } from "../lib/ThemeContext.js";
+import type { UpdateCheckResult } from "../lib/updateCheck.js";
 
 const version = pkg.version;
 
-export function Banner() {
+interface BannerProps {
+  updateInfo?: UpdateCheckResult | null;
+}
+
+export function Banner({ updateInfo }: BannerProps) {
   const theme = useTheme();
 
   return (
@@ -14,7 +19,10 @@ export function Banner() {
         <Text color={theme.brand} bold>
           {"tl;dr"}
         </Text>
-        <Text dimColor>{`  v${version}`}</Text>
+        <Text dimColor>
+          {`  v${version}`}
+          {updateInfo ? ` → ${updateInfo.latestVersion} available` : ""}
+        </Text>
       </Box>
       <Text dimColor>{"   summarize anything."}</Text>
     </Box>

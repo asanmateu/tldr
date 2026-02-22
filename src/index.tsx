@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { spawnSync } from "node:child_process";
 import { render } from "ink";
 import { App } from "./App.js";
 import {
@@ -14,6 +15,7 @@ import * as fmt from "./lib/fmt.js";
 import { importMarkdown } from "./lib/import.js";
 import { resolveTheme } from "./lib/theme.js";
 import type { ConfigOverrides } from "./lib/types.js";
+import { isHomebrew } from "./lib/updateCheck.js";
 
 const args = process.argv.slice(2);
 
@@ -355,5 +357,24 @@ if (command === "config") {
       a !== "preset",
   );
 
-  render(<App initialInput={initialInput} showConfig={showConfig} overrides={overrides} />);
+  let wantsUpdate = false;
+  const instance = render(
+    <App
+      initialInput={initialInput}
+      showConfig={showConfig}
+      overrides={overrides}
+      onUpdate={() => {
+        wantsUpdate = true;
+      }}
+    />,
+  );
+  await instance.waitUntilExit();
+
+  if (wantsUpdate) {
+    if (isHomebrew()) {
+      spawnSync("brew", ["upgrade", "tldr-cli"], { stdio: "inherit" });
+    } else {
+      console.log("\nDownload the latest version:\n  https://github.com/asanmateu/tldr/releases\n");
+    }
+  }
 }

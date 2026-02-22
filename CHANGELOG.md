@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `/update` slash command: update to the latest version without leaving the app (runs `brew upgrade` for Homebrew installs, shows download link otherwise)
+- Inline update notice in banner: version line shows `v2.2.1 → 2.2.2 available` when an update is available, replacing the separate colored notice line
+
+### Removed
+
+- Standalone `UpdateNotice` component — update information is now displayed inline in the banner
+
 ## [2.2.1] - 2026-02-22
 
 ### Fixed
