@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   loadSettings: vi.fn(),
   saveConfig: vi.fn(),
   saveSettings: vi.fn(),
+  resolveConfig: vi.fn(),
   listProfiles: vi.fn(),
   setActiveProfile: vi.fn(),
   addEntry: vi.fn(),
@@ -57,6 +58,7 @@ vi.mock("../lib/config.js", () => ({
   loadSettings: mocks.loadSettings,
   saveConfig: mocks.saveConfig,
   saveSettings: mocks.saveSettings,
+  resolveConfig: mocks.resolveConfig,
   listProfiles: mocks.listProfiles,
   setActiveProfile: mocks.setActiveProfile,
 }));
@@ -170,6 +172,26 @@ describe("App", () => {
     vi.clearAllMocks();
 
     mocks.resolveTheme.mockReturnValue(DEFAULT_PALETTE);
+    mocks.resolveConfig.mockImplementation(
+      (settings: {
+        apiKey?: string;
+        activeProfile?: string;
+        profiles?: Record<string, Record<string, unknown>>;
+      }) => {
+        const profileName = settings.activeProfile ?? "default";
+        const profile = settings.profiles?.[profileName] ?? {};
+        return {
+          ...TEST_CONFIG,
+          profileName,
+          apiKey: settings.apiKey ?? TEST_CONFIG.apiKey,
+          provider: profile.provider ?? "claude-code",
+          audioMode: profile.audioMode ?? "podcast",
+          tone: profile.tone ?? TEST_CONFIG.tone,
+          summaryStyle: profile.summaryStyle ?? TEST_CONFIG.summaryStyle,
+          cognitiveTraits: profile.cognitiveTraits ?? TEST_CONFIG.cognitiveTraits,
+        };
+      },
+    );
     mocks.loadSettings.mockResolvedValue({
       setupCompleted: true,
       activeProfile: "default",
@@ -850,7 +872,327 @@ describe("App", () => {
   });
 
   // -----------------------------------------------------------------------
-  // Group 8: Audio UX
+  // Group 8: First-run setup wizard
+  // -----------------------------------------------------------------------
+  describe("first-run setup wizard", () => {
+    beforeEach(() => {
+      // Override: first-run state (setupCompleted is undefined)
+      mocks.loadSettings.mockResolvedValue({
+        setupCompleted: undefined,
+        activeProfile: "default",
+        profiles: {
+          default: { tone: "casual", summaryStyle: "standard", cognitiveTraits: [] },
+        },
+      });
+    });
+
+    it("shows provider step first on fresh install", async () => {
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("tldr Setup");
+          expect(frame).toContain("AI Provider");
+          expect(frame).toContain("Anthropic");
+          expect(frame).toContain("Claude Code");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("selecting claude-code skips API key guidance and goes to theme", async () => {
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("AI Provider");
+        },
+        { timeout: 2000 },
+      );
+
+      // Navigate down to Claude Code (index 1)
+      instance.stdin.write("\x1B[B"); // down arrow
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Color theme");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("selecting anthropic without env var shows API key guidance", async () => {
+      // Ensure ANTHROPIC_API_KEY is not set
+      const origKey = process.env.ANTHROPIC_API_KEY;
+      Reflect.deleteProperty(process.env, "ANTHROPIC_API_KEY");
+
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("AI Provider");
+        },
+        { timeout: 2000 },
+      );
+
+      // Anthropic is first in the list, just press Enter
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("ANTHROPIC_API_KEY");
+          expect(frame).toContain("shell profile");
+        },
+        { timeout: 2000 },
+      );
+
+      // Restore env
+      if (origKey !== undefined) process.env.ANTHROPIC_API_KEY = origKey;
+
+      instance.unmount();
+    });
+
+    it("selecting anthropic with env var set skips guidance and goes to theme", async () => {
+      const origKey = process.env.ANTHROPIC_API_KEY;
+      process.env.ANTHROPIC_API_KEY = "sk-test-key";
+
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("AI Provider");
+        },
+        { timeout: 2000 },
+      );
+
+      // Anthropic is first, press Enter
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Color theme");
+        },
+        { timeout: 2000 },
+      );
+
+      // Restore env
+      if (origKey !== undefined) {
+        process.env.ANTHROPIC_API_KEY = origKey;
+      } else {
+        Reflect.deleteProperty(process.env, "ANTHROPIC_API_KEY");
+      }
+
+      instance.unmount();
+    });
+
+    it("selecting ollama skips API key guidance", async () => {
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("AI Provider");
+        },
+        { timeout: 2000 },
+      );
+
+      // Navigate to Ollama (index 4: anthropic=0, claude-code=1, codex=2, gemini=3, ollama=4)
+      for (let i = 0; i < 4; i++) {
+        instance.stdin.write("\x1B[B");
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Color theme");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("audio mode step appears after style selection", async () => {
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("AI Provider");
+        },
+        { timeout: 2000 },
+      );
+
+      // Step 1: Select claude-code (skip API key)
+      instance.stdin.write("\x1B[B");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Step 2: Theme name
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Color theme");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Step 3: Appearance
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Appearance mode");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Step 4: Traits
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Cognitive traits");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Step 5: Tone
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Tone");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Step 6: Style
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Summary style");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Step 7: Audio mode
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Audio mode");
+          expect(frame).toContain("Podcast");
+          expect(frame).toContain("Briefing");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("completing wizard saves config with correct provider and audioMode", async () => {
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("AI Provider");
+        },
+        { timeout: 2000 },
+      );
+
+      // Select claude-code (index 1)
+      instance.stdin.write("\x1B[B");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Theme name
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Color theme");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Appearance
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Appearance mode");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Traits
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Cognitive traits");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Tone
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Tone");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Style
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Summary style");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Audio mode — select "Briefing" (index 1)
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Audio mode");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\x1B[B");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Verify saveConfig was called with the correct provider and audioMode
+      await vi.waitFor(
+        () => {
+          expect(mocks.saveConfig).toHaveBeenCalled();
+          const savedConfig = mocks.saveConfig.mock.calls[0]?.[0] as Config;
+          expect(savedConfig.provider).toBe("claude-code");
+          expect(savedConfig.audioMode).toBe("briefing");
+        },
+        { timeout: 3000 },
+      );
+
+      instance.unmount();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Group 9: Audio UX
   // -----------------------------------------------------------------------
   describe("audio UX", () => {
     it("shows bordered audio panel on result", async () => {

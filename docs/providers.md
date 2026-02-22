@@ -20,7 +20,7 @@ tldr uses Claude Code by default. If you have it installed and authenticated, no
 tldr "https://example.com/article"
 ```
 
-If Claude Code is not installed, tldr shows setup instructions on first run. If an API key is available, it falls back to the Anthropic API provider automatically.
+On first run, the setup wizard asks you to pick a provider. If the chosen provider needs an API key, the wizard shows which environment variable to set.
 
 ### Installing Claude Code
 

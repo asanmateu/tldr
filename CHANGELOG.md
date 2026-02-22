@@ -11,10 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `/update` slash command: update to the latest version without leaving the app (runs `brew upgrade` for Homebrew installs, shows download link otherwise)
 - Inline update notice in banner: version line shows `v2.2.1 → 2.2.2 available` when an update is available, replacing the separate colored notice line
+- Setup wizard now starts with AI provider selection — standalone (Homebrew) users pick their provider instead of defaulting to Claude Code
+- Setup wizard ends with audio mode selection, surfacing the v2.2.0 podcast/briefing/lecture/etc. feature during onboarding
+- Setup wizard shows per-provider env var guidance (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) when the chosen provider needs an API key
+
+### Fixed
+
+- Setup wizard no longer assumes Anthropic API key — shows the correct environment variable name for the selected provider
 
 ### Removed
 
 - Standalone `UpdateNotice` component — update information is now displayed inline in the banner
+- API key text input from setup wizard — replaced by environment variable guidance screen
 
 ## [2.2.1] - 2026-02-22
 

@@ -32,7 +32,7 @@ interface ConfigSetupProps {
   onCancel: () => void;
 }
 
-type FirstRunStep = "apiKey" | "theme" | "traits" | "tone" | "style";
+type FirstRunStep = "provider" | "apiKey" | "theme" | "traits" | "tone" | "style" | "audioMode";
 type EditMenuItem =
   | "theme"
   | "traits"
@@ -108,6 +108,16 @@ const ALL_PROVIDERS: { value: SummarizationProvider; label: string; hint: string
   { value: "xai", label: "xAI / Grok", hint: "xAI API, needs XAI_API_KEY" },
 ];
 
+const PROVIDER_ENV_VARS: Record<SummarizationProvider, string | null> = {
+  anthropic: "ANTHROPIC_API_KEY",
+  "claude-code": null,
+  codex: null,
+  gemini: "GEMINI_API_KEY",
+  ollama: null,
+  openai: "OPENAI_API_KEY",
+  xai: "XAI_API_KEY",
+};
+
 const ALL_THEME_NAMES: { value: ThemeName; label: string; hint: string }[] = [
   { value: "coral", label: "Coral", hint: "warm reds & oranges" },
   { value: "ocean", label: "Ocean", hint: "cool blues & teals" },
@@ -166,13 +176,11 @@ export function ConfigSetup({
   onCancel,
 }: ConfigSetupProps) {
   const theme = useTheme();
-  const hasEnvApiKey = !!process.env.ANTHROPIC_API_KEY;
   const isFirstRun = !editProfile;
 
   const defaults = currentConfig ?? buildDefaultConfig();
 
   // Shared state for profile settings
-  const [apiKey, setApiKey] = useState(defaults.apiKey);
   const [selectedTraits, setSelectedTraits] = useState<Set<CognitiveTrait>>(
     new Set(defaults.cognitiveTraits),
   );
@@ -290,69 +298,63 @@ export function ConfigSetup({
   const editMenuNav = useListNavigation({ itemCount: editMenuItems.length });
 
   // First-run step state
-  const skipApiKey = hasEnvApiKey || defaults.provider === "claude-code";
-  const initialStep: FirstRunStep = isFirstRun && !skipApiKey ? "apiKey" : "theme";
-  const [firstRunStep, setFirstRunStep] = useState<FirstRunStep>(initialStep);
+  const [firstRunStep, setFirstRunStep] = useState<FirstRunStep>("provider");
 
   // Edit mode state
   const [editingField, setEditingField] = useState<EditMenuItem | null>(null);
 
-  const buildConfig = useCallback((): Config => {
-    const resolvedApiKey = hasEnvApiKey ? (process.env.ANTHROPIC_API_KEY ?? "") : apiKey;
-    const voice =
-      voices[voiceNav.index]?.value ?? (ttsProvider === "openai" ? "alloy" : "en-US-JennyNeural");
-    const ttsSpeed = Number.parseFloat(ttsSpeedInput) || 1.0;
-    const defaultVoice = ttsProvider === "openai" ? "alloy" : "en-US-JennyNeural";
+  const buildConfig = useCallback(
+    (overrides?: { audioMode?: AudioMode }): Config => {
+      const envVar = PROVIDER_ENV_VARS[provider];
+      const resolvedApiKey = envVar ? (process.env[envVar] ?? "") : "";
+      const voice =
+        voices[voiceNav.index]?.value ?? (ttsProvider === "openai" ? "alloy" : "en-US-JennyNeural");
+      const ttsSpeed = Number.parseFloat(ttsSpeedInput) || 1.0;
+      const defaultVoice = ttsProvider === "openai" ? "alloy" : "en-US-JennyNeural";
+      const effectiveAudioMode = overrides?.audioMode ?? audioMode;
 
-    const profile: Profile = {
-      cognitiveTraits: [...selectedTraits],
+      const profile: Profile = {
+        cognitiveTraits: [...selectedTraits],
+        tone,
+        summaryStyle: style,
+        customInstructions: customInstructions || undefined,
+        model: selectedModel || undefined,
+        voice: voice !== defaultVoice ? voice : undefined,
+        ttsSpeed: ttsSpeed !== 1.0 ? ttsSpeed : undefined,
+        pitch: pitch !== "default" ? pitch : undefined,
+        volume: volume !== "normal" ? volume : undefined,
+        provider: provider !== "claude-code" ? provider : undefined,
+        ttsProvider: ttsProvider !== "edge-tts" ? ttsProvider : undefined,
+        ttsModel: selectedTtsModel !== "tts-1" ? selectedTtsModel : undefined,
+        audioMode: effectiveAudioMode !== "podcast" ? effectiveAudioMode : undefined,
+      };
+
+      const settings: TldrSettings = {
+        apiKey: resolvedApiKey || undefined,
+        activeProfile: defaults.profileName,
+        profiles: { [defaults.profileName]: profile },
+      };
+
+      return resolveConfig(settings);
+    },
+    [
+      voices,
+      voiceNav.index,
+      ttsSpeedInput,
+      pitch,
+      volume,
+      provider,
+      ttsProvider,
+      audioMode,
+      selectedModel,
+      selectedTtsModel,
+      selectedTraits,
       tone,
-      summaryStyle: style,
-      customInstructions: customInstructions || undefined,
-      model: selectedModel || undefined,
-      voice: voice !== defaultVoice ? voice : undefined,
-      ttsSpeed: ttsSpeed !== 1.0 ? ttsSpeed : undefined,
-      pitch: pitch !== "default" ? pitch : undefined,
-      volume: volume !== "normal" ? volume : undefined,
-      provider: provider !== "claude-code" ? provider : undefined,
-      ttsProvider: ttsProvider !== "edge-tts" ? ttsProvider : undefined,
-      ttsModel: selectedTtsModel !== "tts-1" ? selectedTtsModel : undefined,
-      audioMode: audioMode !== "podcast" ? audioMode : undefined,
-    };
-
-    const settings: TldrSettings = {
-      apiKey: resolvedApiKey || undefined,
-      activeProfile: defaults.profileName,
-      profiles: { [defaults.profileName]: profile },
-    };
-
-    return resolveConfig(settings);
-  }, [
-    hasEnvApiKey,
-    apiKey,
-    voices,
-    voiceNav.index,
-    ttsSpeedInput,
-    pitch,
-    volume,
-    provider,
-    ttsProvider,
-    audioMode,
-    selectedModel,
-    selectedTtsModel,
-    selectedTraits,
-    tone,
-    style,
-    customInstructions,
-    defaults.profileName,
-  ]);
-
-  const handleApiKeySubmit = useCallback((value: string) => {
-    if (value.trim()) {
-      setApiKey(value.trim());
-      setFirstRunStep("traits");
-    }
-  }, []);
+      style,
+      customInstructions,
+      defaults.profileName,
+    ],
+  );
 
   const toggleTrait = useCallback(() => {
     const trait = ALL_TRAITS[traitNav.index];
@@ -407,6 +409,29 @@ export function ConfigSetup({
 
     // --- First-run mode ---
     if (isFirstRun && !editProfile) {
+      if (firstRunStep === "provider") {
+        if (key.upArrow) providerNav.handleUp();
+        if (key.downArrow) providerNav.handleDown();
+        if (key.return) {
+          const selected = ALL_PROVIDERS[providerNav.index];
+          if (selected) {
+            setProvider(selected.value);
+            const envVar = PROVIDER_ENV_VARS[selected.value];
+            if (envVar && !process.env[envVar]) {
+              setFirstRunStep("apiKey");
+            } else {
+              setFirstRunStep("theme");
+            }
+          }
+        }
+        return;
+      }
+
+      if (firstRunStep === "apiKey") {
+        if (key.return) setFirstRunStep("theme");
+        return;
+      }
+
       if (firstRunStep === "theme") {
         if (themeSubStep === "name") {
           if (key.upArrow) themeNameNav.handleUp();
@@ -445,7 +470,20 @@ export function ConfigSetup({
         if (key.return) {
           const selected = ALL_STYLES[styleNav.index];
           if (selected) setStyle(selected.value);
-          setTimeout(() => onSave(buildConfig()), 0);
+          setFirstRunStep("audioMode");
+        }
+        return;
+      }
+
+      if (firstRunStep === "audioMode") {
+        if (key.upArrow) audioModeNav.handleUp();
+        if (key.downArrow) audioModeNav.handleDown();
+        if (key.return) {
+          const selected = ALL_AUDIO_MODES[audioModeNav.index];
+          if (selected) {
+            setAudioMode(selected.value);
+            setTimeout(() => onSave(buildConfig({ audioMode: selected.value })), 0);
+          }
         }
         return;
       }
@@ -603,16 +641,26 @@ export function ConfigSetup({
         </Text>
 
         <Box marginTop={1} flexDirection="column">
+          {firstRunStep === "provider" && (
+            <SelectionList
+              title="AI Provider (Enter to confirm):"
+              items={ALL_PROVIDERS}
+              selectedIndex={providerNav.index}
+            />
+          )}
+
           {firstRunStep === "apiKey" && (
             <Box flexDirection="column">
-              <Text>Anthropic API Key:</Text>
-              <Text dimColor>Or set ANTHROPIC_API_KEY env var</Text>
-              <TextInput
-                value={apiKey}
-                onChange={setApiKey}
-                onSubmit={handleApiKeySubmit}
-                mask="*"
-              />
+              <Text>
+                Set <Text bold>{PROVIDER_ENV_VARS[provider]}</Text> in your shell profile (e.g.
+                ~/.zshrc):
+              </Text>
+              <Box marginTop={1}>
+                <Text dimColor>export {PROVIDER_ENV_VARS[provider]}="your-key-here"</Text>
+              </Box>
+              <Box marginTop={1}>
+                <Text dimColor>Then restart your terminal. Press Enter to continue.</Text>
+              </Box>
             </Box>
           )}
 
@@ -659,6 +707,14 @@ export function ConfigSetup({
               title="Summary style (Enter to confirm):"
               items={ALL_STYLES}
               selectedIndex={styleNav.index}
+            />
+          )}
+
+          {firstRunStep === "audioMode" && (
+            <SelectionList
+              title="Audio mode (Enter to confirm):"
+              items={ALL_AUDIO_MODES}
+              selectedIndex={audioModeNav.index}
             />
           )}
         </Box>
