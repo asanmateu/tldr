@@ -82,7 +82,7 @@ function runClaude(
       if ((err as NodeJS.ErrnoException).code === "ENOENT") {
         reject(
           new ClaudeCodeProviderError(
-            "Claude CLI not found. Install it with: npm install -g @anthropic-ai/claude-code",
+            "Claude Code CLI not found. Install it from https://docs.anthropic.com/en/docs/claude-code",
             "NOT_FOUND",
           ),
         );

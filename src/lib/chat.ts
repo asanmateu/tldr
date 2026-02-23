@@ -16,6 +16,6 @@ export async function chatWithSession(
   onChunk: (text: string) => void,
 ): Promise<string> {
   const systemPrompt = buildChatSystemPrompt(summaryContent);
-  const provider = await getProvider(config.provider);
+  const provider = await getProvider(config.provider, config);
   return provider.chat(config, systemPrompt, messages, onChunk);
 }

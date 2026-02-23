@@ -148,7 +148,7 @@ async function callProvider(
   signal?: AbortSignal,
 ): Promise<string> {
   try {
-    const provider = await getProvider(config.provider);
+    const provider = await getProvider(config.provider, config);
     return await provider.summarize(config, systemPrompt, userPrompt, onChunk, image, signal);
   } catch (error) {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
@@ -218,7 +218,7 @@ ${SHARED_AUDIO_RULES}
 - ${toneHint}${traitSection}`;
 
   try {
-    const provider = await getProvider(config.provider);
+    const provider = await getProvider(config.provider, config);
     return await provider.rewrite(markdown, config, systemPrompt);
   } catch (error) {
     throw toSummarizerError(error);

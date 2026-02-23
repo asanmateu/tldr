@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Setup wizard no longer assumes Anthropic API key — shows the correct environment variable name for the selected provider
 - Pasting multiple space-separated URLs into the interactive input no longer crashes — the first URL is extracted and processed
 - Typing `/` now correctly shows the slash command menu — bare `/` was incorrectly classified as a file path after the v2.2.1 file-path fix
+- Missing API key or CLI now shows a clear error (e.g. "Set ANTHROPIC_API_KEY…") instead of a cryptic SDK message, for all providers
 
 ### Removed
 

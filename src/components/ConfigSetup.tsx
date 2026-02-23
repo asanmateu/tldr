@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useListNavigation } from "../hooks/useListNavigation.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { resolveConfig } from "../lib/config.js";
+import { PROVIDER_ENV_VARS } from "../lib/providers/index.js";
 import { getVoicesForProvider } from "../lib/tts/voices.js";
 import type {
   AppearanceMode,
@@ -107,16 +108,6 @@ const ALL_PROVIDERS: { value: SummarizationProvider; label: string; hint: string
   { value: "openai", label: "OpenAI-compatible", hint: "OpenAI, Groq, Together, etc." },
   { value: "xai", label: "xAI / Grok", hint: "xAI API, needs XAI_API_KEY" },
 ];
-
-const PROVIDER_ENV_VARS: Record<SummarizationProvider, string | null> = {
-  anthropic: "ANTHROPIC_API_KEY",
-  "claude-code": null,
-  codex: null,
-  gemini: "GEMINI_API_KEY",
-  ollama: null,
-  openai: "OPENAI_API_KEY",
-  xai: "XAI_API_KEY",
-};
 
 const ALL_THEME_NAMES: { value: ThemeName; label: string; hint: string }[] = [
   { value: "coral", label: "Coral", hint: "warm reds & oranges" },
