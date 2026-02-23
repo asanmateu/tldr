@@ -1,3 +1,4 @@
+import { getCachedModels, suggestModel } from "../modelDiscovery.js";
 import type { Config, Provider, SummarizationProvider } from "../types.js";
 
 export const PROVIDER_ENV_VARS: Record<SummarizationProvider, string | null> = {
@@ -15,6 +16,14 @@ export class ProviderAuthError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ProviderAuthError";
+  }
+}
+
+export class ProviderConfigError extends Error {
+  public readonly code = "CONFIG" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = "ProviderConfigError";
   }
 }
 
@@ -46,8 +55,29 @@ async function validateAuth(type: SummarizationProvider, config: Config): Promis
   }
 }
 
+async function validateModel(type: SummarizationProvider, config: Config): Promise<void> {
+  const cached = await getCachedModels(type);
+  if (!cached || cached.length === 0) return; // no cache → skip validation
+
+  const match = cached.some((m) => m.id === config.model);
+  if (match) return;
+
+  const suggestion = suggestModel(config.model, cached);
+  const hint = suggestion ? ` Did you mean '${suggestion}'?` : "";
+  const available = cached
+    .slice(0, 5)
+    .map((m) => m.id)
+    .join(", ");
+  throw new ProviderConfigError(
+    `Model '${config.model}' not found for ${type}.${hint}\nAvailable: ${available}${cached.length > 5 ? `, ... (${cached.length} total)` : ""}`,
+  );
+}
+
 export async function getProvider(type: SummarizationProvider, config?: Config): Promise<Provider> {
-  if (config) await validateAuth(type, config);
+  if (config) {
+    await validateAuth(type, config);
+    await validateModel(type, config);
+  }
 
   switch (type) {
     case "claude-code": {

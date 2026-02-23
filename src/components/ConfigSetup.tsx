@@ -1,9 +1,11 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useListNavigation } from "../hooks/useListNavigation.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { resolveConfig } from "../lib/config.js";
+import type { ModelInfo } from "../lib/modelDiscovery.js";
+import { canListModels, listModelsForProvider } from "../lib/modelDiscovery.js";
 import { PROVIDER_ENV_VARS } from "../lib/providers/index.js";
 import { getVoicesForProvider } from "../lib/tts/voices.js";
 import type {
@@ -193,6 +195,12 @@ export function ConfigSetup({
   const [ttsModelInput, setTtsModelInput] = useState(defaults.ttsModel);
   const [selectedTtsModel, setSelectedTtsModel] = useState(defaults.ttsModel);
 
+  // Dynamic model discovery state
+  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [availableTtsModels, setAvailableTtsModels] = useState<ModelInfo[]>([]);
+  const [ttsModelsLoading, setTtsModelsLoading] = useState(false);
+
   // Theme state
   const [themeName, setThemeName] = useState<ThemeName>(themeConfig?.name ?? "coral");
   const [appearance, setAppearance] = useState<AppearanceMode>(themeConfig?.appearance ?? "auto");
@@ -277,6 +285,9 @@ export function ConfigSetup({
       0,
     ),
   });
+  const modelNav = useListNavigation({ itemCount: availableModels.length || 1 });
+  const ttsModelNav = useListNavigation({ itemCount: availableTtsModels.length || 1 });
+
   // Hide pitch/volume when OpenAI TTS is selected (unsupported by the API)
   // Hide ttsModel when not using OpenAI TTS (only OpenAI supports model selection)
   const editMenuItems = useMemo(
@@ -293,6 +304,35 @@ export function ConfigSetup({
 
   // Edit mode state
   const [editingField, setEditingField] = useState<EditMenuItem | null>(null);
+
+  // Fetch models when entering model edit field
+  useEffect(() => {
+    if (editingField !== "model") return;
+    if (!canListModels(provider)) return;
+
+    setModelsLoading(true);
+    const envVar = PROVIDER_ENV_VARS[provider];
+    listModelsForProvider(provider, {
+      apiKey: envVar ? (process.env[envVar] ?? "") : "",
+    }).then((models) => {
+      setAvailableModels(models);
+      setModelsLoading(false);
+    });
+  }, [editingField, provider]);
+
+  // Fetch TTS models when entering ttsModel edit field
+  useEffect(() => {
+    if (editingField !== "ttsModel") return;
+    if (ttsProvider !== "openai") return;
+
+    setTtsModelsLoading(true);
+    listModelsForProvider("openai-tts", {
+      apiKey: process.env.OPENAI_API_KEY ?? "",
+    }).then((models) => {
+      setAvailableTtsModels(models);
+      setTtsModelsLoading(false);
+    });
+  }, [editingField, ttsProvider]);
 
   const buildConfig = useCallback(
     (overrides?: { audioMode?: AudioMode }): Config => {
@@ -611,12 +651,43 @@ export function ConfigSetup({
         return;
       }
 
-      if (
-        editingField === "model" ||
-        editingField === "ttsModel" ||
-        editingField === "ttsSpeed" ||
-        editingField === "customInstructions"
-      ) {
+      if (editingField === "model") {
+        if (availableModels.length > 0) {
+          if (key.upArrow) modelNav.handleUp();
+          if (key.downArrow) modelNav.handleDown();
+          if (key.return) {
+            const model = availableModels[modelNav.index];
+            if (model) {
+              setSelectedModel(model.id);
+              setModelInput(model.id);
+            }
+            setEditingField(null);
+          }
+          return;
+        }
+        // Free-text fallback — handled by TextInput onSubmit
+        return;
+      }
+
+      if (editingField === "ttsModel") {
+        if (availableTtsModels.length > 0) {
+          if (key.upArrow) ttsModelNav.handleUp();
+          if (key.downArrow) ttsModelNav.handleDown();
+          if (key.return) {
+            const model = availableTtsModels[ttsModelNav.index];
+            if (model) {
+              setSelectedTtsModel(model.id);
+              setTtsModelInput(model.id);
+            }
+            setEditingField(null);
+          }
+          return;
+        }
+        // Free-text fallback — handled by TextInput onSubmit
+        return;
+      }
+
+      if (editingField === "ttsSpeed" || editingField === "customInstructions") {
         // Handled by TextInput onSubmit
         return;
       }
@@ -824,16 +895,31 @@ export function ConfigSetup({
 
         {editingField === "ttsModel" && (
           <Box flexDirection="column">
-            <Text>TTS Model (Enter to confirm):</Text>
-            <Text dimColor>e.g. tts-1, tts-1-hd, gpt-4o-mini-tts</Text>
-            <TextInput
-              value={ttsModelInput}
-              onChange={setTtsModelInput}
-              onSubmit={(value) => {
-                if (value.trim()) setSelectedTtsModel(value.trim());
-                setEditingField(null);
-              }}
-            />
+            {ttsModelsLoading ? (
+              <Text dimColor>Fetching available TTS models...</Text>
+            ) : availableTtsModels.length > 0 ? (
+              <SelectionList
+                title="TTS Model (Enter to confirm):"
+                items={availableTtsModels.map((m) => ({
+                  value: m.id,
+                  label: m.id,
+                }))}
+                selectedIndex={ttsModelNav.index}
+              />
+            ) : (
+              <>
+                <Text>TTS Model (Enter to confirm):</Text>
+                <Text dimColor>e.g. tts-1, tts-1-hd, gpt-4o-mini-tts</Text>
+                <TextInput
+                  value={ttsModelInput}
+                  onChange={setTtsModelInput}
+                  onSubmit={(value) => {
+                    if (value.trim()) setSelectedTtsModel(value.trim());
+                    setEditingField(null);
+                  }}
+                />
+              </>
+            )}
           </Box>
         )}
 
@@ -893,16 +979,39 @@ export function ConfigSetup({
 
         {editingField === "model" && (
           <Box flexDirection="column">
-            <Text>Model (Enter to confirm):</Text>
-            <Text dimColor>Alias (e.g. haiku, sonnet, opus) or full model ID</Text>
-            <TextInput
-              value={modelInput}
-              onChange={setModelInput}
-              onSubmit={(value) => {
-                if (value.trim()) setSelectedModel(value.trim());
-                setEditingField(null);
-              }}
-            />
+            {modelsLoading ? (
+              <Text dimColor>Fetching available models...</Text>
+            ) : availableModels.length > 0 ? (
+              <SelectionList
+                title="Model (Enter to confirm):"
+                items={availableModels.map((m) => {
+                  const item: { value: string; label: string; hint?: string } = {
+                    value: m.id,
+                    label: m.displayName ?? m.id,
+                  };
+                  if (m.tier) item.hint = m.tier;
+                  return item;
+                })}
+                selectedIndex={modelNav.index}
+              />
+            ) : (
+              <>
+                <Text>Model (Enter to confirm):</Text>
+                <Text dimColor>
+                  {canListModels(provider)
+                    ? "Could not fetch models. Type a model ID manually:"
+                    : "Alias (haiku, sonnet, opus) or full model ID:"}
+                </Text>
+                <TextInput
+                  value={modelInput}
+                  onChange={setModelInput}
+                  onSubmit={(value) => {
+                    if (value.trim()) setSelectedModel(value.trim());
+                    setEditingField(null);
+                  }}
+                />
+              </>
+            )}
           </Box>
         )}
       </Box>

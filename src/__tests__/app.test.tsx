@@ -42,6 +42,8 @@ const mocks = vi.hoisted(() => ({
   checkForUpdate: vi.fn(),
   chatWithSession: vi.fn(),
   buildChatSystemPrompt: vi.fn(),
+  canListModels: vi.fn(),
+  listModelsForProvider: vi.fn(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -101,6 +103,10 @@ vi.mock("../lib/updateCheck.js", () => ({
 vi.mock("../lib/chat.js", () => ({
   chatWithSession: mocks.chatWithSession,
   buildChatSystemPrompt: mocks.buildChatSystemPrompt,
+}));
+vi.mock("../lib/modelDiscovery.js", () => ({
+  canListModels: mocks.canListModels,
+  listModelsForProvider: mocks.listModelsForProvider,
 }));
 
 // ---------------------------------------------------------------------------
@@ -208,6 +214,8 @@ describe("App", () => {
     mocks.saveChat.mockResolvedValue(undefined);
     mocks.getSessionPaths.mockReturnValue(TEST_SESSION);
     mocks.saveSummary.mockResolvedValue(TEST_SESSION);
+    mocks.canListModels.mockReturnValue(false);
+    mocks.listModelsForProvider.mockResolvedValue([]);
     mocks.extract.mockResolvedValue(TEST_EXTRACTION);
     mocks.summarize.mockImplementation(
       async (_result: ExtractionResult, _config: Config, onChunk: (text: string) => void) => {
@@ -425,6 +433,63 @@ describe("App", () => {
       await vi.waitFor(
         () => {
           expect(instance.lastFrame()).toContain("paywall");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows specific auth error when summarize throws ProviderAuthError", async () => {
+      // Simulates what happens when provider auth validation fails —
+      // the real pipeline wraps ProviderAuthError into a SummarizerError
+      // with the original message preserved
+      const authError = new Error(
+        "Missing API key for anthropic. Set ANTHROPIC_API_KEY in your shell profile.",
+      );
+      authError.name = "SummarizerError";
+      mocks.summarize.mockRejectedValue(authError);
+
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("ANTHROPIC_API_KEY");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows fallback message when pipeline throws non-Error value", async () => {
+      // Regression test: at v2.2.1, provider SDKs could throw non-Error values
+      // which hit the generic fallback instead of showing a useful message
+      mocks.extract.mockRejectedValue("raw string error from SDK");
+
+      const instance = render(<App initialInput="https://example.com/fail" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("An unexpected error occurred");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows error when summarize fails with descriptive message", async () => {
+      mocks.summarize.mockRejectedValue(
+        new Error("Rate limited by API. Please wait a moment and try again."),
+      );
+
+      const instance = render(<App initialInput="https://example.com/article" />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Rate limited");
         },
         { timeout: 2000 },
       );
@@ -1638,6 +1703,140 @@ describe("App", () => {
       await vi.waitFor(
         () => {
           expect(instance.lastFrame()).toContain("tl;dr");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Group 12: Model picker in preset editor
+  // -----------------------------------------------------------------------
+  describe("model picker in preset editor", () => {
+    beforeEach(() => {
+      // Use anthropic provider so canListModels returns true
+      mocks.loadConfig.mockResolvedValue({ ...TEST_CONFIG, provider: "anthropic" });
+      mocks.resolveConfig.mockImplementation(
+        (settings: {
+          apiKey?: string;
+          activeProfile?: string;
+          profiles?: Record<string, Record<string, unknown>>;
+        }) => {
+          const profileName = settings.activeProfile ?? "default";
+          const profile = settings.profiles?.[profileName] ?? {};
+          return {
+            ...TEST_CONFIG,
+            profileName,
+            provider: profile.provider ?? "anthropic",
+            audioMode: profile.audioMode ?? "podcast",
+            tone: profile.tone ?? TEST_CONFIG.tone,
+            summaryStyle: profile.summaryStyle ?? TEST_CONFIG.summaryStyle,
+            cognitiveTraits: profile.cognitiveTraits ?? TEST_CONFIG.cognitiveTraits,
+          };
+        },
+      );
+    });
+
+    async function navigateToModelField(instance: ReturnType<typeof render>) {
+      // Wait for the preset editor menu to appear
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Model");
+          expect(instance.lastFrame()).toContain("Cognitive traits");
+        },
+        { timeout: 2000 },
+      );
+
+      // Give the component time to stabilize after render
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Navigate to Model (index 4: traits=0, tone=1, style=2, provider=3, model=4)
+      for (let i = 0; i < 4; i++) {
+        instance.stdin.write("\x1B[B");
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+
+      // Small delay before pressing Enter to ensure navigation has settled
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Press Enter to edit
+      instance.stdin.write("\r");
+    }
+
+    it("shows SelectionList when models are fetched successfully", async () => {
+      mocks.canListModels.mockReturnValue(true);
+      mocks.listModelsForProvider.mockResolvedValue([
+        { id: "claude-opus-4-6", displayName: "Claude Opus 4", tier: "opus" },
+        { id: "claude-sonnet-4-5-20250929", tier: "sonnet" },
+      ]);
+
+      const instance = render(<App showConfig editProfile />);
+      await navigateToModelField(instance);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Model (Enter to confirm):");
+          // Should show the fetched models in the selection list
+          expect(frame).toMatch(/claude-opus-4-6|Claude Opus 4/);
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows 'Fetching available models...' while loading", async () => {
+      mocks.canListModels.mockReturnValue(true);
+      // Never resolve — stay in loading state
+      mocks.listModelsForProvider.mockReturnValue(new Promise(() => {}));
+
+      const instance = render(<App showConfig editProfile />);
+      await navigateToModelField(instance);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Fetching available models...");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows free-text fallback when model fetch returns empty", async () => {
+      mocks.canListModels.mockReturnValue(true);
+      mocks.listModelsForProvider.mockResolvedValue([]);
+
+      const instance = render(<App showConfig editProfile />);
+      await navigateToModelField(instance);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Could not fetch models");
+          expect(frame).toContain("Type a model ID manually");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows alias hint for non-listable providers", async () => {
+      mocks.canListModels.mockReturnValue(false);
+      mocks.loadConfig.mockResolvedValue({ ...TEST_CONFIG, provider: "claude-code" });
+      mocks.resolveConfig.mockReturnValue({ ...TEST_CONFIG, provider: "claude-code" });
+
+      const instance = render(<App showConfig editProfile />);
+      await navigateToModelField(instance);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Alias (haiku, sonnet, opus) or full model ID");
         },
         { timeout: 2000 },
       );

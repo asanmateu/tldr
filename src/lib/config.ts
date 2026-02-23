@@ -1,6 +1,8 @@
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import type { ModelInfo } from "./modelDiscovery.js";
+import { resolveModelIdDynamic } from "./modelDiscovery.js";
 import { BUILT_IN_PRESETS, isBuiltInPreset } from "./presets.js";
 import type {
   AppearanceMode,
@@ -288,7 +290,11 @@ export function resolveModelId(input: string): string {
   return input;
 }
 
-export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverrides): ResolvedConfig {
+export function resolveConfig(
+  settings: TldrSettings,
+  overrides?: ConfigOverrides,
+  dynamicModels?: ModelInfo[],
+): ResolvedConfig {
   const profileName = overrides?.profileName ?? settings.activeProfile;
   const profile =
     settings.profiles[profileName] ??
@@ -302,25 +308,7 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
       ? (overrides.style as SummaryStyle)
       : profile.summaryStyle;
 
-  // Model resolution: CLI/env override > per-style setting > profile.model > style default
-  let model: string;
-  if (overrides?.model) {
-    model = resolveModelId(overrides.model);
-  } else if (profile.styleModels?.[summaryStyle]) {
-    model = resolveModelId(profile.styleModels[summaryStyle]);
-  } else if (profile.model) {
-    model = resolveModelId(profile.model);
-  } else {
-    model = MODEL_IDS[SUMMARY_STYLE_DEFAULTS[summaryStyle]];
-  }
-
-  // API key: override > settings
-  const apiKey = overrides?.apiKey ?? settings.apiKey ?? "";
-
-  // Base URL: override > settings
-  const baseUrl = overrides?.baseUrl ?? settings.baseUrl;
-
-  // Provider resolution: CLI override > profile setting > default "claude-code"
+  // Provider resolution (needed for dynamic model resolution)
   let provider: SummarizationProvider = "claude-code";
   if (
     overrides?.provider &&
@@ -331,6 +319,30 @@ export function resolveConfig(settings: TldrSettings, overrides?: ConfigOverride
   } else if (profile.provider) {
     provider = profile.provider;
   }
+
+  // Dynamic or static model resolver
+  const resolve =
+    dynamicModels && dynamicModels.length > 0
+      ? (input: string) => resolveModelIdDynamic(input, provider, dynamicModels)
+      : resolveModelId;
+
+  // Model resolution: CLI/env override > per-style setting > profile.model > style default
+  let model: string;
+  if (overrides?.model) {
+    model = resolve(overrides.model);
+  } else if (profile.styleModels?.[summaryStyle]) {
+    model = resolve(profile.styleModels[summaryStyle]);
+  } else if (profile.model) {
+    model = resolve(profile.model);
+  } else {
+    model = MODEL_IDS[SUMMARY_STYLE_DEFAULTS[summaryStyle]];
+  }
+
+  // API key: override > settings
+  const apiKey = overrides?.apiKey ?? settings.apiKey ?? "";
+
+  // Base URL: override > settings
+  const baseUrl = overrides?.baseUrl ?? settings.baseUrl;
 
   const outputDir = settings.outputDir ?? join(homedir(), "Documents", "tldr");
 
@@ -390,7 +402,22 @@ export async function loadConfig(overrides?: ConfigOverrides): Promise<ResolvedC
   const settings = await loadSettings();
   const envOverrides = getEnvOverrides();
   const merged: ConfigOverrides = { ...envOverrides, ...overrides };
-  return resolveConfig(settings, merged);
+
+  // Pre-determine provider for cache lookup
+  const profileName = merged.profileName ?? settings.activeProfile;
+  const profile = settings.profiles[profileName] ?? settings.profiles.default ?? DEFAULT_PROFILE;
+  const providerKey = merged.provider ?? profile.provider ?? "claude-code";
+
+  let dynamicModels: ModelInfo[] | undefined;
+  try {
+    const { getCachedModels } = await import("./modelDiscovery.js");
+    const cached = await getCachedModels(providerKey);
+    if (cached) dynamicModels = cached;
+  } catch {
+    // modelDiscovery not available — skip
+  }
+
+  return resolveConfig(settings, merged, dynamicModels);
 }
 
 // Kept for backward compat — saves a ResolvedConfig back as settings

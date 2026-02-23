@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Dynamic model discovery: available models are fetched from provider APIs and cached locally for 24 hours (`~/.tldr/models-cache.json`)
+- Model picker in preset editor: the model and TTS model fields now show a selectable list of available models fetched from the provider, with free-text fallback when listing fails
+- Model validation before provider calls: invalid model names now show actionable errors with "Did you mean?" suggestions (e.g. `Model 'claude-opus-4.6' not found. Did you mean 'claude-opus-4-6'?`)
+- `ProviderConfigError` class for model/config validation failures, flows through `SummarizerError` as `CONFIG` code
+
 ### Changed
 
 - Pressing `q` with an empty input now requires a double-tap within 2 seconds to quit — first press shows a warning, preventing accidental exits
+- Tier aliases (haiku/sonnet/opus) now resolve dynamically to the latest model from the provider API cache, falling back to static IDs when cache is empty
 
 ### Added
 

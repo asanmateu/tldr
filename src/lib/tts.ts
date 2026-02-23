@@ -12,7 +12,7 @@ export async function generateAudio(
   ttsProvider?: TtsProvider,
   ttsModel?: string,
 ): Promise<string> {
-  const provider = await getTtsProvider(ttsProvider ?? "edge-tts");
+  const provider = await getTtsProvider(ttsProvider ?? "edge-tts", ttsModel);
   return provider.generateAudio(text, { voice, speed, pitch, volume, outputPath, ttsModel });
 }
 

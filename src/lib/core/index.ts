@@ -30,6 +30,15 @@ export { chatWithSession, buildChatSystemPrompt } from "../chat.js";
 export { resolveTheme, detectAppearance, DEFAULT_THEME, PALETTES } from "../theme.js";
 export { setTheme } from "../config.js";
 export { compareSemver } from "../updateCheck.js";
+export {
+  canListModels,
+  clearModelCache,
+  getCachedModels,
+  listModelsForProvider,
+  suggestModel,
+} from "../modelDiscovery.js";
+export type { ModelInfo } from "../modelDiscovery.js";
+export { ProviderConfigError } from "../providers/index.js";
 
 export type {
   Config,

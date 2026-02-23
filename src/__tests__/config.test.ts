@@ -484,6 +484,97 @@ describe("config", () => {
     });
   });
 
+  describe("resolveConfig with dynamicModels", () => {
+    const dynamicModels = [
+      { id: "claude-opus-4-7-20260215", displayName: "Claude Opus 4.7", tier: "opus" as const },
+      {
+        id: "claude-sonnet-4-6-20260201",
+        displayName: "Claude Sonnet 4.6",
+        tier: "sonnet" as const,
+      },
+      { id: "claude-haiku-4-6-20260201", displayName: "Claude Haiku 4.6", tier: "haiku" as const },
+    ];
+
+    it("resolves tier alias to latest cached model for anthropic", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: {
+              cognitiveTraits: [],
+              tone: "casual",
+              summaryStyle: "quick",
+              model: "opus",
+              provider: "anthropic",
+            },
+          },
+        },
+        undefined,
+        dynamicModels,
+      );
+      expect(config.model).toBe("claude-opus-4-7-20260215");
+    });
+
+    it("falls back to static MODEL_IDS when dynamicModels is empty", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: {
+              cognitiveTraits: [],
+              tone: "casual",
+              summaryStyle: "quick",
+              model: "opus",
+              provider: "anthropic",
+            },
+          },
+        },
+        undefined,
+        [],
+      );
+      expect(config.model).toBe(MODEL_IDS.opus);
+    });
+
+    it("passes through full model ID unchanged with dynamicModels", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: {
+              cognitiveTraits: [],
+              tone: "casual",
+              summaryStyle: "quick",
+              model: "gpt-4o",
+              provider: "openai",
+            },
+          },
+        },
+        undefined,
+        dynamicModels,
+      );
+      expect(config.model).toBe("gpt-4o");
+    });
+
+    it("resolves CLI override tier with dynamicModels", () => {
+      const config = resolveConfig(
+        {
+          activeProfile: "default",
+          profiles: {
+            default: {
+              cognitiveTraits: [],
+              tone: "casual",
+              summaryStyle: "quick",
+              provider: "anthropic",
+            },
+          },
+        },
+        { model: "sonnet" },
+        dynamicModels,
+      );
+      expect(config.model).toBe("claude-sonnet-4-6-20260201");
+    });
+  });
+
   describe("resolveModelId", () => {
     it("maps tier aliases to full IDs", () => {
       expect(resolveModelId("haiku")).toBe(MODEL_IDS.haiku);

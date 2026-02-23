@@ -108,10 +108,18 @@ const SHARED_AUDIO_RULES =
   "Vary sentence rhythm — mix short punchy sentences with longer flowing ones to maintain engagement.\n" +
   'Write out numbers and abbreviations in full (e.g. "three" not "3", "for example" not "e.g.").';
 
-type SummarizerErrorCode = "AUTH" | "RATE_LIMIT" | "NETWORK" | "NOT_FOUND" | "TIMEOUT" | "UNKNOWN";
+type SummarizerErrorCode =
+  | "AUTH"
+  | "CONFIG"
+  | "RATE_LIMIT"
+  | "NETWORK"
+  | "NOT_FOUND"
+  | "TIMEOUT"
+  | "UNKNOWN";
 
 const VALID_ERROR_CODES = new Set<string>([
   "AUTH",
+  "CONFIG",
   "RATE_LIMIT",
   "NETWORK",
   "NOT_FOUND",

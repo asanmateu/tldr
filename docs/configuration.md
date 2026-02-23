@@ -1,5 +1,7 @@
 # Configuration
 
+<img src="../demos/config.gif" alt="tldr configuration demo — customize settings interactively" width="800" />
+
 Settings are stored at `~/.tldr/settings.json`. Run `tldr config` to see your current settings.
 
 Most settings are easier to change interactively with `tldr preset edit` or `/config` in interactive mode. The CLI commands below are for when you know exactly what you want.
@@ -163,17 +165,43 @@ When no `styleModels` are configured, all styles default to Opus.
 
 ## Model Selection
 
-The interactive preset editor (`tldr preset edit` / `/config`) uses a free-text input for the model field. Type any model ID supported by your provider — for example `gpt-4o` for OpenAI, `gemini-2.5-flash` for Gemini, or `llama3.3` for Ollama.
+The interactive preset editor (`tldr preset edit` / `/config`) fetches available models from your provider's API and shows them as a selectable list. If the API is unreachable or the provider doesn't support model listing, it falls back to a free-text input.
+
+### Dynamic Model Discovery
+
+When you open the model field in the preset editor, tldr calls your provider's model listing API and caches the results locally for 24 hours at `~/.tldr/models-cache.json`. Supported providers:
+
+| Provider | How models are listed |
+|----------|---------------------|
+| Anthropic | `client.models.list()` — tagged with tier (haiku/sonnet/opus) |
+| OpenAI | `client.models.list()` — filtered to chat models (gpt-*, o1-*, o3-*) |
+| Gemini | `ai.models.list()` — generative models |
+| Ollama | `GET /api/tags` — locally pulled models |
+| xAI | OpenAI-compatible `models.list()` |
+| OpenAI TTS | `client.models.list()` — filtered to tts-* models |
+
+CLI providers (claude-code, codex) do not support model listing and always show a free-text input.
+
+### Model Validation
+
+When a summarization or TTS request is made, the model is validated against the cache. If the model is not found, you'll see an actionable error like:
+
+```
+Model 'claude-opus-4.6' not found for anthropic. Did you mean 'claude-opus-4-6'?
+Available: claude-opus-4-6, claude-sonnet-4-5-20250929, ...
+```
+
+Validation is skipped when the cache is empty (first run or expired), so it never blocks you.
 
 ### Anthropic Aliases
 
-For the Anthropic provider, short aliases are resolved automatically:
+For the Anthropic provider, short aliases are resolved dynamically from the cache:
 
 | Alias | Resolves to |
 |-------|-------------|
-| `haiku` | `claude-haiku-4-5-20251001` |
-| `sonnet` | `claude-sonnet-4-5-20250929` |
-| `opus` | `claude-opus-4-6` |
+| `haiku` | Latest cached haiku model (fallback: `claude-haiku-4-5-20251001`) |
+| `sonnet` | Latest cached sonnet model (fallback: `claude-sonnet-4-5-20250929`) |
+| `opus` | Latest cached opus model (fallback: `claude-opus-4-6`) |
 
 Any other string is passed through as-is.
 
