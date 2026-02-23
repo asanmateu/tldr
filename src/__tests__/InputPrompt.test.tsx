@@ -200,6 +200,58 @@ describe("InputPrompt", () => {
     });
   });
 
+  describe("double-tap q to quit", () => {
+    it("does not call onQuit on a single q press with empty input", async () => {
+      const { instance, onQuit } = renderPrompt();
+      await tick();
+
+      instance.stdin.write("q");
+      await tick();
+
+      expect(onQuit).not.toHaveBeenCalled();
+      instance.unmount();
+    });
+
+    it("shows warning text after first q press", async () => {
+      const { instance } = renderPrompt();
+      await tick();
+
+      instance.stdin.write("q");
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("press again to quit");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("calls onQuit on second q press within 2s", async () => {
+      const { instance, onQuit } = renderPrompt();
+      await tick();
+
+      instance.stdin.write("q");
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("press again to quit");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("q");
+      await vi.waitFor(
+        () => {
+          expect(onQuit).toHaveBeenCalledOnce();
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+  });
+
   describe("multi-input handling", () => {
     it("shows multi-source hint for multiple URLs", async () => {
       const { instance } = renderPrompt();

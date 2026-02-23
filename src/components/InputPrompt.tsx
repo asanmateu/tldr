@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUpdateCheck } from "../hooks/useUpdateCheck.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { SLASH_COMMANDS, matchCommands, parseCommand } from "../lib/commands.js";
@@ -31,6 +31,15 @@ export function InputPrompt({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [slashMenuIndex, setSlashMenuIndex] = useState(0);
   const [commandError, setCommandError] = useState<string | undefined>(undefined);
+  const [quitPending, setQuitPending] = useState(false);
+  const quitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up quit timer on unmount
+  useEffect(() => {
+    return () => {
+      if (quitTimerRef.current) clearTimeout(quitTimerRef.current);
+    };
+  }, []);
 
   const filteredCommands = useMemo(() => matchCommands(input), [input]);
   const slashMenuVisible =
@@ -160,9 +169,26 @@ export function InputPrompt({
       return;
     }
 
-    if (ch === "q" && !input) {
+    // Double-tap q to quit: second press (input may contain "q" leaked from first press)
+    if (ch === "q" && quitPending) {
+      if (quitTimerRef.current) clearTimeout(quitTimerRef.current);
       onQuit();
       return;
+    }
+
+    // Double-tap q to quit: first press
+    if (ch === "q" && !input) {
+      setQuitPending(true);
+      quitTimerRef.current = setTimeout(() => {
+        setQuitPending(false);
+      }, 2000);
+      return;
+    }
+
+    // Any other keypress cancels quit pending state
+    if (quitPending && ch !== "q") {
+      setQuitPending(false);
+      if (quitTimerRef.current) clearTimeout(quitTimerRef.current);
     }
 
     if (key.upArrow && history.length > 0) {
@@ -207,6 +233,7 @@ export function InputPrompt({
       {slashMenuVisible && (
         <SlashCommandMenu commands={filteredCommands} selectedIndex={slashMenuIndex} />
       )}
+      {quitPending && <Text color={theme.warning}>[q] press again to quit</Text>}
       {commandError && !slashMenuVisible && <Text color={theme.error}>{commandError}</Text>}
       {!slashMenuVisible && !commandError && inputHint && input && (
         <Text>

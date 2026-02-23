@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Pressing `q` with an empty input now requires a double-tap within 2 seconds to quit — first press shows a warning, preventing accidental exits
+
 ### Added
 
 - `--batch` mode: run headlessly with no TUI — extract, summarize, and print to stdout in a single command (e.g. `tldr --batch <url>`)
