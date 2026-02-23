@@ -742,7 +742,25 @@ describe("App", () => {
   });
 
   // -----------------------------------------------------------------------
-  // Group 6: Slash commands
+  // Group 6: showHistory prop
+  // -----------------------------------------------------------------------
+  describe("showHistory prop", () => {
+    it("renders history view immediately when showHistory is true", async () => {
+      const instance = render(<App showHistory={true} />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("History");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Group 7: Slash commands
   // -----------------------------------------------------------------------
   describe("slash commands", () => {
     it("/help shows help view", async () => {
@@ -808,7 +826,7 @@ describe("App", () => {
   });
 
   // -----------------------------------------------------------------------
-  // Group 7: Provider fallback
+  // Group 8: Provider fallback
   // -----------------------------------------------------------------------
   describe("provider fallback", () => {
     it("shows error when claude-code unavailable and no API key", async () => {
@@ -872,7 +890,7 @@ describe("App", () => {
   });
 
   // -----------------------------------------------------------------------
-  // Group 8: First-run setup wizard
+  // Group 9: First-run setup wizard
   // -----------------------------------------------------------------------
   describe("first-run setup wizard", () => {
     beforeEach(() => {
@@ -1192,7 +1210,7 @@ describe("App", () => {
   });
 
   // -----------------------------------------------------------------------
-  // Group 9: Audio UX
+  // Group 10: Audio UX
   // -----------------------------------------------------------------------
   describe("audio UX", () => {
     it("shows bordered audio panel on result", async () => {

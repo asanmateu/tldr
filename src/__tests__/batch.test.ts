@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   saveAudioFile: vi.fn(),
   getSessionPaths: vi.fn(),
   generateAudio: vi.fn(),
+  addEntry: vi.fn(),
 }));
 
 vi.mock("../pipeline.js", () => ({ extract: mocks.extract }));
@@ -30,6 +31,9 @@ vi.mock("../lib/session.js", () => ({
 }));
 vi.mock("../lib/tts.js", () => ({
   generateAudio: mocks.generateAudio,
+}));
+vi.mock("../lib/history.js", () => ({
+  addEntry: mocks.addEntry,
 }));
 
 import { runBatch } from "../batch.js";
@@ -109,6 +113,7 @@ beforeEach(() => {
   mocks.saveAudioFile.mockResolvedValue(undefined);
   mocks.rewriteForSpeech.mockResolvedValue("Spoken version of summary...");
   mocks.generateAudio.mockResolvedValue("/tmp/audio-temp.mp3");
+  mocks.addEntry.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -118,8 +123,8 @@ afterEach(() => {
 
 describe("runBatch", () => {
   it("extracts, summarizes, and writes summary", async () => {
-    await runBatch({
-      input: "https://techcrunch.com/article",
+    const results = await runBatch({
+      inputs: ["https://techcrunch.com/article"],
       overrides: {},
       includeAudio: false,
     });
@@ -135,11 +140,14 @@ describe("runBatch", () => {
     expect(stderrOutput).toContain("Extracting:");
     expect(stderrOutput).toContain("Summarizing:");
     expect(stderrOutput).toContain("Saved to");
+    expect(results).toHaveLength(1);
+    expect(results[0]?.result).toBeDefined();
+    expect(results[0]?.error).toBeUndefined();
   });
 
   it("generates audio when --audio is set", async () => {
     await runBatch({
-      input: "https://techcrunch.com/article",
+      inputs: ["https://techcrunch.com/article"],
       overrides: {},
       includeAudio: true,
     });
@@ -161,7 +169,7 @@ describe("runBatch", () => {
 
   it("does not generate audio when --audio is not set", async () => {
     await runBatch({
-      input: "https://techcrunch.com/article",
+      inputs: ["https://techcrunch.com/article"],
       overrides: {},
       includeAudio: false,
     });
@@ -173,7 +181,7 @@ describe("runBatch", () => {
 
   it("uses --output directory when provided", async () => {
     await runBatch({
-      input: "https://techcrunch.com/article",
+      inputs: ["https://techcrunch.com/article"],
       overrides: {},
       outputDir: "/custom/output",
       includeAudio: false,
@@ -188,7 +196,7 @@ describe("runBatch", () => {
 
   it("uses config outputDir when --output not provided", async () => {
     await runBatch({
-      input: "https://techcrunch.com/article",
+      inputs: ["https://techcrunch.com/article"],
       overrides: {},
       includeAudio: false,
     });
@@ -203,7 +211,7 @@ describe("runBatch", () => {
   it("passes overrides to loadConfig", async () => {
     const overrides = { provider: "openai", style: "quick" };
     await runBatch({
-      input: "https://techcrunch.com/article",
+      inputs: ["https://techcrunch.com/article"],
       overrides,
       includeAudio: false,
     });
@@ -211,33 +219,38 @@ describe("runBatch", () => {
     expect(mocks.loadConfig).toHaveBeenCalledWith(overrides);
   });
 
-  it("throws on extraction failure", async () => {
+  it("returns error result on extraction failure", async () => {
     mocks.extract.mockRejectedValue(new Error("Network error"));
 
-    await expect(
-      runBatch({
-        input: "https://bad-url.com",
-        overrides: {},
-        includeAudio: false,
-      }),
-    ).rejects.toThrow("Network error");
+    const results = await runBatch({
+      inputs: ["https://bad-url.com"],
+      overrides: {},
+      includeAudio: false,
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.error).toBe("Network error");
+    expect(results[0]?.result).toBeUndefined();
+    expect(stderrOutput).toContain("Error: Network error");
   });
 
-  it("throws on summarization failure", async () => {
+  it("returns error result on summarization failure", async () => {
     mocks.summarize.mockRejectedValue(new Error("API rate limit"));
 
-    await expect(
-      runBatch({
-        input: "https://techcrunch.com/article",
-        overrides: {},
-        includeAudio: false,
-      }),
-    ).rejects.toThrow("API rate limit");
+    const results = await runBatch({
+      inputs: ["https://techcrunch.com/article"],
+      overrides: {},
+      includeAudio: false,
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.error).toBe("API rate limit");
+    expect(results[0]?.result).toBeUndefined();
   });
 
   it("logs progress to stderr", async () => {
     await runBatch({
-      input: "https://techcrunch.com/article",
+      inputs: ["https://techcrunch.com/article"],
       overrides: {},
       includeAudio: false,
     });
@@ -250,12 +263,279 @@ describe("runBatch", () => {
   it("truncates long input in progress log", async () => {
     const longUrl = `https://example.com/${"a".repeat(100)}`;
     await runBatch({
-      input: longUrl,
+      inputs: [longUrl],
       overrides: {},
       includeAudio: false,
     });
 
     expect(stderrOutput).toContain("...");
     expect(stderrOutput).not.toContain(longUrl);
+  });
+
+  it("adds each result to history via addEntry", async () => {
+    await runBatch({
+      inputs: ["https://techcrunch.com/article"],
+      overrides: {},
+      includeAudio: false,
+    });
+
+    expect(mocks.addEntry).toHaveBeenCalledWith(TEST_RESULT);
+  });
+
+  // -----------------------------------------------------------------------
+  // Multi-URL tests
+  // -----------------------------------------------------------------------
+  describe("multi-URL processing", () => {
+    const EXTRACTION_2: ExtractionResult = {
+      title: "Apple WWDC 2026",
+      content: "Apple announced new features...",
+      wordCount: 800,
+      source: "https://apple.com/wwdc",
+    };
+    const SUMMARY_2 = "# Apple WWDC 2026\n\nApple announced new features...";
+    const RESULT_2: TldrResult = {
+      extraction: EXTRACTION_2,
+      summary: SUMMARY_2,
+      timestamp: Date.now(),
+    };
+    const SESSION_2: SessionPaths = {
+      sessionDir: "/tmp/tldr-test-out/2026-02-23/apple-wwdc-2026",
+      summaryPath: "/tmp/tldr-test-out/2026-02-23/apple-wwdc-2026/summary.md",
+      audioPath: "/tmp/tldr-test-out/2026-02-23/apple-wwdc-2026/audio.mp3",
+      chatPath: "/tmp/tldr-test-out/2026-02-23/apple-wwdc-2026/chat.md",
+    };
+
+    const EXTRACTION_3: ExtractionResult = {
+      title: "Meta AI Update",
+      content: "Meta released Llama 4...",
+      wordCount: 600,
+      source: "https://meta.com/ai",
+    };
+    const SUMMARY_3 = "# Meta AI Update\n\nMeta released Llama 4...";
+    const RESULT_3: TldrResult = {
+      extraction: EXTRACTION_3,
+      summary: SUMMARY_3,
+      timestamp: Date.now(),
+    };
+    const SESSION_3: SessionPaths = {
+      sessionDir: "/tmp/tldr-test-out/2026-02-23/meta-ai-update",
+      summaryPath: "/tmp/tldr-test-out/2026-02-23/meta-ai-update/summary.md",
+      audioPath: "/tmp/tldr-test-out/2026-02-23/meta-ai-update/audio.mp3",
+      chatPath: "/tmp/tldr-test-out/2026-02-23/meta-ai-update/chat.md",
+    };
+
+    it("processes multiple inputs sequentially", async () => {
+      const callOrder: string[] = [];
+      mocks.extract.mockImplementation(async (url: string) => {
+        callOrder.push(`extract:${url}`);
+        if (url === "https://apple.com/wwdc") return EXTRACTION_2;
+        if (url === "https://meta.com/ai") return EXTRACTION_3;
+        return TEST_EXTRACTION;
+      });
+      mocks.summarize.mockImplementation(async (extraction: ExtractionResult) => {
+        callOrder.push(`summarize:${extraction.source}`);
+        if (extraction.source === "https://apple.com/wwdc") return RESULT_2;
+        if (extraction.source === "https://meta.com/ai") return RESULT_3;
+        return TEST_RESULT;
+      });
+      mocks.getSessionPaths.mockImplementation((_dir: string, extraction: ExtractionResult) => {
+        if (extraction.source === "https://apple.com/wwdc") return SESSION_2;
+        if (extraction.source === "https://meta.com/ai") return SESSION_3;
+        return TEST_SESSION;
+      });
+      mocks.saveSummary.mockImplementation(async (session: SessionPaths) => session);
+
+      const results = await runBatch({
+        inputs: ["https://techcrunch.com/article", "https://apple.com/wwdc", "https://meta.com/ai"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(results).toHaveLength(3);
+      expect(results[0]?.result).toBeDefined();
+      expect(results[1]?.result).toBeDefined();
+      expect(results[2]?.result).toBeDefined();
+
+      // Verify sequential ordering
+      expect(callOrder).toEqual([
+        "extract:https://techcrunch.com/article",
+        "summarize:https://techcrunch.com/article",
+        "extract:https://apple.com/wwdc",
+        "summarize:https://apple.com/wwdc",
+        "extract:https://meta.com/ai",
+        "summarize:https://meta.com/ai",
+      ]);
+
+      expect(mocks.extract).toHaveBeenCalledTimes(3);
+      expect(mocks.summarize).toHaveBeenCalledTimes(3);
+      expect(mocks.saveSummary).toHaveBeenCalledTimes(3);
+    });
+
+    it("continues on error for middle URL", async () => {
+      mocks.extract.mockImplementation(async (url: string) => {
+        if (url === "https://bad-url.com") throw new Error("Connection timeout");
+        if (url === "https://meta.com/ai") return EXTRACTION_3;
+        return TEST_EXTRACTION;
+      });
+      mocks.summarize.mockImplementation(async (extraction: ExtractionResult) => {
+        if (extraction.source === "https://meta.com/ai") return RESULT_3;
+        return TEST_RESULT;
+      });
+      mocks.getSessionPaths.mockImplementation((_dir: string, extraction: ExtractionResult) => {
+        if (extraction.source === "https://meta.com/ai") return SESSION_3;
+        return TEST_SESSION;
+      });
+      mocks.saveSummary.mockImplementation(async (session: SessionPaths) => session);
+
+      const results = await runBatch({
+        inputs: ["https://techcrunch.com/article", "https://bad-url.com", "https://meta.com/ai"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(results).toHaveLength(3);
+      expect(results[0]?.result).toBeDefined();
+      expect(results[0]?.error).toBeUndefined();
+      expect(results[1]?.error).toBe("Connection timeout");
+      expect(results[1]?.result).toBeUndefined();
+      expect(results[2]?.result).toBeDefined();
+      expect(results[2]?.error).toBeUndefined();
+
+      // First and third should still save
+      expect(mocks.saveSummary).toHaveBeenCalledTimes(2);
+    });
+
+    it("adds each successful result to history", async () => {
+      mocks.extract.mockImplementation(async (url: string) => {
+        if (url === "https://bad-url.com") throw new Error("fail");
+        return TEST_EXTRACTION;
+      });
+
+      await runBatch({
+        inputs: ["https://techcrunch.com/article", "https://bad-url.com"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      // Only the successful one should be added
+      expect(mocks.addEntry).toHaveBeenCalledTimes(1);
+      expect(mocks.addEntry).toHaveBeenCalledWith(TEST_RESULT);
+    });
+
+    it("separates multiple summaries with --- on stdout", async () => {
+      mocks.extract.mockImplementation(async (url: string) => {
+        if (url === "https://apple.com/wwdc") return EXTRACTION_2;
+        return TEST_EXTRACTION;
+      });
+      mocks.summarize.mockImplementation(async (extraction: ExtractionResult) => {
+        if (extraction.source === "https://apple.com/wwdc") return RESULT_2;
+        return TEST_RESULT;
+      });
+      mocks.getSessionPaths.mockImplementation((_dir: string, extraction: ExtractionResult) => {
+        if (extraction.source === "https://apple.com/wwdc") return SESSION_2;
+        return TEST_SESSION;
+      });
+      mocks.saveSummary.mockImplementation(async (session: SessionPaths) => session);
+
+      await runBatch({
+        inputs: ["https://techcrunch.com/article", "https://apple.com/wwdc"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(stdoutOutput).toBe(`${TEST_SUMMARY}\n---\n\n${SUMMARY_2}`);
+    });
+
+    it("returns BatchResult[] with correct structure", async () => {
+      mocks.extract.mockImplementation(async (url: string) => {
+        if (url === "https://bad-url.com") throw new Error("fail");
+        return TEST_EXTRACTION;
+      });
+
+      const results = await runBatch({
+        inputs: ["https://techcrunch.com/article", "https://bad-url.com"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(results).toHaveLength(2);
+
+      // Successful result
+      expect(results[0]).toEqual({
+        input: "https://techcrunch.com/article",
+        result: TEST_RESULT,
+        sessionDir: TEST_SESSION.sessionDir,
+      });
+
+      // Failed result
+      expect(results[1]).toEqual({
+        input: "https://bad-url.com",
+        error: "fail",
+      });
+    });
+
+    it("prints completion report to stderr for multi-input batches", async () => {
+      mocks.extract.mockImplementation(async (url: string) => {
+        if (url === "https://bad-url.com") throw new Error("fail");
+        return TEST_EXTRACTION;
+      });
+
+      await runBatch({
+        inputs: ["https://techcrunch.com/article", "https://bad-url.com"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(stderrOutput).toContain("Batch complete: 1 succeeded, 1 failed");
+    });
+
+    it("does not print completion report for single-input batches", async () => {
+      await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(stderrOutput).not.toContain("Batch complete:");
+    });
+
+    it("shows progress prefixes for multi-input batches", async () => {
+      mocks.extract.mockImplementation(async (url: string) => {
+        if (url === "https://apple.com/wwdc") return EXTRACTION_2;
+        return TEST_EXTRACTION;
+      });
+      mocks.summarize.mockImplementation(async (extraction: ExtractionResult) => {
+        if (extraction.source === "https://apple.com/wwdc") return RESULT_2;
+        return TEST_RESULT;
+      });
+      mocks.getSessionPaths.mockImplementation((_dir: string, extraction: ExtractionResult) => {
+        if (extraction.source === "https://apple.com/wwdc") return SESSION_2;
+        return TEST_SESSION;
+      });
+      mocks.saveSummary.mockImplementation(async (session: SessionPaths) => session);
+
+      await runBatch({
+        inputs: ["https://techcrunch.com/article", "https://apple.com/wwdc"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(stderrOutput).toContain("[1/2] Extracting:");
+      expect(stderrOutput).toContain("[1/2] Summarizing:");
+      expect(stderrOutput).toContain("[1/2] Saved to");
+      expect(stderrOutput).toContain("[2/2] Extracting:");
+      expect(stderrOutput).toContain("[2/2] Summarizing:");
+      expect(stderrOutput).toContain("[2/2] Saved to");
+    });
+
+    it("does not show progress prefixes for single-input batches", async () => {
+      await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(stderrOutput).not.toContain("[1/1]");
+    });
   });
 });

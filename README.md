@@ -10,6 +10,8 @@ Summarize articles, papers, and videos into readable text and natural audio — 
 [![codecov](https://codecov.io/gh/asanmateu/tldr/branch/main/graph/badge.svg)](https://codecov.io/gh/asanmateu/tldr)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+<img src="demos/hero.gif" alt="tldr demo — summarize a URL in seconds" width="800" />
+
 </div>
 
 ---
@@ -47,6 +49,8 @@ tldr "https://example.com/doc.pdf"                # Remote PDF
 tldr "Your text to summarize here..."             # Raw text
 tldr                                              # Interactive mode
 tldr --batch "https://..."                        # Headless — print summary to stdout
+tldr --batch url1 url2 url3                       # Process multiple URLs sequentially
+tldr --batch --browse url1 url2                   # Batch then browse results interactively
 tldr --batch --audio "https://..."                # Headless with audio generation
 ```
 

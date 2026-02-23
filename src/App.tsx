@@ -50,6 +50,7 @@ import { extract } from "./pipeline.js";
 interface AppProps {
   initialInput?: string | undefined;
   showConfig?: boolean | undefined;
+  showHistory?: boolean | undefined;
   editProfile?: boolean | undefined;
   overrides?: ConfigOverrides | undefined;
   onUpdate?: () => void;
@@ -57,14 +58,23 @@ interface AppProps {
 
 const MAX_INPUT_WORDS = 100_000;
 
-export function App({ initialInput, showConfig, editProfile, overrides, onUpdate }: AppProps) {
+export function App({
+  initialInput,
+  showConfig,
+  showHistory,
+  editProfile,
+  overrides,
+  onUpdate,
+}: AppProps) {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const clearScreen = useCallback(() => {
     stdout.write("\x1B[2J\x1B[3J\x1B[H");
   }, [stdout]);
 
-  const [state, setState] = useState<AppState>(showConfig ? "config" : "idle");
+  const [state, setState] = useState<AppState>(
+    showConfig ? "config" : showHistory ? "history" : "idle",
+  );
   const [config, setConfig] = useState<Config | undefined>(undefined);
   const [input, setInput] = useState(initialInput ?? "");
   const [extraction, setExtraction] = useState<ExtractionResult | undefined>(undefined);

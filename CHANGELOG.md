@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `--batch` mode: run headlessly with no TUI — extract, summarize, and print to stdout in a single command (e.g. `tldr --batch <url>`)
+- Multi-URL `--batch`: pass multiple URLs to process them sequentially with continue-on-error (e.g. `tldr --batch url1 url2 url3`)
+- `--browse` flag for batch mode: drop into interactive mode with history open after batch completes
 - `--audio` flag for batch mode: opt-in audio generation during headless runs
 - `--output <dir>` flag for batch mode: override the session output directory
+- Batch results are now added to history immediately, so they appear in `/history` and `--browse`
 - `runBatch()` exported from `lib/core` for programmatic use by desktop sidecar and scripts
+- `BatchResult` type exported from `lib/core` for typed batch result handling
 - `/update` slash command: update to the latest version without leaving the app (runs `brew upgrade` for Homebrew installs, shows download link otherwise)
 - Inline update notice in banner: version line shows `v2.2.1 → 2.2.2 available` when an update is available, replacing the separate colored notice line
 - Setup wizard now starts with AI provider selection — standalone (Homebrew) users pick their provider instead of defaulting to Claude Code
@@ -21,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking (programmatic):** `runBatch()` signature changed from `input: string` to `inputs: string[]` and now returns `BatchResult[]` instead of `void`
 - Session directories are now date-grouped: `~/Documents/tldr/{date}/{slug}/` instead of `~/Documents/tldr/{date}-{slug}/` — existing sessions are not migrated
 
 ### Fixed

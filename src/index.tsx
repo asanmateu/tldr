@@ -62,8 +62,10 @@ if (args.includes("--help") || args.includes("-h")) {
 
   ${fmt.label("Batch mode (non-interactive):")}
     tldr --batch <url>                Run headlessly, print summary to stdout
+    tldr --batch url1 url2 url3       Process multiple URLs sequentially
     tldr --batch --audio <url>        Include audio generation
     tldr --batch --output ./out <url> Save to specific directory
+    tldr --batch --browse url1 url2   Browse results interactively after batch
 
   ${fmt.label("Configuration:")}
     tldr config                       Show current resolved config
@@ -343,11 +345,12 @@ if (command === "config") {
   const batchMode = hasFlag("batch");
   const outputFlag = getFlag("output");
   const includeAudio = hasFlag("audio");
+  const browseAfterBatch = hasFlag("browse");
 
   // Legacy --config flag
   const showConfig = hasFlag("config");
 
-  // Find positional input (not a flag or flag value)
+  // Find positional inputs (not a flag or flag value)
   const flagNames = new Set([
     "model",
     "style",
@@ -367,7 +370,7 @@ if (command === "config") {
       }
     }
   }
-  const initialInput = args.find(
+  const positionalInputs = args.filter(
     (a, i) =>
       !a.startsWith("--") &&
       !skipNext.has(i) &&
@@ -375,26 +378,48 @@ if (command === "config") {
       a !== "profile" &&
       a !== "preset",
   );
+  const initialInput = positionalInputs[0];
 
   // Batch mode — headless pipeline
   if (batchMode) {
-    if (!initialInput) {
+    if (positionalInputs.length === 0) {
       process.stderr.write("Error: --batch requires input (URL, file, or text)\n");
       process.stderr.write("Usage: tldr --batch <url|file|text>\n");
       process.exit(1);
     }
-    try {
-      await runBatch({
-        input: initialInput,
-        overrides,
-        outputDir: outputFlag,
-        includeAudio,
-      });
-    } catch (err) {
-      process.stderr.write(`Error: ${(err as Error).message}\n`);
-      process.exit(1);
+    const batchResults = await runBatch({
+      inputs: positionalInputs,
+      overrides,
+      outputDir: outputFlag,
+      includeAudio,
+    });
+    const hasFailures = batchResults.some((r) => r.error);
+
+    if (browseAfterBatch) {
+      let wantsUpdate = false;
+      const instance = render(
+        <App
+          showHistory={true}
+          overrides={overrides}
+          onUpdate={() => {
+            wantsUpdate = true;
+          }}
+        />,
+      );
+      await instance.waitUntilExit();
+
+      if (wantsUpdate) {
+        if (isHomebrew()) {
+          spawnSync("brew", ["upgrade", "tldr-cli"], { stdio: "inherit" });
+        } else {
+          console.log(
+            "\nDownload the latest version:\n  https://github.com/asanmateu/tldr/releases\n",
+          );
+        }
+      }
     }
-    process.exit(0);
+
+    process.exit(hasFailures ? 1 : 0);
   }
 
   let wantsUpdate = false;
