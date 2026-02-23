@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Clipboard hint below input prompt — no longer reads or displays clipboard contents on mount
 - Standalone `UpdateNotice` component — update information is now displayed inline in the banner
 - API key text input from setup wizard — replaced by environment variable guidance screen
 

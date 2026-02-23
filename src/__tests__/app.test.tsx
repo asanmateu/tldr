@@ -36,7 +36,6 @@ const mocks = vi.hoisted(() => ({
   speakFallback: vi.fn(),
   getVoiceDisplayName: vi.fn(),
   writeClipboard: vi.fn(),
-  readClipboard: vi.fn(),
   isClaudeCodeAvailable: vi.fn(),
   isCodexAvailable: vi.fn(),
   resolveTheme: vi.fn(),
@@ -83,7 +82,6 @@ vi.mock("../lib/tts.js", () => ({
 }));
 vi.mock("../lib/clipboard.js", () => ({
   writeClipboard: mocks.writeClipboard,
-  readClipboard: mocks.readClipboard,
 }));
 vi.mock("../lib/providers/claude-code.js", () => ({
   isClaudeCodeAvailable: mocks.isClaudeCodeAvailable,
@@ -204,7 +202,6 @@ describe("App", () => {
     mocks.isClaudeCodeAvailable.mockReturnValue(true);
     mocks.isCodexAvailable.mockReturnValue(true);
     mocks.getVoiceDisplayName.mockReturnValue("Jenny");
-    mocks.readClipboard.mockReturnValue("");
     mocks.checkForUpdate.mockResolvedValue(null);
     mocks.deduplicateBySource.mockImplementation((e: TldrResult[]) => e);
     mocks.addEntry.mockResolvedValue(undefined);

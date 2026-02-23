@@ -6,13 +6,9 @@ import type { ThemePalette } from "../lib/types.js";
 // Hoisted mocks
 // ---------------------------------------------------------------------------
 const mocks = vi.hoisted(() => ({
-  readClipboard: vi.fn(),
   checkForUpdate: vi.fn(),
 }));
 
-vi.mock("../lib/clipboard.js", () => ({
-  readClipboard: mocks.readClipboard,
-}));
 vi.mock("../lib/updateCheck.js", () => ({
   checkForUpdate: mocks.checkForUpdate,
   compareSemver: vi.fn(() => 0),
@@ -72,7 +68,6 @@ const tick = () => new Promise((r) => setTimeout(r, 50));
 describe("InputPrompt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.readClipboard.mockReturnValue("");
     mocks.checkForUpdate.mockResolvedValue(null);
   });
 

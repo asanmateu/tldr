@@ -4,7 +4,6 @@ import TextInput from "ink-text-input";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUpdateCheck } from "../hooks/useUpdateCheck.js";
 import { useTheme } from "../lib/ThemeContext.js";
-import { readClipboard } from "../lib/clipboard.js";
 import { SLASH_COMMANDS, matchCommands, parseCommand } from "../lib/commands.js";
 import { looksLikeFilePath, normalizeDraggedPath } from "../lib/paths.js";
 import type { TldrResult } from "../lib/types.js";
@@ -29,7 +28,6 @@ export function InputPrompt({
   const theme = useTheme();
   const updateInfo = useUpdateCheck();
   const [input, setInput] = useState("");
-  const [clipboardHint, setClipboardHint] = useState<string | undefined>(undefined);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [slashMenuIndex, setSlashMenuIndex] = useState(0);
   const [commandError, setCommandError] = useState<string | undefined>(undefined);
@@ -47,18 +45,6 @@ export function InputPrompt({
     if (/\.(jpe?g|png|gif|webp)$/i.test(normalized)) return { name, type: "image" };
     return { name, type: "document" };
   }, [input]);
-
-  useEffect(() => {
-    const clip = readClipboard();
-    if (/^https?:\/\//i.test(clip)) {
-      try {
-        const domain = new URL(clip).hostname;
-        setClipboardHint(domain);
-      } catch {
-        // ignore invalid URLs
-      }
-    }
-  }, []);
 
   // Reset menu index when filtered commands change
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset on command count change
@@ -193,9 +179,6 @@ export function InputPrompt({
           <Text color={theme.accent}>{fileHint.name}</Text>
           <Text dimColor>{` — ${fileHint.type}`}</Text>
         </Text>
-      )}
-      {!slashMenuVisible && !commandError && !fileHint && clipboardHint && !input && (
-        <Text dimColor>Clipboard: {clipboardHint}</Text>
       )}
     </Box>
   );
