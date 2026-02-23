@@ -7,26 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Dynamic model discovery: available models are fetched from provider APIs and cached locally for 24 hours (`~/.tldr/models-cache.json`)
-- Model picker in preset editor: the model and TTS model fields now show a selectable list of available models fetched from the provider, with free-text fallback when listing fails
-- Model validation before provider calls: invalid model names now show actionable errors with "Did you mean?" suggestions (e.g. `Model 'claude-opus-4.6' not found. Did you mean 'claude-opus-4-6'?`)
-- `ProviderConfigError` class for model/config validation failures, flows through `SummarizerError` as `CONFIG` code
-
-### Changed
-
-- Pressing `q` with an empty input now requires a double-tap within 2 seconds to quit — first press shows a warning, preventing accidental exits
-- Tier aliases (haiku/sonnet/opus) now resolve dynamically to the latest model from the provider API cache, falling back to static IDs when cache is empty
-- **Internal:** Extracted `resetToIdle()`, `refreshHistory()`, `handleAudioGenerate()`, and `handleSave()` callbacks from App.tsx, replacing duplicated inline logic
-- **Internal:** Replaced 11-case slash command switch with data-driven `SLASH_COMMANDS` dispatch map
-- **Internal:** Extracted `truncateAndScale()`, `isAbortError()`, and `extractErrorMessage()` helpers from App.tsx
-- **Internal:** Extracted `useToast` hook (`src/hooks/useToast.ts`) — shared by App.tsx and ChatView.tsx
-- **Internal:** Centralized voice validation into `isValidVoiceForProvider()` and `getVoiceDisplayName()` in `src/lib/tts/voices.ts`, replacing scattered inline checks
-- **Internal:** Consolidated model tier definitions — `MODEL_IDS` in config.ts is now a re-export of `STATIC_TIER_IDS` from modelDiscovery.ts
-- **Internal:** Added `validateCliProvider()` facade in `src/lib/providers/index.ts`, removing direct provider imports from App.tsx
-- **Internal:** Removed `as unknown` type casts — `SelectionList` accepts `ReadonlySet<string>`, configSetter uses `Object.assign()`
-- **Internal:** Extracted magic numbers to named constants (`LONG_CONTENT_WORD_THRESHOLD`, `LONG_CONTENT_MAX_TOKENS`, `DISCARD_TIMEOUT_MS`)
+## [2.3.0] - 2026-02-24
 
 ### Added
 
@@ -46,11 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-input queue: paste or drop multiple URLs/file paths and process them all sequentially — intermediate results auto-save and pin upward, last result stays in the active view
 - Input hint shows detected source count for multi-input (e.g. "example.com + 2 more — 3 sources")
 - Queue progress in processing view (e.g. "(1/3) Extracting from...")
+- Dynamic model discovery: available models are fetched from provider APIs and cached locally for 24 hours (`~/.tldr/models-cache.json`)
+- Model picker in preset editor: the model and TTS model fields now show a selectable list of available models fetched from the provider, with free-text fallback when listing fails
+- Model validation before provider calls: invalid model names now show actionable errors with "Did you mean?" suggestions (e.g. `Model 'claude-opus-4.6' not found. Did you mean 'claude-opus-4-6'?`)
+- `ProviderConfigError` class for model/config validation failures, flows through `SummarizerError` as `CONFIG` code
 
 ### Changed
 
 - **Breaking (programmatic):** `runBatch()` signature changed from `input: string` to `inputs: string[]` and now returns `BatchResult[]` instead of `void`
 - Session directories are now date-grouped: `~/Documents/tldr/{date}/{slug}/` instead of `~/Documents/tldr/{date}-{slug}/` — existing sessions are not migrated
+- Pressing `q` with an empty input now requires a double-tap within 2 seconds to quit — first press shows a warning, preventing accidental exits
+- Tier aliases (haiku/sonnet/opus) now resolve dynamically to the latest model from the provider API cache, falling back to static IDs when cache is empty
+- **Internal:** Extracted `resetToIdle()`, `refreshHistory()`, `handleAudioGenerate()`, and `handleSave()` callbacks from App.tsx, replacing duplicated inline logic
+- **Internal:** Replaced 11-case slash command switch with data-driven `SLASH_COMMANDS` dispatch map
+- **Internal:** Extracted `truncateAndScale()`, `isAbortError()`, and `extractErrorMessage()` helpers from App.tsx
+- **Internal:** Extracted `useToast` hook (`src/hooks/useToast.ts`) — shared by App.tsx and ChatView.tsx
+- **Internal:** Centralized voice validation into `isValidVoiceForProvider()` and `getVoiceDisplayName()` in `src/lib/tts/voices.ts`, replacing scattered inline checks
+- **Internal:** Consolidated model tier definitions — `MODEL_IDS` in config.ts is now a re-export of `STATIC_TIER_IDS` from modelDiscovery.ts
+- **Internal:** Added `validateCliProvider()` facade in `src/lib/providers/index.ts`, removing direct provider imports from App.tsx
+- **Internal:** Removed `as unknown` type casts — `SelectionList` accepts `ReadonlySet<string>`, configSetter uses `Object.assign()`
+- **Internal:** Extracted magic numbers to named constants (`LONG_CONTENT_WORD_THRESHOLD`, `LONG_CONTENT_MAX_TOKENS`, `DISCARD_TIMEOUT_MS`)
 
 ### Fixed
 
