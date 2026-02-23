@@ -73,6 +73,33 @@ async function validateModel(type: SummarizationProvider, config: Config): Promi
   );
 }
 
+/**
+ * Check if a CLI-based provider is available on the system.
+ * Returns an error message/hint pair if unavailable, or null if OK.
+ */
+export async function validateCliProvider(
+  type: SummarizationProvider,
+): Promise<{ message: string; hint: string } | null> {
+  if (type === "claude-code") {
+    const { isClaudeCodeAvailable } = await import("./claude-code.js");
+    if (!isClaudeCodeAvailable()) {
+      return {
+        message: "Claude Code is not installed or not authenticated.",
+        hint: 'Install it with: npm install -g @anthropic-ai/claude-code\nThen run "claude" to log in.\n\nOr run: tldr config set provider anthropic — and set ANTHROPIC_API_KEY.\nOr run: tldr config set provider openai — and set OPENAI_API_KEY.',
+      };
+    }
+  } else if (type === "codex") {
+    const { isCodexAvailable } = await import("./codex.js");
+    if (!isCodexAvailable()) {
+      return {
+        message: "Codex CLI is not installed.",
+        hint: "Install it with: npm install -g @openai/codex\n\nOr switch provider:\n  tldr config set provider openai — and set OPENAI_API_KEY.\n  tldr config set provider anthropic — and set ANTHROPIC_API_KEY.",
+      };
+    }
+  }
+  return null;
+}
+
 export async function getProvider(type: SummarizationProvider, config?: Config): Promise<Provider> {
   if (config) {
     await validateAuth(type, config);

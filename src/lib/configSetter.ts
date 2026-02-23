@@ -165,7 +165,8 @@ function applyToProfile(settings: TldrSettings, property: string, value: unknown
   const profileName = settings.activeProfile;
   const profile = settings.profiles[profileName];
   if (!profile) return profileName;
-  (profile as unknown as Record<string, unknown>)[property] = value;
+  // Safe: property comes from CONFIG_KEYS descriptors, not user input
+  Object.assign(profile, { [property]: value });
   return profileName;
 }
 
@@ -200,7 +201,8 @@ export async function applyConfigSet(
 
   if (descriptor.target === "settings") {
     const transformed = descriptor.transform ? descriptor.transform(value, allArgs) : value;
-    (settings as unknown as Record<string, unknown>)[descriptor.property] = transformed;
+    // Safe: property comes from CONFIG_KEYS descriptors, not user input
+    Object.assign(settings, { [descriptor.property]: transformed });
     await saveSettings(settings);
     const display = key === "apiKey" ? "***" : String(transformed);
     return `Set ${key} = ${display}`;

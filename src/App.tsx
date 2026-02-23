@@ -11,6 +11,7 @@ import { ProcessingView } from "./components/ProcessingView.js";
 import { ProfilePicker } from "./components/ProfilePicker.js";
 import { SummaryContent } from "./components/SummaryContent.js";
 import { SummaryView } from "./components/SummaryView.js";
+import { useToast } from "./hooks/useToast.js";
 import { ThemeProvider } from "./lib/ThemeContext.js";
 import { writeClipboard } from "./lib/clipboard.js";
 import {
@@ -22,8 +23,7 @@ import {
   setActiveProfile,
 } from "./lib/config.js";
 import { addEntry, deduplicateBySource, getRecent, removeEntry } from "./lib/history.js";
-import { isClaudeCodeAvailable } from "./lib/providers/claude-code.js";
-import { isCodexAvailable } from "./lib/providers/codex.js";
+import { validateCliProvider } from "./lib/providers/index.js";
 import { getSessionPaths, saveAudioFile, saveChat, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
 import { resolveTheme } from "./lib/theme.js";
@@ -47,6 +47,97 @@ import type {
 } from "./lib/types.js";
 import { extract } from "./pipeline.js";
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const MAX_INPUT_WORDS = 100_000;
+const LONG_CONTENT_WORD_THRESHOLD = 10_000;
+const LONG_CONTENT_MAX_TOKENS = 4096;
+const DISCARD_TIMEOUT_MS = 2000;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Truncate content that exceeds MAX_INPUT_WORDS and scale maxTokens for
+ * content above LONG_CONTENT_WORD_THRESHOLD. Mutates `result.content`
+ * when truncation occurs.
+ */
+function truncateAndScale(result: ExtractionResult, cfg: Config): Config {
+  if (result.image) return cfg;
+
+  const words = result.content.split(/\s+/);
+  if (words.length > MAX_INPUT_WORDS) {
+    result.content = words.slice(0, MAX_INPUT_WORDS).join(" ");
+  }
+  if (words.length > LONG_CONTENT_WORD_THRESHOLD) {
+    return { ...cfg, maxTokens: Math.min(cfg.maxTokens * 2, LONG_CONTENT_MAX_TOKENS) };
+  }
+  return cfg;
+}
+
+function isAbortError(err: unknown, signal: AbortSignal): boolean {
+  return signal.aborted || (err instanceof DOMException && err.name === "AbortError");
+}
+
+function extractErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "An unexpected error occurred.";
+}
+
+// ---------------------------------------------------------------------------
+// Slash-command dispatch map
+// ---------------------------------------------------------------------------
+
+type SlashCommandHandler = (ctx: {
+  setState: (s: AppState) => void;
+  setConfigMode: (m: "setup" | "edit") => void;
+  setProfiles: (p: { name: string; active: boolean }[]) => void;
+  audioProcess: ChildProcess | undefined;
+  exit: () => void;
+  onUpdate?: (() => void) | undefined;
+}) => void;
+
+const SLASH_COMMANDS: Record<string, SlashCommandHandler> = {
+  history: ({ setState }) => setState("history"),
+  setup: ({ setState, setConfigMode }) => {
+    setConfigMode("setup");
+    setState("config");
+  },
+  config: ({ setState, setConfigMode }) => {
+    setConfigMode("edit");
+    setState("config");
+  },
+  theme: ({ setState, setConfigMode }) => {
+    setConfigMode("edit");
+    setState("config");
+  },
+  preset: ({ setState, setProfiles }) => {
+    (async () => {
+      const profileList = await listProfiles();
+      setProfiles(profileList);
+      setState("profile");
+    })();
+  },
+  help: ({ setState }) => setState("help"),
+  update: ({ audioProcess, exit, onUpdate }) => {
+    if (audioProcess) stopAudio(audioProcess);
+    onUpdate?.();
+    exit();
+  },
+  quit: ({ audioProcess, exit }) => {
+    if (audioProcess) stopAudio(audioProcess);
+    exit();
+  },
+};
+// "profile" is an alias for "preset"
+SLASH_COMMANDS.profile = SLASH_COMMANDS.preset as SlashCommandHandler;
+
+// ---------------------------------------------------------------------------
+// App component
+// ---------------------------------------------------------------------------
+
 interface AppProps {
   initialInput?: string | undefined;
   showConfig?: boolean | undefined;
@@ -55,8 +146,6 @@ interface AppProps {
   overrides?: ConfigOverrides | undefined;
   onUpdate?: () => void;
 }
-
-const MAX_INPUT_WORDS = 100_000;
 
 export function App({
   initialInput,
@@ -72,6 +161,7 @@ export function App({
     stdout.write("\x1B[2J\x1B[3J\x1B[H");
   }, [stdout]);
 
+  // --- State ---
   const [state, setState] = useState<AppState>(
     showConfig ? "config" : showHistory ? "history" : "idle",
   );
@@ -93,7 +183,6 @@ export function App({
   const [configMode, setConfigMode] = useState<"setup" | "edit">("setup");
   const [pendingResult, setPendingResult] = useState<TldrResult | undefined>(undefined);
   const [discardPending, setDiscardPending] = useState(false);
-  const [toast, setToast] = useState<string | undefined>(undefined);
   const [tempAudioPath, setTempAudioPath] = useState<string | undefined>(undefined);
   const [audioIsFallback, setAudioIsFallback] = useState(false);
   const [cachedSpeechText, setCachedSpeechText] = useState<string | undefined>(undefined);
@@ -107,12 +196,42 @@ export function App({
   >([]);
   const [inputQueue, setInputQueue] = useState<string[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
+
+  const { toast, showToast, clearToast } = useToast();
+
+  // --- Refs ---
   const abortRef = useRef<AbortController | null>(null);
   const queueCancelledRef = useRef(false);
   const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load config and history on mount
+  // --- Helpers ---
+
+  /** Reset all transient state back to idle. */
+  const resetToIdle = useCallback(() => {
+    setSummaryPinned(false);
+    setPinnedSummaries([]);
+    setChatMessages([]);
+    setChatSaveEnabled(false);
+    setInputQueue([]);
+    setQueueIndex(0);
+    setPendingResult(undefined);
+    setState("idle");
+    setSummary("");
+    setExtraction(undefined);
+    setInput("");
+    setCurrentSession(undefined);
+    setTempAudioPath(undefined);
+    setAudioIsFallback(false);
+    setCachedSpeechText(undefined);
+  }, []);
+
+  const refreshHistory = useCallback(async () => {
+    const updated = await getRecent(100);
+    setHistory(updated);
+  }, []);
+
+  // --- Mount: load config & history ---
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional mount-only effect
   useEffect(() => {
     (async () => {
@@ -124,30 +243,17 @@ export function App({
       const recent = await getRecent(100);
       setHistory(recent);
 
-      // Graceful CLI fallback: if CLI provider selected but not available,
-      // try API key, otherwise guide the user
-      if (cfg.provider === "claude-code" && !isClaudeCodeAvailable()) {
-        if (cfg.apiKey) {
+      // Graceful CLI fallback
+      const cliError = await validateCliProvider(cfg.provider);
+      if (cliError) {
+        if (cfg.provider === "claude-code" && cfg.apiKey) {
           cfg = { ...cfg, provider: "anthropic" };
         } else {
           setConfig(cfg);
-          setError({
-            message: "Claude Code is not installed or not authenticated.",
-            hint: 'Install it with: npm install -g @anthropic-ai/claude-code\nThen run "claude" to log in.\n\nOr run: tldr config set provider anthropic — and set ANTHROPIC_API_KEY.\nOr run: tldr config set provider openai — and set OPENAI_API_KEY.',
-          });
+          setError(cliError);
           setState("error");
           return;
         }
-      }
-
-      if (cfg.provider === "codex" && !isCodexAvailable()) {
-        setConfig(cfg);
-        setError({
-          message: "Codex CLI is not installed.",
-          hint: "Install it with: npm install -g @openai/codex\n\nOr switch provider:\n  tldr config set provider openai — and set OPENAI_API_KEY.\n  tldr config set provider anthropic — and set ANTHROPIC_API_KEY.",
-        });
-        setState("error");
-        return;
       }
 
       setConfig(cfg);
@@ -161,16 +267,17 @@ export function App({
     })();
   }, []);
 
+  // --- Processing pipeline ---
+
   const processInput = useCallback(
     async (rawInput: string, cfg: Config) => {
-      const activeConfig = cfg;
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
       const { signal } = controller;
 
       try {
-        // Extraction phase
+        // Reset state for new pipeline run
         setState("extracting");
         setInput(rawInput);
         setSummary("");
@@ -183,6 +290,7 @@ export function App({
         setChatMessages([]);
         setChatSaveEnabled(false);
 
+        // Extraction
         const result = await extract(rawInput, signal);
 
         if (!result.content && !result.image) {
@@ -198,26 +306,9 @@ export function App({
 
         setExtraction(result);
 
-        // Truncation for very long content (skip for images)
-        let effectiveConfig = activeConfig;
-        if (!result.image) {
-          let content = result.content;
-          const words = content.split(/\s+/);
-          if (words.length > MAX_INPUT_WORDS) {
-            content = words.slice(0, MAX_INPUT_WORDS).join(" ");
-            result.content = content;
-          }
+        const effectiveConfig = truncateAndScale(result, cfg);
 
-          // Scale max_tokens for long content
-          if (words.length > 10_000) {
-            effectiveConfig = {
-              ...activeConfig,
-              maxTokens: Math.min(activeConfig.maxTokens * 2, 4096),
-            };
-          }
-        }
-
-        // Summarization phase
+        // Summarization
         setState("summarizing");
         setIsStreaming(true);
 
@@ -230,22 +321,19 @@ export function App({
 
         setIsStreaming(false);
 
-        // Compute session paths BEFORE transitioning to result state
-        // so that currentSession.audioPath is available if user presses 'a' quickly
+        // Compute session paths before transitioning to result state
         try {
-          const sessionPaths = getSessionPaths(activeConfig.outputDir, result, tldrResult.summary);
+          const sessionPaths = getSessionPaths(cfg.outputDir, result, tldrResult.summary);
           setCurrentSession(sessionPaths);
         } catch {
           // Non-fatal
         }
 
-        // Defer persistence — store result for saving on Enter
         setPendingResult(tldrResult);
         setState("result");
       } catch (err) {
         setIsStreaming(false);
-        // Silently return on abort (ESC pressed)
-        if (signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
+        if (isAbortError(err, signal)) {
           if (initialInput) {
             clearScreen();
             exit();
@@ -256,8 +344,7 @@ export function App({
           setExtraction(undefined);
           return;
         }
-        const message = err instanceof Error ? err.message : "An unexpected error occurred.";
-        setError({ message });
+        setError({ message: extractErrorMessage(err) });
         setState("error");
       } finally {
         abortRef.current = null;
@@ -266,146 +353,130 @@ export function App({
     [clearScreen, exit, initialInput],
   );
 
-  const processQueue = useCallback(async (inputs: string[], cfg: Config) => {
-    setInputQueue(inputs);
-    setQueueIndex(0);
-    queueCancelledRef.current = false;
-    setSummaryPinned(false);
-    setPinnedSummaries([]);
-    setChatMessages([]);
-    setChatSaveEnabled(false);
+  const processQueue = useCallback(
+    async (inputs: string[], cfg: Config) => {
+      setInputQueue(inputs);
+      setQueueIndex(0);
+      queueCancelledRef.current = false;
+      setSummaryPinned(false);
+      setPinnedSummaries([]);
+      setChatMessages([]);
+      setChatSaveEnabled(false);
 
-    for (let i = 0; i < inputs.length; i++) {
-      if (queueCancelledRef.current) break;
-      const rawInput = inputs[i] ?? "";
-      setQueueIndex(i);
+      for (let i = 0; i < inputs.length; i++) {
+        if (queueCancelledRef.current) break;
+        const rawInput = inputs[i] ?? "";
+        setQueueIndex(i);
 
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      const { signal } = controller;
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
+        const { signal } = controller;
 
-      const isLast = i === inputs.length - 1;
+        const isLast = i === inputs.length - 1;
 
-      try {
-        setState("extracting");
-        setInput(rawInput);
-        setSummary("");
-        setExtraction(undefined);
-        setPendingResult(undefined);
+        try {
+          setState("extracting");
+          setInput(rawInput);
+          setSummary("");
+          setExtraction(undefined);
+          setPendingResult(undefined);
 
-        const result = await extract(rawInput, signal);
+          const result = await extract(rawInput, signal);
 
-        if (!result.content && !result.image) {
-          if (!isLast) continue; // skip failed non-last items
-          setError({
-            message: "Couldn't extract content from this input.",
-            hint: result.partial
-              ? "This content may be behind a paywall. Try pasting the text directly."
-              : undefined,
-          });
+          if (!result.content && !result.image) {
+            if (!isLast) continue;
+            setError({
+              message: "Couldn't extract content from this input.",
+              hint: result.partial
+                ? "This content may be behind a paywall. Try pasting the text directly."
+                : undefined,
+            });
+            setState("error");
+            setInputQueue([]);
+            setQueueIndex(0);
+            return;
+          }
+
+          setExtraction(result);
+
+          const effectiveConfig = truncateAndScale(result, cfg);
+
+          setState("summarizing");
+          setIsStreaming(true);
+
+          const tldrResult = await summarize(
+            result,
+            effectiveConfig,
+            (chunk) => setSummary((prev) => prev + chunk),
+            signal,
+          );
+
+          setIsStreaming(false);
+
+          if (isLast) {
+            try {
+              const sessionPaths = getSessionPaths(cfg.outputDir, result, tldrResult.summary);
+              setCurrentSession(sessionPaths);
+            } catch {
+              // Non-fatal
+            }
+            setPendingResult(tldrResult);
+            setState("result");
+          } else {
+            // Non-last item — auto-save and pin
+            try {
+              const sessionPaths = getSessionPaths(cfg.outputDir, result, tldrResult.summary);
+              const saved = await saveSummary(sessionPaths, tldrResult.summary);
+              await addEntry(tldrResult);
+              await refreshHistory();
+
+              setPinnedSummaries((prev) => [
+                ...prev,
+                {
+                  id: String(Date.now()),
+                  extraction: result,
+                  summary: tldrResult.summary,
+                  sessionDir: saved.sessionDir,
+                },
+              ]);
+            } catch {
+              setPinnedSummaries((prev) => [
+                ...prev,
+                {
+                  id: String(Date.now()),
+                  extraction: result,
+                  summary: tldrResult.summary,
+                  sessionDir: undefined,
+                },
+              ]);
+            }
+          }
+        } catch (err) {
+          setIsStreaming(false);
+          if (isAbortError(err, signal)) {
+            setState("idle");
+            setSummary("");
+            setExtraction(undefined);
+            setInputQueue([]);
+            setQueueIndex(0);
+            return;
+          }
+          if (!isLast) continue;
+          setError({ message: extractErrorMessage(err) });
           setState("error");
           setInputQueue([]);
           setQueueIndex(0);
           return;
+        } finally {
+          abortRef.current = null;
         }
-
-        setExtraction(result);
-
-        let effectiveConfig = cfg;
-        if (!result.image) {
-          let content = result.content;
-          const words = content.split(/\s+/);
-          if (words.length > MAX_INPUT_WORDS) {
-            content = words.slice(0, MAX_INPUT_WORDS).join(" ");
-            result.content = content;
-          }
-          if (words.length > 10_000) {
-            effectiveConfig = {
-              ...cfg,
-              maxTokens: Math.min(cfg.maxTokens * 2, 4096),
-            };
-          }
-        }
-
-        setState("summarizing");
-        setIsStreaming(true);
-
-        const tldrResult = await summarize(
-          result,
-          effectiveConfig,
-          (chunk) => setSummary((prev) => prev + chunk),
-          signal,
-        );
-
-        setIsStreaming(false);
-
-        if (isLast) {
-          // Last item — leave in active view
-          try {
-            const sessionPaths = getSessionPaths(cfg.outputDir, result, tldrResult.summary);
-            setCurrentSession(sessionPaths);
-          } catch {
-            // Non-fatal
-          }
-          setPendingResult(tldrResult);
-          setState("result");
-        } else {
-          // Non-last item — auto-save and pin
-          try {
-            const sessionPaths = getSessionPaths(cfg.outputDir, result, tldrResult.summary);
-            const saved = await saveSummary(sessionPaths, tldrResult.summary);
-            await addEntry(tldrResult);
-            const updated = await getRecent(100);
-            setHistory(updated);
-
-            setPinnedSummaries((prev) => [
-              ...prev,
-              {
-                id: String(Date.now()),
-                extraction: result,
-                summary: tldrResult.summary,
-                sessionDir: saved.sessionDir,
-              },
-            ]);
-          } catch {
-            // Non-fatal — pin without session dir
-            setPinnedSummaries((prev) => [
-              ...prev,
-              {
-                id: String(Date.now()),
-                extraction: result,
-                summary: tldrResult.summary,
-                sessionDir: undefined,
-              },
-            ]);
-          }
-        }
-      } catch (err) {
-        setIsStreaming(false);
-        if (signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
-          // Cancelled — stop processing remaining
-          setState("idle");
-          setSummary("");
-          setExtraction(undefined);
-          setInputQueue([]);
-          setQueueIndex(0);
-          return;
-        }
-        if (!isLast) continue; // skip failed non-last items
-        const message = err instanceof Error ? err.message : "An unexpected error occurred.";
-        setError({ message });
-        setState("error");
-        setInputQueue([]);
-        setQueueIndex(0);
-        return;
-      } finally {
-        abortRef.current = null;
       }
-    }
+    },
+    [refreshHistory],
+  );
 
-    // Queue complete — don't reset inputQueue yet so ProcessingView can show final position
-  }, []);
+  // --- Event handlers ---
 
   const handleThemeChange = useCallback(async (newThemeConfig: ThemeConfig) => {
     setThemeConfig(newThemeConfig);
@@ -419,14 +490,12 @@ export function App({
     async (messages: ChatMessage[]) => {
       if (!config || !extraction) return;
       let session = currentSession;
-      // Ensure session dir exists — save summary if not saved yet
       if (pendingResult && session) {
         const saved = await saveSummary(session, pendingResult.summary);
         setCurrentSession(saved);
         session = saved;
         await addEntry(pendingResult);
-        const updated = await getRecent(100);
-        setHistory(updated);
+        await refreshHistory();
         setPendingResult(undefined);
       }
       if (session) {
@@ -434,7 +503,7 @@ export function App({
         setChatSaveEnabled(true);
       }
     },
-    [config, extraction, currentSession, pendingResult],
+    [config, extraction, currentSession, pendingResult, refreshHistory],
   );
 
   const handleChatAutoSave = useCallback(
@@ -466,43 +535,15 @@ export function App({
 
   const handleSlashCommand = useCallback(
     (command: string) => {
-      switch (command) {
-        case "history":
-          setState("history");
-          break;
-        case "setup":
-          setConfigMode("setup");
-          setState("config");
-          break;
-        case "config":
-          setConfigMode("edit");
-          setState("config");
-          break;
-        case "theme":
-          setConfigMode("edit");
-          setState("config");
-          break;
-        case "preset":
-        case "profile":
-          (async () => {
-            const profileList = await listProfiles();
-            setProfiles(profileList);
-            setState("profile");
-          })();
-          break;
-        case "help":
-          setState("help");
-          break;
-        case "update":
-          if (audioProcess) stopAudio(audioProcess);
-          onUpdate?.();
-          exit();
-          break;
-        case "quit":
-          if (audioProcess) stopAudio(audioProcess);
-          exit();
-          break;
-      }
+      const handler = SLASH_COMMANDS[command] as SlashCommandHandler | undefined;
+      handler?.({
+        setState,
+        setConfigMode,
+        setProfiles,
+        audioProcess,
+        exit,
+        onUpdate,
+      });
     },
     [audioProcess, exit, onUpdate],
   );
@@ -518,11 +559,13 @@ export function App({
     setState("result");
   }, []);
 
-  const handleHistoryDelete = useCallback(async (entry: TldrResult) => {
-    await removeEntry(entry.timestamp);
-    const updated = await getRecent(100);
-    setHistory(updated);
-  }, []);
+  const handleHistoryDelete = useCallback(
+    async (entry: TldrResult) => {
+      await removeEntry(entry.timestamp);
+      await refreshHistory();
+    },
+    [refreshHistory],
+  );
 
   const handleProfileSwitch = useCallback(
     async (name: string) => {
@@ -536,6 +579,128 @@ export function App({
     [overrides],
   );
 
+  // --- Audio generation ---
+
+  const handleAudioGenerate = useCallback(async () => {
+    if (!config) throw new Error("Config not loaded");
+    setAudioError(undefined);
+    setIsGeneratingAudio(true);
+
+    try {
+      const speechText = cachedSpeechText ?? (await rewriteForSpeech(summary, config));
+      setCachedSpeechText(speechText);
+      try {
+        const path = await generateAudio(
+          speechText,
+          config.voice,
+          config.ttsSpeed,
+          config.pitch,
+          config.volume,
+          undefined,
+          config.ttsProvider,
+          config.ttsModel,
+        );
+        setTempAudioPath(path);
+        setAudioIsFallback(false);
+        setIsGeneratingAudio(false);
+        const proc = playAudio(path);
+        setAudioProcess(proc);
+        proc.on("exit", () => setAudioProcess(undefined));
+      } catch (ttsErr) {
+        setIsGeneratingAudio(false);
+        if (config.ttsProvider === "openai") {
+          setAudioError(ttsErr instanceof Error ? ttsErr.message : "OpenAI TTS failed");
+        } else {
+          setAudioIsFallback(true);
+          const proc = speakFallback(speechText);
+          if (proc) {
+            setAudioProcess(proc);
+            proc.on("exit", () => setAudioProcess(undefined));
+          } else {
+            setAudioError("No TTS available");
+          }
+        }
+      }
+    } catch (err) {
+      setIsGeneratingAudio(false);
+      setAudioError(err instanceof Error ? err.message : "Audio generation failed");
+    }
+  }, [config, summary, cachedSpeechText]);
+
+  // --- Save handler ---
+
+  const handleSave = useCallback(
+    async (withAudio: boolean) => {
+      if (!pendingResult || !currentSession) {
+        if (withAudio) setIsSavingAudio(false);
+        setPendingResult(undefined);
+        return;
+      }
+
+      try {
+        const saved = await saveSummary(currentSession, pendingResult.summary);
+        setCurrentSession(saved);
+
+        let audioSaved = false;
+        if (withAudio) {
+          try {
+            if (tempAudioPath) {
+              await saveAudioFile(saved, tempAudioPath);
+              audioSaved = true;
+            } else if (audioIsFallback) {
+              setAudioError("System TTS has no MP3 file to save");
+            } else if (config) {
+              const speechText = cachedSpeechText ?? (await rewriteForSpeech(summary, config));
+              const audioPath = await generateAudio(
+                speechText,
+                config.voice,
+                config.ttsSpeed,
+                config.pitch,
+                config.volume,
+                undefined,
+                config.ttsProvider,
+                config.ttsModel,
+              );
+              await saveAudioFile(saved, audioPath);
+              audioSaved = true;
+            }
+          } catch (err) {
+            setAudioError(err instanceof Error ? err.message : "Audio save failed");
+          }
+          setIsSavingAudio(false);
+        }
+
+        const queueSuffix = inputQueue.length > 1 ? ` (${inputQueue.length} summaries total)` : "";
+        const toastMessage =
+          withAudio && !audioSaved
+            ? `Saved to ${saved.sessionDir} (audio failed)${queueSuffix}`
+            : audioSaved
+              ? `Saved with audio to ${saved.sessionDir}${queueSuffix}`
+              : `Saved to ${saved.sessionDir}${queueSuffix}`;
+        showToast(toastMessage);
+      } catch {
+        if (withAudio) setIsSavingAudio(false);
+      }
+      await addEntry(pendingResult);
+      await refreshHistory();
+      setPendingResult(undefined);
+    },
+    [
+      pendingResult,
+      currentSession,
+      tempAudioPath,
+      audioIsFallback,
+      config,
+      summary,
+      cachedSpeechText,
+      inputQueue.length,
+      showToast,
+      refreshHistory,
+    ],
+  );
+
+  // --- Effects ---
+
   // Reset discard pending when leaving result state
   useEffect(() => {
     if (state !== "result") {
@@ -546,6 +711,8 @@ export function App({
       }
     }
   }, [state]);
+
+  // --- Key bindings ---
 
   // ESC to cancel during extraction/summarization
   useInput(
@@ -558,7 +725,7 @@ export function App({
     { isActive: state === "extracting" || state === "summarizing" },
   );
 
-  // Key bindings for result state
+  // Key bindings for result and error states
   useInput(
     (ch, key) => {
       if (state === "result" && extraction) {
@@ -567,8 +734,6 @@ export function App({
           return;
         }
         if (ch === "a" && !audioProcess && !isGeneratingAudio) {
-          setAudioError(undefined);
-          setIsGeneratingAudio(true);
           if (!summaryPinned) {
             setPinnedSummaries((prev) => [
               ...prev,
@@ -581,52 +746,7 @@ export function App({
             ]);
             setSummaryPinned(true);
           }
-          (async () => {
-            try {
-              if (!config) throw new Error("Config not loaded");
-              const speechText = cachedSpeechText ?? (await rewriteForSpeech(summary, config));
-              setCachedSpeechText(speechText);
-              try {
-                const path = await generateAudio(
-                  speechText,
-                  config.voice,
-                  config.ttsSpeed,
-                  config.pitch,
-                  config.volume,
-                  undefined,
-                  config.ttsProvider,
-                  config.ttsModel,
-                );
-                setTempAudioPath(path);
-                setAudioIsFallback(false);
-                setIsGeneratingAudio(false);
-                const proc = playAudio(path);
-                setAudioProcess(proc);
-                proc.on("exit", () => setAudioProcess(undefined));
-              } catch (ttsErr) {
-                setIsGeneratingAudio(false);
-                // OpenAI TTS: show error directly (no system fallback)
-                if (config.ttsProvider === "openai") {
-                  const msg = ttsErr instanceof Error ? ttsErr.message : "OpenAI TTS failed";
-                  setAudioError(msg);
-                } else {
-                  // edge-tts failed — fall back to system TTS (no MP3 file produced)
-                  setAudioIsFallback(true);
-                  const proc = speakFallback(speechText);
-                  if (proc) {
-                    setAudioProcess(proc);
-                    proc.on("exit", () => setAudioProcess(undefined));
-                  } else {
-                    setAudioError("No TTS available");
-                  }
-                }
-              }
-            } catch (err) {
-              setIsGeneratingAudio(false);
-              const msg = err instanceof Error ? err.message : "Audio generation failed";
-              setAudioError(msg);
-            }
-          })();
+          handleAudioGenerate();
           return;
         }
         if (ch === "s" && !key.ctrl && audioProcess) {
@@ -650,7 +770,6 @@ export function App({
         if ((key.return || ch === "w") && !isSavingAudio && pendingResult) {
           const withAudio = ch === "w";
 
-          // Stop any playing audio
           if (audioProcess) {
             stopAudio(audioProcess);
             setAudioProcess(undefined);
@@ -665,73 +784,7 @@ export function App({
           }
           if (withAudio) setIsSavingAudio(true);
 
-          if (pendingResult && currentSession) {
-            (async () => {
-              try {
-                const saved = await saveSummary(currentSession, pendingResult.summary);
-                setCurrentSession(saved);
-
-                let audioSaved = false;
-                if (withAudio) {
-                  try {
-                    if (tempAudioPath) {
-                      await saveAudioFile(saved, tempAudioPath);
-                      audioSaved = true;
-                    } else if (audioIsFallback) {
-                      setAudioError("System TTS has no MP3 file to save");
-                    } else if (config) {
-                      const speechText =
-                        cachedSpeechText ?? (await rewriteForSpeech(summary, config));
-                      const audioPath = await generateAudio(
-                        speechText,
-                        config.voice,
-                        config.ttsSpeed,
-                        config.pitch,
-                        config.volume,
-                        undefined,
-                        config.ttsProvider,
-                        config.ttsModel,
-                      );
-                      await saveAudioFile(saved, audioPath);
-                      audioSaved = true;
-                    }
-                  } catch (err) {
-                    setAudioError(err instanceof Error ? err.message : "Audio save failed");
-                  }
-                  setIsSavingAudio(false);
-                }
-
-                // Show save toast — include queue count if multi-input
-                const queueSuffix =
-                  inputQueue.length > 1 ? ` (${inputQueue.length} summaries total)` : "";
-                setToast(
-                  withAudio && !audioSaved
-                    ? `Saved to ${saved.sessionDir} (audio failed)${queueSuffix}`
-                    : audioSaved
-                      ? `Saved with audio to ${saved.sessionDir}${queueSuffix}`
-                      : `Saved to ${saved.sessionDir}${queueSuffix}`,
-                );
-                if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-                toastTimerRef.current = setTimeout(() => {
-                  setToast(undefined);
-                  toastTimerRef.current = null;
-                }, 3000);
-              } catch {
-                // Non-fatal
-                if (withAudio) setIsSavingAudio(false);
-              }
-              await addEntry(pendingResult);
-              const updated = await getRecent(100);
-              setHistory(updated);
-
-              // Stay on result — mark as saved
-              setPendingResult(undefined);
-            })();
-          } else {
-            // No session — mark as saved and stay on result
-            if (withAudio) setIsSavingAudio(false);
-            setPendingResult(undefined);
-          }
+          handleSave(withAudio);
           return;
         }
       }
@@ -744,27 +797,14 @@ export function App({
           return;
         }
         if (state === "result" && !pendingResult) {
-          // Already saved — single tap exits, clean up all state
+          // Already saved — single tap exits
           if (audioProcess) stopAudio(audioProcess);
           clearScreen();
           if (initialInput) {
             exit();
             return;
           }
-          setSummaryPinned(false);
-          setPinnedSummaries([]);
-          setChatMessages([]);
-          setChatSaveEnabled(false);
-          setInputQueue([]);
-          setQueueIndex(0);
-          setState("idle");
-          setSummary("");
-          setExtraction(undefined);
-          setInput("");
-          setCurrentSession(undefined);
-          setTempAudioPath(undefined);
-          setAudioIsFallback(false);
-          setCachedSpeechText(undefined);
+          resetToIdle();
           return;
         }
         if (state === "result") {
@@ -781,34 +821,22 @@ export function App({
               exit();
               return;
             }
-            setSummaryPinned(false);
-            setPinnedSummaries([]);
-            setChatMessages([]);
-            setChatSaveEnabled(false);
-            setInputQueue([]);
-            setQueueIndex(0);
-            setPendingResult(undefined);
-            setState("idle");
-            setSummary("");
-            setExtraction(undefined);
-            setInput("");
-            setCurrentSession(undefined);
-            setTempAudioPath(undefined);
-            setAudioIsFallback(false);
-            setCachedSpeechText(undefined);
+            resetToIdle();
           } else {
             // First press — start discard timer
             setDiscardPending(true);
             discardTimerRef.current = setTimeout(() => {
               setDiscardPending(false);
               discardTimerRef.current = null;
-            }, 2000);
+            }, DISCARD_TIMEOUT_MS);
           }
         }
       }
     },
     { isActive: state === "result" || state === "error" },
   );
+
+  // --- Render ---
 
   if (!config && state !== "config") {
     return (
@@ -867,13 +895,7 @@ export function App({
             history={history}
             toast={toast}
             onSubmit={(inputs) => {
-              if (toast) {
-                setToast(undefined);
-                if (toastTimerRef.current) {
-                  clearTimeout(toastTimerRef.current);
-                  toastTimerRef.current = null;
-                }
-              }
+              if (toast) clearToast();
               if (config) {
                 if (inputs.length <= 1) {
                   processInput(inputs[0] ?? "", config);

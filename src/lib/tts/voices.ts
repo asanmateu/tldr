@@ -40,3 +40,12 @@ export function getVoicesForProvider(provider: TtsProvider): ReadonlyArray<Voice
 export function getDefaultVoiceForProvider(provider: TtsProvider): string {
   return DEFAULT_VOICE[provider];
 }
+
+export function isValidVoiceForProvider(voiceId: string, provider: TtsProvider): boolean {
+  return VOICE_MAP[provider].some((v) => v.id === voiceId);
+}
+
+export function getVoiceDisplayName(voiceId: string, provider: TtsProvider): string {
+  const voice = VOICE_MAP[provider].find((v) => v.id === voiceId);
+  return voice?.label ?? voiceId;
+}

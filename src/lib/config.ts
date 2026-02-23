@@ -2,8 +2,9 @@ import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ModelInfo } from "./modelDiscovery.js";
-import { resolveModelIdDynamic } from "./modelDiscovery.js";
+import { STATIC_TIER_IDS, resolveModelIdDynamic } from "./modelDiscovery.js";
 import { BUILT_IN_PRESETS, isBuiltInPreset } from "./presets.js";
+import { getDefaultVoiceForProvider, isValidVoiceForProvider } from "./tts/voices.js";
 import type {
   AppearanceMode,
   AudioMode,
@@ -23,11 +24,8 @@ import type {
   VolumePreset,
 } from "./types.js";
 
-export const MODEL_IDS: Record<ModelTier, string> = {
-  haiku: "claude-haiku-4-5-20251001",
-  sonnet: "claude-sonnet-4-5-20250929",
-  opus: "claude-opus-4-6",
-};
+/** @deprecated Use STATIC_TIER_IDS from modelDiscovery.ts instead */
+export const MODEL_IDS = STATIC_TIER_IDS;
 
 const SUMMARY_STYLE_DEFAULTS: Record<SummaryStyle, ModelTier> = {
   quick: "opus",
@@ -353,19 +351,9 @@ export function resolveConfig(
       : "edge-tts";
 
   // Voice resolution: fall back to provider default when voice doesn't belong to the provider
-  let voice = profile.voice ?? "en-US-JennyNeural";
-  if (ttsProvider === "openai") {
-    const openaiVoices = new Set(["alloy", "echo", "fable", "onyx", "nova", "shimmer"]);
-    if (!openaiVoices.has(voice)) voice = "alloy";
-  } else {
-    const edgeVoices = new Set([
-      "en-US-JennyNeural",
-      "en-US-GuyNeural",
-      "en-US-AriaNeural",
-      "en-GB-SoniaNeural",
-      "en-AU-NatashaNeural",
-    ]);
-    if (!edgeVoices.has(voice)) voice = "en-US-JennyNeural";
+  let voice = profile.voice ?? getDefaultVoiceForProvider(ttsProvider);
+  if (!isValidVoiceForProvider(voice, ttsProvider)) {
+    voice = getDefaultVoiceForProvider(ttsProvider);
   }
 
   // Audio mode resolution: CLI override > profile setting > default "podcast"

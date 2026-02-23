@@ -1,6 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { useToast } from "../hooks/useToast.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { chatWithSession } from "../lib/chat.js";
 import type { ChatMessage, Config } from "../lib/types.js";
@@ -30,23 +31,7 @@ export function ChatView({
   const [inputValue, setInputValue] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingResponse, setStreamingResponse] = useState("");
-  const [toast, setToast] = useState<string | undefined>(undefined);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
-
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => {
-      setToast(undefined);
-      toastTimerRef.current = null;
-    }, 3000);
-  }, []);
+  const { toast, showToast } = useToast();
 
   const handleSubmit = useCallback(
     async (value: string) => {

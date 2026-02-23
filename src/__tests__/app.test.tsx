@@ -36,8 +36,7 @@ const mocks = vi.hoisted(() => ({
   speakFallback: vi.fn(),
   getVoiceDisplayName: vi.fn(),
   writeClipboard: vi.fn(),
-  isClaudeCodeAvailable: vi.fn(),
-  isCodexAvailable: vi.fn(),
+  validateCliProvider: vi.fn(),
   resolveTheme: vi.fn(),
   checkForUpdate: vi.fn(),
   chatWithSession: vi.fn(),
@@ -85,11 +84,17 @@ vi.mock("../lib/tts.js", () => ({
 vi.mock("../lib/clipboard.js", () => ({
   writeClipboard: mocks.writeClipboard,
 }));
-vi.mock("../lib/providers/claude-code.js", () => ({
-  isClaudeCodeAvailable: mocks.isClaudeCodeAvailable,
-}));
-vi.mock("../lib/providers/codex.js", () => ({
-  isCodexAvailable: mocks.isCodexAvailable,
+vi.mock("../lib/providers/index.js", () => ({
+  validateCliProvider: mocks.validateCliProvider,
+  PROVIDER_ENV_VARS: {
+    anthropic: "ANTHROPIC_API_KEY",
+    "claude-code": null,
+    codex: null,
+    gemini: "GEMINI_API_KEY",
+    ollama: null,
+    openai: "OPENAI_API_KEY",
+    xai: "XAI_API_KEY",
+  },
 }));
 vi.mock("../lib/theme.js", () => ({
   resolveTheme: mocks.resolveTheme,
@@ -205,8 +210,7 @@ describe("App", () => {
     });
     mocks.loadConfig.mockResolvedValue(TEST_CONFIG);
     mocks.getRecent.mockResolvedValue([]);
-    mocks.isClaudeCodeAvailable.mockReturnValue(true);
-    mocks.isCodexAvailable.mockReturnValue(true);
+    mocks.validateCliProvider.mockResolvedValue(null);
     mocks.getVoiceDisplayName.mockReturnValue("Jenny");
     mocks.checkForUpdate.mockResolvedValue(null);
     mocks.deduplicateBySource.mockImplementation((e: TldrResult[]) => e);
@@ -892,7 +896,10 @@ describe("App", () => {
   // -----------------------------------------------------------------------
   describe("provider fallback", () => {
     it("shows error when claude-code unavailable and no API key", async () => {
-      mocks.isClaudeCodeAvailable.mockReturnValue(false);
+      mocks.validateCliProvider.mockResolvedValue({
+        message: "Claude Code is not installed or not authenticated.",
+        hint: 'Install it with: npm install -g @anthropic-ai/claude-code\nThen run "claude" to log in.',
+      });
       mocks.loadConfig.mockResolvedValue({
         ...TEST_CONFIG,
         provider: "claude-code" as const,
@@ -912,7 +919,10 @@ describe("App", () => {
     });
 
     it("falls back to anthropic when claude-code unavailable but API key present", async () => {
-      mocks.isClaudeCodeAvailable.mockReturnValue(false);
+      mocks.validateCliProvider.mockResolvedValue({
+        message: "Claude Code is not installed or not authenticated.",
+        hint: "Install it.",
+      });
       mocks.loadConfig.mockResolvedValue({
         ...TEST_CONFIG,
         provider: "claude-code" as const,
@@ -932,7 +942,10 @@ describe("App", () => {
     });
 
     it("shows error when codex unavailable", async () => {
-      mocks.isCodexAvailable.mockReturnValue(false);
+      mocks.validateCliProvider.mockResolvedValue({
+        message: "Codex CLI is not installed.",
+        hint: "Install it with: npm install -g @openai/codex",
+      });
       mocks.loadConfig.mockResolvedValue({
         ...TEST_CONFIG,
         provider: "codex" as const,

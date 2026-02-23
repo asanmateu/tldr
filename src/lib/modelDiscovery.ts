@@ -45,8 +45,8 @@ const TIER_PATTERNS: Record<ModelTier, RegExp> = {
   opus: /claude-.*opus/i,
 };
 
-// Static fallback IDs — used when cache has no match for a tier
-const STATIC_TIER_IDS: Record<ModelTier, string> = {
+// Static fallback IDs — canonical tier-to-model mapping, also used by config.ts
+export const STATIC_TIER_IDS: Record<ModelTier, string> = {
   haiku: "claude-haiku-4-5-20251001",
   sonnet: "claude-sonnet-4-5-20250929",
   opus: "claude-opus-4-6",

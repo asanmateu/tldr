@@ -11,7 +11,7 @@ interface SelectionListProps {
   title: string;
   items: SelectionItem[];
   selectedIndex: number;
-  checkedValues?: Set<string>;
+  checkedValues?: ReadonlySet<string>;
 }
 
 export function SelectionList({ title, items, selectedIndex, checkedValues }: SelectionListProps) {

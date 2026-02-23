@@ -748,7 +748,7 @@ export function ConfigSetup({
                 title="Cognitive traits (Space to toggle, Enter to confirm):"
                 items={ALL_TRAITS}
                 selectedIndex={traitNav.index}
-                checkedValues={selectedTraits as unknown as Set<string>}
+                checkedValues={selectedTraits}
               />
               <Text dimColor>
                 Selected: {selectedTraits.size > 0 ? [...selectedTraits].join(", ") : "none"}
@@ -857,7 +857,7 @@ export function ConfigSetup({
             title="Cognitive traits (Space to toggle, Enter to go back):"
             items={ALL_TRAITS}
             selectedIndex={traitNav.index}
-            checkedValues={selectedTraits as unknown as Set<string>}
+            checkedValues={selectedTraits}
           />
         )}
 

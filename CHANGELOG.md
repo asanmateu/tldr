@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pressing `q` with an empty input now requires a double-tap within 2 seconds to quit — first press shows a warning, preventing accidental exits
 - Tier aliases (haiku/sonnet/opus) now resolve dynamically to the latest model from the provider API cache, falling back to static IDs when cache is empty
+- **Internal:** Extracted `resetToIdle()`, `refreshHistory()`, `handleAudioGenerate()`, and `handleSave()` callbacks from App.tsx, replacing duplicated inline logic
+- **Internal:** Replaced 11-case slash command switch with data-driven `SLASH_COMMANDS` dispatch map
+- **Internal:** Extracted `truncateAndScale()`, `isAbortError()`, and `extractErrorMessage()` helpers from App.tsx
+- **Internal:** Extracted `useToast` hook (`src/hooks/useToast.ts`) — shared by App.tsx and ChatView.tsx
+- **Internal:** Centralized voice validation into `isValidVoiceForProvider()` and `getVoiceDisplayName()` in `src/lib/tts/voices.ts`, replacing scattered inline checks
+- **Internal:** Consolidated model tier definitions — `MODEL_IDS` in config.ts is now a re-export of `STATIC_TIER_IDS` from modelDiscovery.ts
+- **Internal:** Added `validateCliProvider()` facade in `src/lib/providers/index.ts`, removing direct provider imports from App.tsx
+- **Internal:** Removed `as unknown` type casts — `SelectionList` accepts `ReadonlySet<string>`, configSetter uses `Object.assign()`
+- **Internal:** Extracted magic numbers to named constants (`LONG_CONTENT_WORD_THRESHOLD`, `LONG_CONTENT_MAX_TOKENS`, `DISCARD_TIMEOUT_MS`)
 
 ### Added
 

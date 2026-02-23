@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { getTtsProvider } from "./tts/index.js";
+import { getVoiceDisplayName as _getVoiceDisplayName } from "./tts/voices.js";
 import type { PitchPreset, TtsProvider, VolumePreset } from "./types.js";
 
 export async function generateAudio(
@@ -17,27 +18,7 @@ export async function generateAudio(
 }
 
 export function getVoiceDisplayName(voiceId: string, ttsProvider?: TtsProvider): string {
-  // Synchronous lookup — import voices directly to avoid async
-  // Uses the voice lists from the voices module
-  if (ttsProvider === "openai") {
-    const OPENAI_NAMES: Record<string, string> = {
-      alloy: "Alloy",
-      echo: "Echo",
-      fable: "Fable",
-      onyx: "Onyx",
-      nova: "Nova",
-      shimmer: "Shimmer",
-    };
-    return OPENAI_NAMES[voiceId] ?? voiceId;
-  }
-  const EDGE_NAMES: Record<string, string> = {
-    "en-US-JennyNeural": "Jenny",
-    "en-US-GuyNeural": "Guy",
-    "en-US-AriaNeural": "Aria",
-    "en-GB-SoniaNeural": "Sonia",
-    "en-AU-NatashaNeural": "Natasha",
-  };
-  return EDGE_NAMES[voiceId] ?? voiceId;
+  return _getVoiceDisplayName(voiceId, ttsProvider ?? "edge-tts");
 }
 
 export function playAudio(filePath: string): ChildProcess {
