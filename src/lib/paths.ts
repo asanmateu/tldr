@@ -24,6 +24,8 @@ export function normalizeDraggedPath(input: string): string {
 export function looksLikeFilePath(input: string): boolean {
   const normalized = normalizeDraggedPath(input);
   if (!FILE_PATH_PATTERN.test(normalized)) return false;
+  // Bare "/" is the slash-command trigger, not a file path
+  if (normalized === "/") return false;
   // For bare /word inputs, require a second slash or file extension
   // to distinguish from slash commands like /help or /history
   if (/^\/[^/]+$/.test(normalized)) {

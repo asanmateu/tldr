@@ -87,6 +87,18 @@ describe("looksLikeFilePath", () => {
   it("rejects quoted text that is not a path", () => {
     expect(looksLikeFilePath("'just some text'")).toBe(false);
   });
+
+  it("rejects bare slash (slash-command trigger)", () => {
+    expect(looksLikeFilePath("/")).toBe(false);
+  });
+
+  it("rejects slash commands like /help", () => {
+    expect(looksLikeFilePath("/help")).toBe(false);
+  });
+
+  it("accepts bare /word with file extension", () => {
+    expect(looksLikeFilePath("/file.txt")).toBe(true);
+  });
 });
 
 describe("expandHome", () => {
