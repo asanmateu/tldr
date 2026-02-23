@@ -1,3 +1,4 @@
+export { runBatch } from "../../batch.js";
 export { extract } from "../../pipeline.js";
 export { classify } from "../../extractors/router.js";
 export { summarize, rewriteForSpeech } from "../summarizer.js";

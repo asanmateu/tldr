@@ -2,6 +2,7 @@
 import { spawnSync } from "node:child_process";
 import { render } from "ink";
 import { App } from "./App.js";
+import { runBatch } from "./batch.js";
 import {
   createProfile,
   deleteProfile,
@@ -58,6 +59,11 @@ if (args.includes("--help") || args.includes("-h")) {
     tldr --provider xai <url>         Use xAI / Grok API
     tldr --provider codex <url>       Use OpenAI Codex CLI
     tldr                              Interactive mode
+
+  ${fmt.label("Batch mode (non-interactive):")}
+    tldr --batch <url>                Run headlessly, print summary to stdout
+    tldr --batch --audio <url>        Include audio generation
+    tldr --batch --output ./out <url> Save to specific directory
 
   ${fmt.label("Configuration:")}
     tldr config                       Show current resolved config
@@ -333,11 +339,24 @@ if (command === "config") {
   const audioModeFlag = getFlag("audio-mode");
   if (audioModeFlag) overrides.audioMode = audioModeFlag;
 
+  // Batch mode flags
+  const batchMode = hasFlag("batch");
+  const outputFlag = getFlag("output");
+  const includeAudio = hasFlag("audio");
+
   // Legacy --config flag
   const showConfig = hasFlag("config");
 
   // Find positional input (not a flag or flag value)
-  const flagNames = new Set(["model", "style", "preset", "profile", "provider", "audio-mode"]);
+  const flagNames = new Set([
+    "model",
+    "style",
+    "preset",
+    "profile",
+    "provider",
+    "audio-mode",
+    "output",
+  ]);
   const skipNext = new Set<number>();
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -356,6 +375,27 @@ if (command === "config") {
       a !== "profile" &&
       a !== "preset",
   );
+
+  // Batch mode — headless pipeline
+  if (batchMode) {
+    if (!initialInput) {
+      process.stderr.write("Error: --batch requires input (URL, file, or text)\n");
+      process.stderr.write("Usage: tldr --batch <url|file|text>\n");
+      process.exit(1);
+    }
+    try {
+      await runBatch({
+        input: initialInput,
+        overrides,
+        outputDir: outputFlag,
+        includeAudio,
+      });
+    } catch (err) {
+      process.stderr.write(`Error: ${(err as Error).message}\n`);
+      process.exit(1);
+    }
+    process.exit(0);
+  }
 
   let wantsUpdate = false;
   const instance = render(

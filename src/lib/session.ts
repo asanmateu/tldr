@@ -20,11 +20,9 @@ export function parseTitleFromSummary(markdown: string): string | undefined {
 }
 
 export function buildSessionName(extraction: ExtractionResult, summary?: string): string {
-  const date = new Date().toISOString().slice(0, 10);
   const modelTitle = summary ? parseTitleFromSummary(summary) : undefined;
   const label = modelTitle ?? extraction.title ?? extraction.source;
-  const slug = slugify(label);
-  return `${date}-${slug || "summary"}`;
+  return slugify(label) || "summary";
 }
 
 export function getSessionPaths(
@@ -32,7 +30,9 @@ export function getSessionPaths(
   extraction: ExtractionResult,
   summary?: string,
 ): SessionPaths {
-  const sessionDir = join(outputDir, buildSessionName(extraction, summary));
+  const date = new Date().toISOString().slice(0, 10);
+  const slug = buildSessionName(extraction, summary);
+  const sessionDir = join(outputDir, date, slug);
   return {
     sessionDir,
     summaryPath: join(sessionDir, "summary.md"),

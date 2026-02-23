@@ -79,7 +79,7 @@ describe("buildSessionName", () => {
       source: "https://example.com",
     };
     const name = buildSessionName(extraction);
-    expect(name).toMatch(/^\d{4}-\d{2}-\d{2}-how-llms-work$/);
+    expect(name).toBe("how-llms-work");
   });
 
   it("falls back to source when no title", () => {
@@ -101,7 +101,7 @@ describe("buildSessionName", () => {
     };
     const summary = "# How AI Changes Everything\n\n## TL;DR\nContent here";
     const name = buildSessionName(extraction, summary);
-    expect(name).toMatch(/^\d{4}-\d{2}-\d{2}-how-ai-changes-everything$/);
+    expect(name).toBe("how-ai-changes-everything");
   });
 
   it("falls back to extraction title when summary has no h1", () => {
@@ -113,12 +113,22 @@ describe("buildSessionName", () => {
     };
     const summary = "## TL;DR\nNo top-level heading here";
     const name = buildSessionName(extraction, summary);
-    expect(name).toMatch(/^\d{4}-\d{2}-\d{2}-page-title$/);
+    expect(name).toBe("page-title");
+  });
+
+  it("returns 'summary' for empty slug", () => {
+    const extraction: ExtractionResult = {
+      content: "...",
+      wordCount: 100,
+      source: "!!!",
+    };
+    const name = buildSessionName(extraction);
+    expect(name).toBe("summary");
   });
 });
 
 describe("getSessionPaths", () => {
-  it("returns paths under outputDir", () => {
+  it("returns date-grouped paths under outputDir", () => {
     const extraction: ExtractionResult = {
       title: "Test",
       content: "...",
@@ -126,7 +136,8 @@ describe("getSessionPaths", () => {
       source: "test",
     };
     const paths = getSessionPaths("/out", extraction);
-    expect(paths.sessionDir).toMatch(/^\/out\//);
+    // Should be /out/{date}/{slug}/
+    expect(paths.sessionDir).toMatch(/^\/out\/\d{4}-\d{2}-\d{2}\/test$/);
     expect(paths.summaryPath).toContain("summary.md");
     expect(paths.audioPath).toContain("audio.mp3");
     expect(paths.chatPath).toContain("chat.md");

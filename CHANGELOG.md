@@ -9,11 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `--batch` mode: run headlessly with no TUI — extract, summarize, and print to stdout in a single command (e.g. `tldr --batch <url>`)
+- `--audio` flag for batch mode: opt-in audio generation during headless runs
+- `--output <dir>` flag for batch mode: override the session output directory
+- `runBatch()` exported from `lib/core` for programmatic use by desktop sidecar and scripts
 - `/update` slash command: update to the latest version without leaving the app (runs `brew upgrade` for Homebrew installs, shows download link otherwise)
 - Inline update notice in banner: version line shows `v2.2.1 → 2.2.2 available` when an update is available, replacing the separate colored notice line
 - Setup wizard now starts with AI provider selection — standalone (Homebrew) users pick their provider instead of defaulting to Claude Code
 - Setup wizard ends with audio mode selection, surfacing the v2.2.0 podcast/briefing/lecture/etc. feature during onboarding
 - Setup wizard shows per-provider env var guidance (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) when the chosen provider needs an API key
+
+### Changed
+
+- Session directories are now date-grouped: `~/Documents/tldr/{date}/{slug}/` instead of `~/Documents/tldr/{date}-{slug}/` — existing sessions are not migrated
 
 ### Fixed
 

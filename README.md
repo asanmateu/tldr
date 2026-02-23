@@ -46,6 +46,8 @@ tldr ./paper.pdf                                  # Local PDF
 tldr "https://example.com/doc.pdf"                # Remote PDF
 tldr "Your text to summarize here..."             # Raw text
 tldr                                              # Interactive mode
+tldr --batch "https://..."                        # Headless — print summary to stdout
+tldr --batch --audio "https://..."                # Headless with audio generation
 ```
 
 YouTube, Slack threads, and Notion pages also work — just paste the URL.
