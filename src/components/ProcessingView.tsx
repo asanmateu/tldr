@@ -7,20 +7,31 @@ interface ProcessingViewProps {
   phase: "extracting" | "summarizing";
   source: string;
   extraction?: ExtractionResult | undefined;
+  queuePosition?: number | undefined;
+  queueTotal?: number | undefined;
 }
 
-export function ProcessingView({ phase, source, extraction }: ProcessingViewProps) {
+export function ProcessingView({
+  phase,
+  source,
+  extraction,
+  queuePosition,
+  queueTotal,
+}: ProcessingViewProps) {
   const theme = useTheme();
   const isImage = !!extraction?.image;
 
+  const queuePrefix =
+    queuePosition != null && queueTotal != null ? `(${queuePosition}/${queueTotal}) ` : "";
+
   const label =
     phase === "extracting"
-      ? `Extracting from ${source}...`
+      ? `${queuePrefix}Extracting from ${source}...`
       : isImage
-        ? "Analyzing image..."
+        ? `${queuePrefix}Analyzing image...`
         : extraction
-          ? `Summarizing ${extraction.wordCount.toLocaleString()} words...`
-          : "Summarizing with Claude...";
+          ? `${queuePrefix}Summarizing ${extraction.wordCount.toLocaleString()} words...`
+          : `${queuePrefix}Summarizing with Claude...`;
 
   return (
     <Box flexDirection="column" paddingX={1}>
@@ -42,7 +53,9 @@ export function ProcessingView({ phase, source, extraction }: ProcessingViewProp
         </Box>
       )}
       <Box marginTop={1}>
-        <Text dimColor>[Esc] cancel</Text>
+        <Text dimColor>
+          {queueTotal != null && queueTotal > 1 ? "[Esc] cancel remaining" : "[Esc] cancel"}
+        </Text>
       </Box>
     </Box>
   );

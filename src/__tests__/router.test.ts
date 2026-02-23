@@ -354,6 +354,20 @@ describe("classify", () => {
       });
     });
 
+    it("extracts first URL when multiple space-separated URLs are pasted", () => {
+      expect(classify("https://example.com/one https://example.com/two")).toEqual({
+        type: "url",
+        value: "https://example.com/one",
+      });
+    });
+
+    it("extracts first URL when followed by trailing text", () => {
+      expect(classify("https://example.com/article some extra text")).toEqual({
+        type: "url",
+        value: "https://example.com/article",
+      });
+    });
+
     it("handles Unicode in URLs", () => {
       expect(classify("https://example.com/ñoño")).toEqual({
         type: "url",
@@ -365,6 +379,20 @@ describe("classify", () => {
       expect(classify("ftp://example.com/file")).toEqual({
         type: "text",
         value: "ftp://example.com/file",
+      });
+    });
+
+    it("extracts first file path when followed by trailing text", () => {
+      expect(classify("/home/user/doc.txt some extra text")).toEqual({
+        type: "file",
+        value: "/home/user/doc.txt",
+      });
+    });
+
+    it("extracts first file path when two paths are space-separated", () => {
+      expect(classify("/home/user/a.pdf /home/user/b.pdf")).toEqual({
+        type: "file:pdf",
+        value: "/home/user/a.pdf",
       });
     });
   });

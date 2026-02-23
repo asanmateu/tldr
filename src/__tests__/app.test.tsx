@@ -1475,4 +1475,174 @@ describe("App", () => {
       instance.unmount();
     });
   });
+
+  // -----------------------------------------------------------------------
+  // Group 11: Multi-input queue processing
+  // -----------------------------------------------------------------------
+  describe("multi-input queue processing", () => {
+    it("processes multiple inputs sequentially and auto-saves intermediates", async () => {
+      let extractCount = 0;
+      mocks.extract.mockImplementation(async (input: string) => {
+        extractCount++;
+        return {
+          ...TEST_EXTRACTION,
+          source: input,
+          title: `Article ${extractCount}`,
+        };
+      });
+
+      let summarizeCount = 0;
+      mocks.summarize.mockImplementation(
+        async (result: ExtractionResult, _config: Config, onChunk: (text: string) => void) => {
+          summarizeCount++;
+          const summary = `## Summary ${summarizeCount}`;
+          onChunk(summary);
+          return { extraction: result, summary, timestamp: Date.now() };
+        },
+      );
+
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("tl;dr");
+        },
+        { timeout: 2000 },
+      );
+
+      // Type two URLs and submit
+      instance.stdin.write("https://a.com https://b.com");
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("+ 1 more");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Should process both — first auto-saved, second in active view
+      await vi.waitFor(
+        () => {
+          expect(mocks.extract).toHaveBeenCalledTimes(2);
+          expect(mocks.summarize).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 5000 },
+      );
+
+      // First item auto-saved
+      await vi.waitFor(
+        () => {
+          expect(mocks.saveSummary).toHaveBeenCalled();
+          expect(mocks.addEntry).toHaveBeenCalled();
+        },
+        { timeout: 2000 },
+      );
+
+      // Last item in result view
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Summary 2");
+          expect(frame).toContain("[Enter] save");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows queue progress in processing view", async () => {
+      // Make extract hang so we can observe the processing view
+      mocks.extract.mockImplementation(
+        () => new Promise(() => {}), // never resolves
+      );
+
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("tl;dr");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("https://a.com https://b.com");
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("+ 1 more");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("(1/2)");
+          expect(frame).toContain("Extracting");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("ESC during queue cancels remaining items", async () => {
+      // First extract succeeds, second hangs
+      let callCount = 0;
+      mocks.extract.mockImplementation((_input: string, signal?: AbortSignal) => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({ ...TEST_EXTRACTION, source: "https://a.com" });
+        }
+        return new Promise((_resolve, reject) => {
+          signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
+        });
+      });
+
+      const instance = render(<App />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("tl;dr");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.stdin.write("https://a.com https://b.com");
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("+ 1 more");
+        },
+        { timeout: 2000 },
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      instance.stdin.write("\r");
+
+      // Wait for second extraction to start
+      await vi.waitFor(
+        () => {
+          expect(callCount).toBe(2);
+        },
+        { timeout: 5000 },
+      );
+
+      // Press ESC
+      instance.stdin.write("\x1B");
+
+      // Should return to idle
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("tl;dr");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+  });
 });

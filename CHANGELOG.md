@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Setup wizard now starts with AI provider selection — standalone (Homebrew) users pick their provider instead of defaulting to Claude Code
 - Setup wizard ends with audio mode selection, surfacing the v2.2.0 podcast/briefing/lecture/etc. feature during onboarding
 - Setup wizard shows per-provider env var guidance (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) when the chosen provider needs an API key
+- Multi-input queue: paste or drop multiple URLs/file paths and process them all sequentially — intermediate results auto-save and pin upward, last result stays in the active view
+- Input hint shows detected source count for multi-input (e.g. "example.com + 2 more — 3 sources")
+- Queue progress in processing view (e.g. "(1/3) Extracting from...")
 
 ### Changed
 
@@ -32,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Setup wizard no longer assumes Anthropic API key — shows the correct environment variable name for the selected provider
 - Pasting multiple space-separated URLs into the interactive input no longer crashes — the first URL is extracted and processed
+- File paths with trailing text no longer include junk in the extracted path (parity with URL first-token fix)
 - Typing `/` now correctly shows the slash command menu — bare `/` was incorrectly classified as a file path after the v2.2.1 file-path fix
 - Missing API key or CLI now shows a clear error (e.g. "Set ANTHROPIC_API_KEY…") instead of a cryptic SDK message, for all providers
 

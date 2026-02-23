@@ -37,7 +37,7 @@ const PALETTE: ThemePalette = {
 
 /** Render InputPrompt wrapped in ThemeProvider. */
 function renderPrompt(overrides?: {
-  onSubmit?: (input: string) => void;
+  onSubmit?: (inputs: string[]) => void;
   onSlashCommand?: (cmd: string) => void;
   onQuit?: () => void;
 }) {
@@ -88,7 +88,7 @@ describe("InputPrompt", () => {
 
       await vi.waitFor(
         () => {
-          expect(onSubmit).toHaveBeenCalledWith("/Users/someone/Documents/notes.md");
+          expect(onSubmit).toHaveBeenCalledWith(["/Users/someone/Documents/notes.md"]);
         },
         { timeout: 2000 },
       );
@@ -113,7 +113,7 @@ describe("InputPrompt", () => {
 
       await vi.waitFor(
         () => {
-          expect(onSubmit).toHaveBeenCalledWith("/Users/foo/my file.pdf");
+          expect(onSubmit).toHaveBeenCalledWith(["/Users/foo/my file.pdf"]);
         },
         { timeout: 2000 },
       );
@@ -192,6 +192,70 @@ describe("InputPrompt", () => {
           expect(frame).toContain("document");
           expect(frame).not.toContain("Browse and resume");
           expect(frame).not.toContain("Re-run first-time");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+  });
+
+  describe("multi-input handling", () => {
+    it("shows multi-source hint for multiple URLs", async () => {
+      const { instance } = renderPrompt();
+      await tick();
+
+      instance.stdin.write("https://a.com https://b.com");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("a.com");
+          expect(frame).toContain("+ 1 more");
+          expect(frame).toContain("2 sources");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows multi-source hint for multiple file paths", async () => {
+      const { instance } = renderPrompt();
+      await tick();
+
+      instance.stdin.write("/tmp/report.pdf /tmp/notes.md");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("report.pdf");
+          expect(frame).toContain("+ 1 more");
+          expect(frame).toContain("2 sources");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("submits multiple URLs as string array", async () => {
+      const { instance, onSubmit } = renderPrompt();
+      await tick();
+
+      instance.stdin.write("https://a.com https://b.com");
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("+ 1 more");
+        },
+        { timeout: 2000 },
+      );
+      await tick();
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          expect(onSubmit).toHaveBeenCalledWith(["https://a.com", "https://b.com"]);
         },
         { timeout: 2000 },
       );

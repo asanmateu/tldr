@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUpdateCheck } from "../hooks/useUpdateCheck.js";
 import { useTheme } from "../lib/ThemeContext.js";
 import { SLASH_COMMANDS, matchCommands, parseCommand } from "../lib/commands.js";
-import { looksLikeFilePath, normalizeDraggedPath } from "../lib/paths.js";
+import { looksLikeFilePath, normalizeDraggedPath, tokenizeInput } from "../lib/paths.js";
 import type { TldrResult } from "../lib/types.js";
 import { Banner } from "./Banner.js";
 import { SlashCommandMenu } from "./SlashCommandMenu.js";
@@ -13,7 +13,7 @@ import { SlashCommandMenu } from "./SlashCommandMenu.js";
 interface InputPromptProps {
   history: TldrResult[];
   toast?: string | undefined;
-  onSubmit: (input: string) => void;
+  onSubmit: (inputs: string[]) => void;
   onQuit: () => void;
   onSlashCommand: (command: string) => void;
 }
@@ -36,10 +36,32 @@ export function InputPrompt({
   const slashMenuVisible =
     input.startsWith("/") && !looksLikeFilePath(input) && filteredCommands.length > 0;
 
-  const fileHint = useMemo(() => {
+  const inputHint = useMemo(() => {
     if (!input) return undefined;
+
+    const tokens = tokenizeInput(input);
+    const sources = tokens.filter((t) => /^https?:\/\//i.test(t) || looksLikeFilePath(t));
+
+    if (sources.length >= 2) {
+      const first = sources[0] ?? "";
+      let firstLabel: string;
+      if (/^https?:\/\//i.test(first)) {
+        try {
+          firstLabel = new URL(first).hostname;
+        } catch {
+          firstLabel = first.slice(0, 30);
+        }
+      } else {
+        firstLabel = basename(first);
+      }
+      return {
+        name: `${firstLabel} + ${sources.length - 1} more`,
+        type: `${sources.length} sources`,
+      };
+    }
+
     if (!looksLikeFilePath(input)) return undefined;
-    const normalized = normalizeDraggedPath(input);
+    const normalized = normalizeDraggedPath(input).split(/\s/)[0] ?? normalizeDraggedPath(input);
     const name = basename(normalized);
     if (/\.pdf$/i.test(normalized)) return { name, type: "PDF document" };
     if (/\.(jpe?g|png|gif|webp)$/i.test(normalized)) return { name, type: "image" };
@@ -66,9 +88,21 @@ export function InputPrompt({
       const trimmed = value.trim();
       if (!trimmed) return;
 
+      // Multi-input detection
+      const tokens = tokenizeInput(trimmed);
+      const classifiable = tokens.filter((t) => /^https?:\/\//i.test(t) || looksLikeFilePath(t));
+      if (classifiable.length >= 2) {
+        const normalized = classifiable.map((t) =>
+          looksLikeFilePath(t) ? normalizeDraggedPath(t) : t,
+        );
+        onSubmit(normalized);
+        setInput("");
+        return;
+      }
+
       // File paths start with / but are not slash commands
       if (looksLikeFilePath(trimmed)) {
-        onSubmit(normalizeDraggedPath(trimmed));
+        onSubmit([normalizeDraggedPath(trimmed)]);
         setInput("");
         return;
       }
@@ -97,7 +131,7 @@ export function InputPrompt({
         return;
       }
 
-      onSubmit(trimmed);
+      onSubmit([trimmed]);
     },
     [onSubmit, onSlashCommand, slashMenuVisible, filteredCommands, slashMenuIndex],
   );
@@ -174,10 +208,10 @@ export function InputPrompt({
         <SlashCommandMenu commands={filteredCommands} selectedIndex={slashMenuIndex} />
       )}
       {commandError && !slashMenuVisible && <Text color={theme.error}>{commandError}</Text>}
-      {!slashMenuVisible && !commandError && fileHint && input && (
+      {!slashMenuVisible && !commandError && inputHint && input && (
         <Text>
-          <Text color={theme.accent}>{fileHint.name}</Text>
-          <Text dimColor>{` — ${fileHint.type}`}</Text>
+          <Text color={theme.accent}>{inputHint.name}</Text>
+          <Text dimColor>{` — ${inputHint.type}`}</Text>
         </Text>
       )}
     </Box>

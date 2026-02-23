@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { expandHome, looksLikeFilePath, normalizeDraggedPath } from "../lib/paths.js";
+import {
+  expandHome,
+  looksLikeFilePath,
+  normalizeDraggedPath,
+  tokenizeInput,
+} from "../lib/paths.js";
 
 describe("normalizeDraggedPath", () => {
   it("strips single quotes (iTerm2 style)", () => {
@@ -113,5 +118,63 @@ describe("expandHome", () => {
 
   it("leaves relative paths unchanged", () => {
     expect(expandHome("./file.txt")).toBe("./file.txt");
+  });
+});
+
+describe("tokenizeInput", () => {
+  it("returns single URL as-is", () => {
+    expect(tokenizeInput("https://example.com")).toEqual(["https://example.com"]);
+  });
+
+  it("splits two space-separated URLs", () => {
+    expect(tokenizeInput("https://a.com https://b.com")).toEqual([
+      "https://a.com",
+      "https://b.com",
+    ]);
+  });
+
+  it("handles single-quoted path with spaces", () => {
+    expect(tokenizeInput("'/Users/foo/my file.pdf'")).toEqual(["/Users/foo/my file.pdf"]);
+  });
+
+  it("handles multiple quoted paths", () => {
+    expect(tokenizeInput("'/path/a.pdf' '/path/b.pdf'")).toEqual(["/path/a.pdf", "/path/b.pdf"]);
+  });
+
+  it("handles backslash-escaped path", () => {
+    expect(tokenizeInput("/path/my\\ file.pdf")).toEqual(["/path/my file.pdf"]);
+  });
+
+  it("handles mixed URLs and paths", () => {
+    expect(tokenizeInput("https://a.com /path/file.pdf")).toEqual([
+      "https://a.com",
+      "/path/file.pdf",
+    ]);
+  });
+
+  it("does not split plain text", () => {
+    expect(tokenizeInput("some random text")).toEqual(["some random text"]);
+  });
+
+  it("returns empty array for empty input", () => {
+    expect(tokenizeInput("")).toEqual([]);
+  });
+
+  it("returns empty array for whitespace-only input", () => {
+    expect(tokenizeInput("   ")).toEqual([]);
+  });
+
+  it("handles double-quoted paths", () => {
+    expect(tokenizeInput('"/path/my file.pdf" "/path/other.pdf"')).toEqual([
+      "/path/my file.pdf",
+      "/path/other.pdf",
+    ]);
+  });
+
+  it("splits newline-separated URLs", () => {
+    expect(tokenizeInput("https://a.com\nhttps://b.com")).toEqual([
+      "https://a.com",
+      "https://b.com",
+    ]);
   });
 });

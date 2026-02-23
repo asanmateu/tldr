@@ -30,27 +30,33 @@ export function classify(input: string): ClassifiedInput {
   }
 
   if (URL_PATTERN.test(trimmed)) {
+    const urlToken = trimmed.split(/\s/)[0] ?? trimmed;
+
     for (const { pattern, type } of PLATFORM_PATTERNS) {
-      if (pattern.test(trimmed)) {
-        if (type === "url:arxiv" && PDF_URL_PATTERN.test(trimmed)) {
-          return { type: "url:pdf", value: trimmed };
+      if (pattern.test(urlToken)) {
+        if (type === "url:arxiv" && PDF_URL_PATTERN.test(urlToken)) {
+          return { type: "url:pdf", value: urlToken };
         }
-        return { type, value: trimmed };
+        return { type, value: urlToken };
       }
     }
 
-    if (PDF_URL_PATTERN.test(trimmed)) {
-      return { type: "url:pdf", value: trimmed };
+    if (PDF_URL_PATTERN.test(urlToken)) {
+      return { type: "url:pdf", value: urlToken };
     }
 
-    if (IMAGE_URL_PATTERN.test(trimmed)) {
-      return { type: "url:image", value: trimmed };
+    if (IMAGE_URL_PATTERN.test(urlToken)) {
+      return { type: "url:image", value: urlToken };
     }
 
-    return { type: "url", value: trimmed };
+    return { type: "url", value: urlToken };
   }
 
-  const normalizedPath = normalizeDraggedPath(trimmed);
+  // Extract the first path token from the raw input, respecting quotes and
+  // backslash escapes, so that paths with spaces survive the split.
+  const rawPathMatch = trimmed.match(/^(?:'[^']*'|"[^"]*"|(?:\\.|[^\s])*)/);
+  const rawPathToken = rawPathMatch ? rawPathMatch[0] : trimmed;
+  const normalizedPath = normalizeDraggedPath(rawPathToken);
   if (FILE_PATH_PATTERN.test(normalizedPath)) {
     if (isPdfPath(normalizedPath)) {
       return { type: "file:pdf", value: normalizedPath };

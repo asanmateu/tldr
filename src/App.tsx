@@ -105,7 +105,10 @@ export function App({
   const [pinnedSummaries, setPinnedSummaries] = useState<
     { id: string; extraction: ExtractionResult; summary: string; sessionDir: string | undefined }[]
   >([]);
+  const [inputQueue, setInputQueue] = useState<string[]>([]);
+  const [queueIndex, setQueueIndex] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
+  const queueCancelledRef = useRef(false);
   const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -175,6 +178,8 @@ export function App({
         setPendingResult(undefined);
         setSummaryPinned(false);
         setPinnedSummaries([]);
+        setInputQueue([]);
+        setQueueIndex(0);
         setChatMessages([]);
         setChatSaveEnabled(false);
 
@@ -260,6 +265,147 @@ export function App({
     },
     [clearScreen, exit, initialInput],
   );
+
+  const processQueue = useCallback(async (inputs: string[], cfg: Config) => {
+    setInputQueue(inputs);
+    setQueueIndex(0);
+    queueCancelledRef.current = false;
+    setSummaryPinned(false);
+    setPinnedSummaries([]);
+    setChatMessages([]);
+    setChatSaveEnabled(false);
+
+    for (let i = 0; i < inputs.length; i++) {
+      if (queueCancelledRef.current) break;
+      const rawInput = inputs[i] ?? "";
+      setQueueIndex(i);
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const { signal } = controller;
+
+      const isLast = i === inputs.length - 1;
+
+      try {
+        setState("extracting");
+        setInput(rawInput);
+        setSummary("");
+        setExtraction(undefined);
+        setPendingResult(undefined);
+
+        const result = await extract(rawInput, signal);
+
+        if (!result.content && !result.image) {
+          if (!isLast) continue; // skip failed non-last items
+          setError({
+            message: "Couldn't extract content from this input.",
+            hint: result.partial
+              ? "This content may be behind a paywall. Try pasting the text directly."
+              : undefined,
+          });
+          setState("error");
+          setInputQueue([]);
+          setQueueIndex(0);
+          return;
+        }
+
+        setExtraction(result);
+
+        let effectiveConfig = cfg;
+        if (!result.image) {
+          let content = result.content;
+          const words = content.split(/\s+/);
+          if (words.length > MAX_INPUT_WORDS) {
+            content = words.slice(0, MAX_INPUT_WORDS).join(" ");
+            result.content = content;
+          }
+          if (words.length > 10_000) {
+            effectiveConfig = {
+              ...cfg,
+              maxTokens: Math.min(cfg.maxTokens * 2, 4096),
+            };
+          }
+        }
+
+        setState("summarizing");
+        setIsStreaming(true);
+
+        const tldrResult = await summarize(
+          result,
+          effectiveConfig,
+          (chunk) => setSummary((prev) => prev + chunk),
+          signal,
+        );
+
+        setIsStreaming(false);
+
+        if (isLast) {
+          // Last item — leave in active view
+          try {
+            const sessionPaths = getSessionPaths(cfg.outputDir, result, tldrResult.summary);
+            setCurrentSession(sessionPaths);
+          } catch {
+            // Non-fatal
+          }
+          setPendingResult(tldrResult);
+          setState("result");
+        } else {
+          // Non-last item — auto-save and pin
+          try {
+            const sessionPaths = getSessionPaths(cfg.outputDir, result, tldrResult.summary);
+            const saved = await saveSummary(sessionPaths, tldrResult.summary);
+            await addEntry(tldrResult);
+            const updated = await getRecent(100);
+            setHistory(updated);
+
+            setPinnedSummaries((prev) => [
+              ...prev,
+              {
+                id: String(Date.now()),
+                extraction: result,
+                summary: tldrResult.summary,
+                sessionDir: saved.sessionDir,
+              },
+            ]);
+          } catch {
+            // Non-fatal — pin without session dir
+            setPinnedSummaries((prev) => [
+              ...prev,
+              {
+                id: String(Date.now()),
+                extraction: result,
+                summary: tldrResult.summary,
+                sessionDir: undefined,
+              },
+            ]);
+          }
+        }
+      } catch (err) {
+        setIsStreaming(false);
+        if (signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
+          // Cancelled — stop processing remaining
+          setState("idle");
+          setSummary("");
+          setExtraction(undefined);
+          setInputQueue([]);
+          setQueueIndex(0);
+          return;
+        }
+        if (!isLast) continue; // skip failed non-last items
+        const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+        setError({ message });
+        setState("error");
+        setInputQueue([]);
+        setQueueIndex(0);
+        return;
+      } finally {
+        abortRef.current = null;
+      }
+    }
+
+    // Queue complete — don't reset inputQueue yet so ProcessingView can show final position
+  }, []);
 
   const handleThemeChange = useCallback(async (newThemeConfig: ThemeConfig) => {
     setThemeConfig(newThemeConfig);
@@ -405,6 +551,7 @@ export function App({
   useInput(
     (_ch, key) => {
       if (key.escape) {
+        queueCancelledRef.current = true;
         abortRef.current?.abort();
       }
     },
@@ -554,13 +701,15 @@ export function App({
                   setIsSavingAudio(false);
                 }
 
-                // Show save toast
+                // Show save toast — include queue count if multi-input
+                const queueSuffix =
+                  inputQueue.length > 1 ? ` (${inputQueue.length} summaries total)` : "";
                 setToast(
                   withAudio && !audioSaved
-                    ? `Saved to ${saved.sessionDir} (audio failed)`
+                    ? `Saved to ${saved.sessionDir} (audio failed)${queueSuffix}`
                     : audioSaved
-                      ? `Saved with audio to ${saved.sessionDir}`
-                      : `Saved to ${saved.sessionDir}`,
+                      ? `Saved with audio to ${saved.sessionDir}${queueSuffix}`
+                      : `Saved to ${saved.sessionDir}${queueSuffix}`,
                 );
                 if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
                 toastTimerRef.current = setTimeout(() => {
@@ -606,6 +755,8 @@ export function App({
           setPinnedSummaries([]);
           setChatMessages([]);
           setChatSaveEnabled(false);
+          setInputQueue([]);
+          setQueueIndex(0);
           setState("idle");
           setSummary("");
           setExtraction(undefined);
@@ -634,6 +785,8 @@ export function App({
             setPinnedSummaries([]);
             setChatMessages([]);
             setChatSaveEnabled(false);
+            setInputQueue([]);
+            setQueueIndex(0);
             setPendingResult(undefined);
             setState("idle");
             setSummary("");
@@ -713,7 +866,7 @@ export function App({
           <InputPrompt
             history={history}
             toast={toast}
-            onSubmit={(value) => {
+            onSubmit={(inputs) => {
               if (toast) {
                 setToast(undefined);
                 if (toastTimerRef.current) {
@@ -721,14 +874,26 @@ export function App({
                   toastTimerRef.current = null;
                 }
               }
-              if (config) processInput(value, config);
+              if (config) {
+                if (inputs.length <= 1) {
+                  processInput(inputs[0] ?? "", config);
+                } else {
+                  processQueue(inputs, config);
+                }
+              }
             }}
             onQuit={() => exit()}
             onSlashCommand={handleSlashCommand}
           />
         )}
         {(state === "extracting" || state === "summarizing") && (
-          <ProcessingView phase={state} source={input} extraction={extraction} />
+          <ProcessingView
+            phase={state}
+            source={input}
+            extraction={extraction}
+            queuePosition={inputQueue.length > 1 ? queueIndex + 1 : undefined}
+            queueTotal={inputQueue.length > 1 ? inputQueue.length : undefined}
+          />
         )}
         {state === "result" && extraction && (
           <SummaryView
