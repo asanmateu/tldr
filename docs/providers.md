@@ -1,5 +1,7 @@
 # Providers
 
+<img src="../demos/providers.gif" alt="tldr providers demo — switch between AI providers" width="800" />
+
 tldr supports seven summarization providers.
 
 ## Comparison
@@ -10,7 +12,6 @@ tldr supports seven summarization providers.
 | **Speed** | ~5s | ~2s | Varies | ~2s | ~5s | Varies | ~2s |
 | **Requires** | Claude Code + sub | `ANTHROPIC_API_KEY` | `OPENAI_API_KEY` | `GEMINI_API_KEY` | Codex CLI installed | Ollama running | `XAI_API_KEY` |
 | **How it works** | Shells out to `claude -p` | Anthropic API | OpenAI-compatible API | Google GenAI SDK | Shells out to `codex` | Local REST API | OpenAI-compatible API |
-| **Streaming** | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 
 ## Claude Code Provider (Default)
 
@@ -165,42 +166,8 @@ tldr config set model grok-3-mini-fast
 
 ## Model Selection in the Interactive Editor
 
-The profile editor (`tldr profile edit` / `/config`) uses a free-text input for the model field. Enter any model ID your provider supports — the value is passed through as-is. Anthropic aliases (`haiku`, `sonnet`, `opus`) are resolved automatically.
+The preset editor (`tldr preset edit` / `/config`) uses a free-text input for the model field. Enter any model ID your provider supports — the value is passed through as-is. Anthropic aliases (`haiku`, `sonnet`, `opus`) are resolved automatically.
 
-## Switching Providers
+## Audio
 
-```bash
-# Permanently switch (saved to active profile)
-tldr config set provider anthropic
-tldr config set provider claude-code
-tldr config set provider codex
-tldr config set provider gemini
-tldr config set provider ollama
-tldr config set provider openai
-tldr config set provider xai
-
-# One-time override
-tldr --provider anthropic "https://example.com/article"
-tldr --provider gemini "https://example.com/article"
-tldr --provider ollama "https://example.com/article"
-```
-
-## Provider for Audio
-
-The same provider is used to rewrite summaries as audio scripts when you press `a` in the result view. See the [Audio guide](audio.md) for details on how the rewrite works and voice options.
-
-### TTS Model
-
-By default, OpenAI TTS uses `tts-1`. Change the model:
-
-```bash
-tldr config set tts-model tts-1-hd
-```
-
-Known OpenAI TTS models:
-
-| Model | Cost | Notes |
-|-------|------|-------|
-| tts-1 (default) | ~$0.01/summary | Faster, lower cost |
-| tts-1-hd | ~$0.02/summary | Higher audio quality |
-| gpt-4o-mini-tts | ~$0.01/summary | Newest, supports instructions |
+The same provider you use for summarization also rewrites summaries as spoken scripts for audio playback. See the [Audio guide](audio.md) for TTS providers, voices, and models.

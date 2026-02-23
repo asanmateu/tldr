@@ -1,5 +1,7 @@
 # Audio
 
+<img src="../demos/audio.gif" alt="tldr audio demo — listen to your summaries" width="800" />
+
 Summaries aren't just read aloud. They're **rewritten as audio scripts** by the same AI provider you use for summarizing, using a configurable **audio mode** that controls the persona and structure. The script adapts to your cognitive traits and tone setting. The result sounds like a natural spoken piece, not a screen reader.
 
 ## How audio works
@@ -44,10 +46,6 @@ The rewrite also adapts to your **cognitive traits**. These work with any audio 
 
 Traits stack — enable multiple with `tldr preset edit`. Your **tone** setting (casual, professional, academic, eli5) also shapes the script.
 
-This costs one extra API call, which is why it sounds natural instead of robotic.
-
-A bordered **Audio** panel is always visible in the result view, adapting its content based on audio state — showing shortcuts when idle, a spinner during generation or saving, and playback info while playing.
-
 ## Listening to a summary
 
 1. Summary appears. A bordered Audio panel shows **`[a] listen · [w] save + audio`**.
@@ -62,13 +60,6 @@ A bordered **Audio** panel is always visible in the result view, adapting its co
 Press **`w`** instead of Enter. Saves both `summary.md` and `audio.mp3`. Press **Enter** to save the summary only.
 
 After saving, you stay on the result view — you can still copy, chat, re-listen, or re-summarize. The footer shows "Saved" and `[q]` exits with a single tap (no confirmation needed since nothing will be lost).
-
-## Saving chat transcripts
-
-Press **`Ctrl+s`** in chat view to save the conversation as `chat.md` in the session directory. After the first save, every completed assistant message auto-saves the full conversation. If the summary hasn't been saved yet, saving the chat also creates the session directory and saves the summary.
-
-- If you already pressed `a`, the cached audio is reused — no extra API call.
-- Audio failures are non-fatal. The summary always saves.
 
 ## TTS Providers
 
@@ -100,8 +91,6 @@ tldr config set tts-model tts-1-hd
 | tts-1 (default) | ~$0.01/summary | Faster, lower cost |
 | tts-1-hd | ~$0.02/summary | Higher audio quality |
 | gpt-4o-mini-tts | ~$0.01/summary | Newest, supports instructions |
-
-See [Providers > TTS Model](providers.md#tts-model) for more details.
 
 ## Voices
 

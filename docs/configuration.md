@@ -54,26 +54,7 @@ tldr --style quick "https://example.com/article"
 | `volume` | `quiet`, `normal`, `loud` | `tldr config set volume loud` |
 > **Note:** Pitch and Volume only apply to Edge TTS. They are not supported by OpenAI TTS and will be hidden in the preset editor when OpenAI is selected.
 
-### Audio Modes
-
-Audio modes control the persona and structure used when rewriting summaries for spoken playback.
-
-| Mode | Persona | Best for |
-|------|---------|----------|
-| **podcast** (default) | Conversational podcast host | General listening |
-| **briefing** | Concise analyst | Quick daily catch-ups |
-| **lecture** | Patient teacher | Deep learning sessions |
-| **storyteller** | Compelling narrator | Narrative-driven content |
-| **study-buddy** | Smart study partner | Exam prep and retention |
-| **calm** | Gentle, soothing narrator | Relaxed listening |
-
-Override for a single run:
-
-```bash
-tldr --audio-mode briefing "https://example.com/article"
-```
-
-See the [Audio guide](audio.md) for workflow details, voice personalities, and save-with-audio behavior.
+See the [Audio guide](audio.md) for audio modes, voices, and save-with-audio behavior.
 
 ## Appearance
 
@@ -143,6 +124,10 @@ In interactive mode, type `/` to access commands:
 | `/help` | Show shortcuts and commands |
 | `/quit` | Exit the app |
 
+### Saving chat transcripts
+
+Press **`Ctrl+s`** in chat view to save the conversation as `chat.md` in the session directory. After the first save, every completed assistant message auto-saves the full conversation. If the summary hasn't been saved yet, saving the chat also creates the session directory and saves the summary.
+
 ## Per-Style Model Configuration
 
 Each summary style can use a different model. Configure in `settings.json`:
@@ -165,45 +150,15 @@ When no `styleModels` are configured, all styles default to Opus.
 
 ## Model Selection
 
-The interactive preset editor (`tldr preset edit` / `/config`) fetches available models from your provider's API and shows them as a selectable list. If the API is unreachable or the provider doesn't support model listing, it falls back to a free-text input.
+The interactive preset editor (`tldr preset edit` / `/config`) fetches available models from your provider's API and shows them as a selectable list. If the API is unreachable or the provider doesn't support model listing, it falls back to a free-text input. CLI providers (claude-code, codex) always use a free-text input.
 
-### Dynamic Model Discovery
+Model results are cached locally so subsequent edits are instant.
 
-When you open the model field in the preset editor, tldr calls your provider's model listing API and caches the results locally for 24 hours at `~/.tldr/models-cache.json`. Supported providers:
-
-| Provider | How models are listed |
-|----------|---------------------|
-| Anthropic | `client.models.list()` — tagged with tier (haiku/sonnet/opus) |
-| OpenAI | `client.models.list()` — filtered to chat models (gpt-*, o1-*, o3-*) |
-| Gemini | `ai.models.list()` — generative models |
-| Ollama | `GET /api/tags` — locally pulled models |
-| xAI | OpenAI-compatible `models.list()` |
-| OpenAI TTS | `client.models.list()` — filtered to tts-* models |
-
-CLI providers (claude-code, codex) do not support model listing and always show a free-text input.
-
-### Model Validation
-
-When a summarization or TTS request is made, the model is validated against the cache. If the model is not found, you'll see an actionable error like:
-
-```
-Model 'claude-opus-4.6' not found for anthropic. Did you mean 'claude-opus-4-6'?
-Available: claude-opus-4-6, claude-sonnet-4-5-20250929, ...
-```
-
-Validation is skipped when the cache is empty (first run or expired), so it never blocks you.
+If you enter an invalid model ID, tldr suggests the closest match from your provider's available models.
 
 ### Anthropic Aliases
 
-For the Anthropic provider, short aliases are resolved dynamically from the cache:
-
-| Alias | Resolves to |
-|-------|-------------|
-| `haiku` | Latest cached haiku model (fallback: `claude-haiku-4-5-20251001`) |
-| `sonnet` | Latest cached sonnet model (fallback: `claude-sonnet-4-5-20250929`) |
-| `opus` | Latest cached opus model (fallback: `claude-opus-4-6`) |
-
-Any other string is passed through as-is.
+For the Anthropic provider, short aliases like `haiku`, `sonnet`, and `opus` resolve to the latest available model in that tier automatically.
 
 ## Environment Variables
 

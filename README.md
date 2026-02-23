@@ -24,9 +24,7 @@ I had a pile of to-reads growing at work and it was overwhelming — not because
 
 ## Audio
 
-Summaries aren't just read aloud. They're **rewritten as spoken scripts** using a configurable audio mode — podcast, briefing, lecture, storyteller, study-buddy, or calm. Each mode has a distinct persona and delivery style. The script also adapts to your cognitive traits and tone. The result sounds natural, not robotic.
-
-Press **`a`** to listen. Press **`w`** to save the audio alongside your summary. Use built-in presets like `morning-brief` or `bedtime-read` for curated listening experiences. Free with Edge TTS by default, or switch to OpenAI TTS for higher quality. See the [Audio guide](docs/audio.md) for modes, voices, and provider options.
+Summaries are **rewritten as natural spoken scripts** and played back using configurable voices and personas. The result sounds like a real briefing or podcast, not a screen reader. Free with Edge TTS by default, or upgrade to OpenAI TTS for higher quality. See the [Audio guide](docs/audio.md) for modes, voices, and presets.
 
 ---
 
@@ -106,12 +104,6 @@ Cognitive accessibility is the point, not a feature. Every summary is optimised 
 | **Visual thinker** | Hierarchical layout, grouped ideas, numbered steps |
 
 Traits stack. Enable multiple with `tldr preset edit`.
-
----
-
-## Alternative providers
-
-By default tldr uses Claude Code (`claude-code`). You can also use the Anthropic API directly (`anthropic`), Google Gemini (`gemini`), xAI/Grok (`xai`), local Ollama (`ollama`), OpenAI Codex CLI (`codex`), or any OpenAI-compatible endpoint (`openai`) — see the [Providers guide](docs/providers.md).
 
 ---
 

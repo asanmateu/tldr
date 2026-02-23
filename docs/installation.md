@@ -1,15 +1,12 @@
 # Installation
 
+<img src="../demos/install.gif" alt="tldr installation demo — install and verify" width="800" />
+
 ## Prerequisites
 
-tldr requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to be installed and authenticated:
+tldr works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (the default provider). If you have it installed and authenticated, no extra setup is needed.
 
-```bash
-npm install -g @anthropic-ai/claude-code
-claude    # Authenticate
-```
-
-If you already have Claude Code set up, `tldr` works immediately after installation.
+If you'd rather use a different provider (Anthropic API, Gemini, Ollama, etc.), you can skip Claude Code entirely — see the [Providers guide](providers.md).
 
 ## Homebrew (recommended)
 

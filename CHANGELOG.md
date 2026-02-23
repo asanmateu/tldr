@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Trimmed README Audio section to a concise teaser linking to the Audio guide
+- Removed redundant "Alternative providers" section from README (already covered in Installation)
+- Removed redundant "Switching Providers" section from providers docs (each provider section already shows this)
+- Removed all-Yes "Streaming" row from providers comparison table
+- Deduplicated audio modes table — canonical home is now `docs/audio.md`, configuration.md links to it
+- Deduplicated TTS model table — canonical home is now `docs/audio.md`, providers.md links to it
+- Trimmed Model Discovery/Validation section in configuration docs to remove implementation details (cache paths, API method names, fallback IDs)
+- Moved "Saving chat transcripts" from audio docs to configuration docs under Interactive Commands
+- Reframed installation prerequisites so Claude Code is not presented as a hard requirement
+- Removed implementation detail ("costs one extra API call") and UI state description from audio docs
+
+### Fixed
+
+- Fixed stale `tldr profile edit` reference in providers docs (now `tldr preset edit`)
+
 ## [2.3.0] - 2026-02-24
 
 ### Added
