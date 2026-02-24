@@ -12,9 +12,9 @@ Output demos/hero.gif
 Require tldr
 
 Set Shell "bash"
-Set FontSize 22
-Set Width 1100
-Set Height 650
+Set FontSize 16
+Set Width 1200
+Set Height 800
 Set Padding 20
 Set Theme "Catppuccin Mocha"
 Set TypingSpeed 120ms
