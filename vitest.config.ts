@@ -15,7 +15,7 @@ export default defineConfig({
         "src/extractors/slack.ts",
         "src/extractors/youtube.ts",
       ],
-      reporter: ["text", "text-summary", "cobertura"],
+      reporter: ["text", "text-summary", "cobertura", "lcov"],
       reportsDirectory: "./coverage",
       thresholds: {
         lines: 85,

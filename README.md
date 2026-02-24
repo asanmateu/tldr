@@ -7,7 +7,7 @@
 Summarize articles, papers, and videos into readable text and natural audio — a CLI built for neurodivergent workflows.
 
 [![CI](https://github.com/asanmateu/tldr/actions/workflows/ci.yml/badge.svg)](https://github.com/asanmateu/tldr/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/asanmateu/tldr/branch/main/graph/badge.svg)](https://codecov.io/gh/asanmateu/tldr)
+[![codecov](https://codecov.io/github/asanmateu/tldr/graph/badge.svg?token=KhASLvKKP5)](https://codecov.io/github/asanmateu/tldr)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 <img src="demos/hero.gif" alt="tldr demo — summarize a URL in seconds" width="800" />
