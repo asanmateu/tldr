@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Consolidated 5 demo GIFs into a single hero GIF covering summarize + audio flow
+- Slowed down hero tape timings and typed URL in segments for a natural feel
+- Widened hero tape canvas (1400x800, font 14) for better readability
+- Removed per-page GIF embeds from audio, configuration, providers, and installation docs
 - Trimmed README Audio section to a concise teaser linking to the Audio guide
 - Removed redundant "Alternative providers" section from README (already covered in Installation)
 - Removed redundant "Switching Providers" section from providers docs (each provider section already shows this)

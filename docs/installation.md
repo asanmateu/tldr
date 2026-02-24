@@ -1,7 +1,5 @@
 # Installation
 
-<img src="../demos/install.gif" alt="tldr installation demo — install and verify" width="800" />
-
 ## Prerequisites
 
 tldr works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (the default provider). If you have it installed and authenticated, no extra setup is needed.

@@ -1,7 +1,5 @@
 # Providers
 
-<img src="../demos/providers.gif" alt="tldr providers demo — switch between AI providers" width="800" />
-
 tldr supports seven summarization providers.
 
 ## Comparison

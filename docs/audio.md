@@ -1,7 +1,5 @@
 # Audio
 
-<img src="../demos/audio.gif" alt="tldr audio demo — listen to your summaries" width="800" />
-
 Summaries aren't just read aloud. They're **rewritten as audio scripts** by the same AI provider you use for summarizing, using a configurable **audio mode** that controls the persona and structure. The script adapts to your cognitive traits and tone setting. The result sounds like a natural spoken piece, not a screen reader.
 
 ## How audio works

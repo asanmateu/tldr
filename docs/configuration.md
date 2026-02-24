@@ -1,7 +1,5 @@
 # Configuration
 
-<img src="../demos/config.gif" alt="tldr configuration demo — customize settings interactively" width="800" />
-
 Settings are stored at `~/.tldr/settings.json`. Run `tldr config` to see your current settings.
 
 Most settings are easier to change interactively with `tldr preset edit` or `/config` in interactive mode. The CLI commands below are for when you know exactly what you want.
