@@ -7,7 +7,7 @@
 Summarize articles, papers, and videos into readable text and natural audio — a CLI built for neurodivergent workflows.
 
 [![CI](https://github.com/asanmateu/tldr/actions/workflows/ci.yml/badge.svg)](https://github.com/asanmateu/tldr/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-asanmateu.github.io%2Ftldr-blue)](https://asanmateu.github.io/tldr/)
+[![Docs](https://img.shields.io/badge/docs-online-informational)](https://asanmateu.github.io/tldr/)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Powered by AI](https://img.shields.io/badge/powered%20by-AI-blueviolet)
 
