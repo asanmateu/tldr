@@ -19,5 +19,5 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: asanmateu/tldr
-          files: ./coverage/cobertura-coverage.xml,./coverage/lcov.info
+          files: ./coverage/lcov.info
           fail_ci_if_error: false
