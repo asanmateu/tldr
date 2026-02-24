@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- VitePress docs site with home page, sidebar navigation, local search, and dark mode
+- GitHub Actions workflow to deploy docs to GitHub Pages on push to `main`
+- `docs:dev`, `docs:build`, and `docs:preview` npm scripts
+
 ### Changed
 
 - Consolidated 5 demo GIFs into a single hero GIF covering summarize + audio flow

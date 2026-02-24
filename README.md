@@ -7,6 +7,7 @@
 Summarize articles, papers, and videos into readable text and natural audio — a CLI built for neurodivergent workflows.
 
 [![CI](https://github.com/asanmateu/tldr/actions/workflows/ci.yml/badge.svg)](https://github.com/asanmateu/tldr/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-asanmateu.github.io%2Ftldr-blue)](https://asanmateu.github.io/tldr/)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Powered by AI](https://img.shields.io/badge/powered%20by-AI-blueviolet)
 
@@ -24,7 +25,7 @@ I had a pile of to-reads growing at work and it was overwhelming — not because
 
 ## Audio
 
-Summaries are **rewritten as natural spoken scripts** and played back using configurable voices and personas. The result sounds like a real briefing or podcast, not a screen reader. Free with Edge TTS by default, or upgrade to OpenAI TTS for higher quality. See the [Audio guide](docs/audio.md) for modes, voices, and presets.
+Summaries are **rewritten as natural spoken scripts** and played back using configurable voices and personas. The result sounds like a real briefing or podcast, not a screen reader. Free with Edge TTS by default, or upgrade to OpenAI TTS for higher quality. See the [Audio guide](https://asanmateu.github.io/tldr/audio) for modes, voices, and presets.
 
 ---
 
@@ -34,7 +35,7 @@ Summaries are **rewritten as natural spoken scripts** and played back using conf
 brew install asanmateu/tldr/tldr-cli
 ```
 
-Works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), or bring your own API key (Anthropic, OpenAI, Gemini, xAI, Ollama, Codex, etc.) — see [Providers](docs/providers.md). For standalone binaries, building from source, and other install methods, see the [Installation guide](docs/installation.md).
+Works out of the box with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), or bring your own API key (Anthropic, OpenAI, Gemini, xAI, Ollama, Codex, etc.) — see [Providers](https://asanmateu.github.io/tldr/providers). For standalone binaries, building from source, and other install methods, see the [Installation guide](https://asanmateu.github.io/tldr/installation).
 
 ---
 
@@ -87,7 +88,7 @@ Choose from three color themes (coral, ocean, forest) and auto dark/light mode d
 
 Use built-in presets (morning-brief, deep-study, bedtime-read, etc.) or create your own for different contexts with different tones, styles, audio modes, and cognitive trait settings.
 
-See the [Configuration guide](docs/configuration.md) for details.
+See the [Configuration guide](https://asanmateu.github.io/tldr/configuration) for details.
 
 ---
 
@@ -109,10 +110,10 @@ Traits stack. Enable multiple with `tldr preset edit`.
 
 ## Documentation
 
-- [Installation](docs/installation.md) — Homebrew, standalone binaries, prerequisites
-- [Configuration](docs/configuration.md) — settings, presets, tones, summary styles, audio modes
-- [Providers](docs/providers.md) — Claude Code, Anthropic API, Gemini, xAI, Ollama, Codex, and OpenAI-compatible setup
-- [Audio](docs/audio.md) — audio modes, listening to summaries, voices, save with audio
+- [Installation](https://asanmateu.github.io/tldr/installation) — Homebrew, standalone binaries, prerequisites
+- [Configuration](https://asanmateu.github.io/tldr/configuration) — settings, presets, tones, summary styles, audio modes
+- [Providers](https://asanmateu.github.io/tldr/providers) — Claude Code, Anthropic API, Gemini, xAI, Ollama, Codex, and OpenAI-compatible setup
+- [Audio](https://asanmateu.github.io/tldr/audio) — audio modes, listening to summaries, voices, save with audio
 
 ---
 

@@ -6,4 +6,6 @@ coverage/
 .DS_Store
 .env
 .env.*
+docs/.vitepress/cache
+docs/.vitepress/dist
 claude_notes/

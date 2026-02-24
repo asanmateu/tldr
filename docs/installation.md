@@ -49,6 +49,3 @@ This registers `tldr` as a global command via Bun's linker. To update later, `gi
 tldr --version
 ```
 
----
-
-[Back to README](../README.md)
