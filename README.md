@@ -8,6 +8,7 @@ Summarize articles, papers, and videos into readable text and natural audio — 
 
 [![CI](https://github.com/asanmateu/tldr/actions/workflows/ci.yml/badge.svg)](https://github.com/asanmateu/tldr/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Powered by AI](https://img.shields.io/badge/powered%20by-AI-blueviolet)
 
 <img src="demos/hero.gif" alt="tldr demo — summarize a URL in seconds" width="800" />
 
