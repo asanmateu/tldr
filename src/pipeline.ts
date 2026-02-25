@@ -2,7 +2,15 @@ import { classify } from "./extractors/router.js";
 import { expandHome } from "./lib/paths.js";
 import type { ExtractionResult } from "./lib/types.js";
 
-export async function extract(input: string, signal?: AbortSignal): Promise<ExtractionResult> {
+export interface ExtractOptions {
+  fallbackToJina?: boolean | undefined;
+}
+
+export async function extract(
+  input: string,
+  signal?: AbortSignal,
+  options?: ExtractOptions,
+): Promise<ExtractionResult> {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
   const classified = classify(input);
@@ -11,7 +19,9 @@ export async function extract(input: string, signal?: AbortSignal): Promise<Extr
     case "url":
     case "url:arxiv": {
       const { extractFromUrl } = await import("./extractors/web.js");
-      return extractFromUrl(classified.value);
+      return extractFromUrl(classified.value, {
+        fallbackToJina: options?.fallbackToJina,
+      });
     }
     case "url:pdf":
     case "file:pdf": {

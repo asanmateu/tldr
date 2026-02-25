@@ -111,6 +111,15 @@ const CONFIG_KEYS: Record<string, ConfigKeyDescriptor> = {
     validValues: VALID_AUDIO_MODES,
     defaultValue: "podcast",
   },
+  "fallback-jina": {
+    target: "settings",
+    property: "fallbackToJina",
+    transform: (v) => {
+      if (v === "true") return true;
+      if (v === "false") return false;
+      throw new ConfigSetError("Invalid value. Use true or false.");
+    },
+  },
   "tts-speed": {
     target: "profile",
     property: "ttsSpeed",

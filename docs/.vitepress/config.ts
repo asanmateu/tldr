@@ -33,6 +33,7 @@ export default defineConfig({
           { text: "Configuration", link: "/configuration" },
           { text: "Providers", link: "/providers" },
           { text: "Audio", link: "/audio" },
+          { text: "Use Cases", link: "/use-cases" },
         ],
       },
     ],

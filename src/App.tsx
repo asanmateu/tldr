@@ -291,7 +291,10 @@ export function App({
         setChatSaveEnabled(false);
 
         // Extraction
-        const result = await extract(rawInput, signal);
+        const settings = await loadSettings();
+        const result = await extract(rawInput, signal, {
+          fallbackToJina: settings.fallbackToJina ?? true,
+        });
 
         if (!result.content && !result.image) {
           setError({
@@ -382,7 +385,10 @@ export function App({
           setExtraction(undefined);
           setPendingResult(undefined);
 
-          const result = await extract(rawInput, signal);
+          const queueSettings = await loadSettings();
+          const result = await extract(rawInput, signal, {
+            fallbackToJina: queueSettings.fallbackToJina ?? true,
+          });
 
           if (!result.content && !result.image) {
             if (!isLast) continue;

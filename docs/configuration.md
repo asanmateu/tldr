@@ -65,6 +65,24 @@ Three themes: **coral** (warm reds, default), **ocean** (cool blues), **forest**
 
 Three appearance modes: **auto** (detects system setting, default), **dark**, **light**.
 
+## Extraction
+
+| Key | Values | Example |
+|-----|--------|---------|
+| `fallback-jina` | `true`, `false` | `tldr config set fallback-jina false` |
+
+### Jina Reader Fallback
+
+When a webpage can't be extracted (JavaScript-rendered SPAs, empty Readability results), tldr automatically retries via [Jina Reader](https://r.jina.ai), which renders pages server-side and returns clean markdown. This is enabled by default.
+
+**Privacy note:** When the fallback triggers, the URL is sent to Jina AI's servers (`r.jina.ai`). No API key is required. To disable this, run:
+
+```bash
+tldr config set fallback-jina false
+```
+
+When disabled, pages that require JavaScript will show an error message suggesting you paste the text directly.
+
 ## Global Settings
 
 These are top-level settings, not preset-specific. They are not available in the interactive preset editor.
@@ -76,6 +94,7 @@ These are top-level settings, not preset-specific. They are not available in the
 | `maxTokens` | Number | `tldr config set maxTokens 2048` |
 | `output-dir` | Path | `tldr config set output-dir ~/summaries` |
 | `activeProfile` | Preset name | `tldr config set activeProfile work` |
+| `fallback-jina` | `true` / `false` (default: `true`) | `tldr config set fallback-jina false` |
 
 ## Presets
 

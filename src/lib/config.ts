@@ -125,6 +125,7 @@ function parseSettings(parsed: unknown): TldrSettings {
     profiles,
     theme,
     setupCompleted: typeof obj.setupCompleted === "boolean" ? obj.setupCompleted : undefined,
+    fallbackToJina: typeof obj.fallbackToJina === "boolean" ? obj.fallbackToJina : undefined,
   };
 }
 

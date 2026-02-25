@@ -9,12 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Jina Reader fallback: when Readability fails to extract content (JS-rendered SPAs, empty pages), tldr automatically retries via Jina Reader (`r.jina.ai`) which renders JavaScript server-side
+- `fallback-jina` config key: opt out of the Jina Reader fallback with `tldr config set fallback-jina false` (enabled by default)
+- Retry with exponential backoff for transient HTTP errors (429, 5xx) — up to 2 retries with `Retry-After` header support
+- Actionable error messages for blocked (403) and rate-limited (429) responses instead of returning unusable HTML
+- Use Cases documentation page with workflows from quick triage to automated daily digests, covering presets, batch mode, audio, cron scheduling, and accessibility tuning
 - VitePress docs site with home page, sidebar navigation, local search, and dark mode
 - GitHub Actions workflow to deploy docs to GitHub Pages on push to `main`
 - `docs:dev`, `docs:build`, and `docs:preview` npm scripts
 
 ### Changed
 
+- Browser-like HTTP headers for web fetching — replaces the `tldr/1.0` User-Agent with Chrome-like headers, reducing 403 blocks from bot detection
 - Consolidated 5 demo GIFs into a single hero GIF covering summarize + audio flow
 - Slowed down hero tape timings and typed URL in segments for a natural feel
 - Widened hero tape canvas (1400x800, font 14) for better readability

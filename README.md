@@ -114,6 +114,7 @@ Traits stack. Enable multiple with `tldr preset edit`.
 - [Configuration](https://asanmateu.github.io/tldr/configuration) — settings, presets, tones, summary styles, audio modes
 - [Providers](https://asanmateu.github.io/tldr/providers) — Claude Code, Anthropic API, Gemini, xAI, Ollama, Codex, and OpenAI-compatible setup
 - [Audio](https://asanmateu.github.io/tldr/audio) — audio modes, listening to summaries, voices, save with audio
+- [Use Cases](https://asanmateu.github.io/tldr/use-cases) — workflows from quick triage to automated daily digests
 
 ---
 

@@ -105,6 +105,7 @@ export interface TldrSettings {
   profiles: Record<string, Profile>;
   theme?: ThemeConfig | undefined;
   setupCompleted?: boolean | undefined;
+  fallbackToJina?: boolean | undefined;
 }
 
 export interface ResolvedConfig {

@@ -245,6 +245,7 @@ describe("App", () => {
           expect(mocks.extract).toHaveBeenCalledWith(
             "https://example.com/article",
             expect.any(AbortSignal),
+            expect.objectContaining({ fallbackToJina: true }),
           );
         },
         { timeout: 2000 },
