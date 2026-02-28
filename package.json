@@ -1,6 +1,6 @@
 {
   "name": "tldr-cli",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "CLI summarization tool optimised for neurodiversity",
   "type": "module",
   "exports": {
