@@ -4,7 +4,7 @@
 
 **Summarize anything. Understand everything.**
 
-Summarize articles, papers, and videos into readable text and natural audio — a CLI built for neurodivergent workflows.
+Summarize articles, papers, and videos into text and audio you can actually absorb.
 
 [![CI](https://github.com/asanmateu/tldr/actions/workflows/ci.yml/badge.svg)](https://github.com/asanmateu/tldr/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-online-informational)](https://asanmateu.github.io/tldr/)

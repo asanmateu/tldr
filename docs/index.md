@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "tl;dr"
   text: "Summarize anything. Understand everything."
-  tagline: A CLI built for neurodivergent workflows — articles, papers, and videos into readable text and natural audio.
+  tagline: Summarize articles, papers, and videos into text and audio you can actually absorb.
   actions:
     - theme: brand
       text: Get Started

@@ -3,7 +3,7 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
   title: "tl;dr",
   description:
-    "Summarize anything. Understand everything. A CLI built for neurodivergent workflows.",
+    "Summarize anything. Understand everything. Articles, papers, and videos into text and audio you can actually absorb.",
   base: "/tldr/",
 
   head: [
