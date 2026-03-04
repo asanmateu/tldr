@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- YouTube transcript extraction now retries up to 3 times with 1.5s delay to handle intermittent YouTube API failures
+- Replaced broken `youtube-transcript` library (v1.2.1, returns empty arrays) with maintained fork `@danielxceron/youtube-transcript` (v1.2.6)
 - Batch mode now respects user `fallbackToJina` setting (previously ignored, always used default)
 - Batch mode now applies `truncateAndScale` for long documents, matching interactive mode behavior (prevents excessive tokens for 100k+ word content)
 - Audio generation failure in batch mode no longer marks the entire URL as failed — the summary is still saved and printed to stdout

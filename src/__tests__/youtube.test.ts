@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { YouTubeError, extractFromYouTube, parseVideoId } from "../extractors/youtube.js";
+import {
+  MAX_RETRIES,
+  RETRY_DELAY_MS,
+  YouTubeError,
+  extractFromYouTube,
+  isTranscriptError,
+  parseVideoId,
+} from "../extractors/youtube.js";
 
 describe("parseVideoId", () => {
   it("parses youtube.com/watch?v= URLs", () => {
@@ -103,5 +110,35 @@ describe("extractFromYouTube", () => {
 
     expect(result.content).toBe("  spaced   text");
     expect(result.wordCount).toBe(2);
+  });
+});
+
+describe("retry constants", () => {
+  it("retries up to 3 times", () => {
+    expect(MAX_RETRIES).toBe(3);
+  });
+
+  it("waits 1.5s between retries", () => {
+    expect(RETRY_DELAY_MS).toBe(1500);
+  });
+});
+
+describe("isTranscriptError", () => {
+  it("matches disabled transcripts", () => {
+    expect(isTranscriptError("Transcript is disabled on this video")).toBe(true);
+  });
+
+  it("matches unavailable transcripts", () => {
+    expect(isTranscriptError("Transcript unavailable")).toBe(true);
+    expect(isTranscriptError("Transcript is not available")).toBe(true);
+  });
+
+  it("matches Could not errors", () => {
+    expect(isTranscriptError("Could not retrieve transcript")).toBe(true);
+  });
+
+  it("does not match unrelated errors", () => {
+    expect(isTranscriptError("Network timeout")).toBe(false);
+    expect(isTranscriptError("fetch failed")).toBe(false);
   });
 });

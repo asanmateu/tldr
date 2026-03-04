@@ -35,25 +35,46 @@ export function parseVideoId(url: string): string {
   throw new YouTubeError(`Could not parse YouTube video ID from URL: ${url}`, "INVALID_URL");
 }
 
+export const MAX_RETRIES = 3;
+export const RETRY_DELAY_MS = 1500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function isTranscriptError(message: string): boolean {
+  return (
+    message.includes("disabled") ||
+    message.includes("not available") ||
+    message.includes("unavailable") ||
+    message.includes("Could not")
+  );
+}
+
 async function defaultFetchTranscript(videoId: string): Promise<TranscriptSegment[]> {
-  const { YoutubeTranscript } = await import("youtube-transcript");
-  try {
-    return await YoutubeTranscript.fetchTranscript(videoId);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (
-      message.includes("disabled") ||
-      message.includes("not available") ||
-      message.includes("unavailable") ||
-      message.includes("Could not")
-    ) {
-      throw new YouTubeError(
-        "No transcript available for this video. Try a video with captions enabled, or paste a transcript directly.",
-        "NO_TRANSCRIPT",
-      );
+  const { YoutubeTranscript } = await import("@danielxceron/youtube-transcript");
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      const segments = await YoutubeTranscript.fetchTranscript(videoId);
+      if (segments.length > 0) return segments;
+      // Empty result — treat as transient and retry
+      lastError = new Error("Empty transcript response");
+    } catch (error) {
+      lastError = error;
     }
-    throw new YouTubeError(`Failed to fetch transcript: ${message}`, "NETWORK");
+    if (attempt < MAX_RETRIES - 1) await sleep(RETRY_DELAY_MS);
   }
+
+  const message = lastError instanceof Error ? lastError.message : String(lastError);
+  if (isTranscriptError(message)) {
+    throw new YouTubeError(
+      "No transcript available for this video. Try a video with captions enabled, or paste a transcript directly.",
+      "NO_TRANSCRIPT",
+    );
+  }
+  throw new YouTubeError(`Failed to fetch transcript: ${message}`, "NETWORK");
 }
 
 async function defaultFetchTitle(url: string): Promise<string | undefined> {
