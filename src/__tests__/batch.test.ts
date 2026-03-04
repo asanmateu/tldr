@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   summarize: vi.fn(),
   rewriteForSpeech: vi.fn(),
   loadConfig: vi.fn(),
+  loadSettings: vi.fn(),
+  truncateAndScale: vi.fn(),
   saveSummary: vi.fn(),
   saveAudioFile: vi.fn(),
   getSessionPaths: vi.fn(),
@@ -23,6 +25,10 @@ vi.mock("../lib/summarizer.js", () => ({
 }));
 vi.mock("../lib/config.js", () => ({
   loadConfig: mocks.loadConfig,
+  loadSettings: mocks.loadSettings,
+}));
+vi.mock("../lib/content.js", () => ({
+  truncateAndScale: mocks.truncateAndScale,
 }));
 vi.mock("../lib/session.js", () => ({
   saveSummary: mocks.saveSummary,
@@ -106,6 +112,8 @@ beforeEach(() => {
 
   // Default mock implementations
   mocks.loadConfig.mockResolvedValue(TEST_CONFIG);
+  mocks.loadSettings.mockResolvedValue({ fallbackToJina: true });
+  mocks.truncateAndScale.mockImplementation((_result: ExtractionResult, cfg: Config) => cfg);
   mocks.extract.mockResolvedValue(TEST_EXTRACTION);
   mocks.summarize.mockResolvedValue(TEST_RESULT);
   mocks.getSessionPaths.mockReturnValue(TEST_SESSION);
@@ -129,7 +137,9 @@ describe("runBatch", () => {
       includeAudio: false,
     });
 
-    expect(mocks.extract).toHaveBeenCalledWith("https://techcrunch.com/article");
+    expect(mocks.extract).toHaveBeenCalledWith("https://techcrunch.com/article", undefined, {
+      fallbackToJina: true,
+    });
     expect(mocks.summarize).toHaveBeenCalledWith(
       TEST_EXTRACTION,
       TEST_CONFIG,
@@ -536,6 +546,90 @@ describe("runBatch", () => {
       });
 
       expect(stderrOutput).not.toContain("[1/1]");
+    });
+  });
+
+  describe("fallbackToJina settings", () => {
+    it("passes fallbackToJina from user settings to extract", async () => {
+      mocks.loadSettings.mockResolvedValue({ fallbackToJina: false });
+
+      await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(mocks.extract).toHaveBeenCalledWith("https://techcrunch.com/article", undefined, {
+        fallbackToJina: false,
+      });
+    });
+
+    it("defaults fallbackToJina to true when setting is undefined", async () => {
+      mocks.loadSettings.mockResolvedValue({});
+
+      await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(mocks.extract).toHaveBeenCalledWith("https://techcrunch.com/article", undefined, {
+        fallbackToJina: true,
+      });
+    });
+  });
+
+  describe("truncateAndScale", () => {
+    it("calls truncateAndScale before summarizing", async () => {
+      const scaledConfig = { ...TEST_CONFIG, maxTokens: 4096 };
+      mocks.truncateAndScale.mockReturnValue(scaledConfig);
+
+      await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: false,
+      });
+
+      expect(mocks.truncateAndScale).toHaveBeenCalledWith(TEST_EXTRACTION, TEST_CONFIG);
+      expect(mocks.summarize).toHaveBeenCalledWith(
+        TEST_EXTRACTION,
+        scaledConfig,
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe("audio error isolation", () => {
+    it("succeeds when audio generation fails", async () => {
+      mocks.generateAudio.mockRejectedValue(new Error("TTS service unavailable"));
+
+      const results = await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: true,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.result).toBeDefined();
+      expect(results[0]?.error).toBeUndefined();
+      expect(stderrOutput).toContain("Audio failed: TTS service unavailable");
+      expect(mocks.addEntry).toHaveBeenCalledWith(TEST_RESULT);
+      expect(stdoutOutput).toBe(TEST_SUMMARY);
+    });
+
+    it("succeeds when rewriteForSpeech fails", async () => {
+      mocks.rewriteForSpeech.mockRejectedValue(new Error("Speech rewrite failed"));
+
+      const results = await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: true,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.result).toBeDefined();
+      expect(results[0]?.error).toBeUndefined();
+      expect(stderrOutput).toContain("Audio failed: Speech rewrite failed");
     });
   });
 });

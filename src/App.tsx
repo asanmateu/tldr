@@ -22,6 +22,7 @@ import {
   saveSettings,
   setActiveProfile,
 } from "./lib/config.js";
+import { truncateAndScale } from "./lib/content.js";
 import { addEntry, deduplicateBySource, getRecent, removeEntry } from "./lib/history.js";
 import { validateCliProvider } from "./lib/providers/index.js";
 import { getSessionPaths, saveAudioFile, saveChat, saveSummary } from "./lib/session.js";
@@ -51,32 +52,11 @@ import { extract } from "./pipeline.js";
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_INPUT_WORDS = 100_000;
-const LONG_CONTENT_WORD_THRESHOLD = 10_000;
-const LONG_CONTENT_MAX_TOKENS = 4096;
 const DISCARD_TIMEOUT_MS = 2000;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Truncate content that exceeds MAX_INPUT_WORDS and scale maxTokens for
- * content above LONG_CONTENT_WORD_THRESHOLD. Mutates `result.content`
- * when truncation occurs.
- */
-function truncateAndScale(result: ExtractionResult, cfg: Config): Config {
-  if (result.image) return cfg;
-
-  const words = result.content.split(/\s+/);
-  if (words.length > MAX_INPUT_WORDS) {
-    result.content = words.slice(0, MAX_INPUT_WORDS).join(" ");
-  }
-  if (words.length > LONG_CONTENT_WORD_THRESHOLD) {
-    return { ...cfg, maxTokens: Math.min(cfg.maxTokens * 2, LONG_CONTENT_MAX_TOKENS) };
-  }
-  return cfg;
-}
 
 function isAbortError(err: unknown, signal: AbortSignal): boolean {
   return signal.aborted || (err instanceof DOMException && err.name === "AbortError");

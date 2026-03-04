@@ -1,4 +1,5 @@
-import { loadConfig } from "./lib/config.js";
+import { loadConfig, loadSettings } from "./lib/config.js";
+import { truncateAndScale } from "./lib/content.js";
 import { addEntry } from "./lib/history.js";
 import { getSessionPaths, saveAudioFile, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
@@ -31,35 +32,46 @@ export async function runBatch(options: {
       // Extract
       const source = input.length > 60 ? `${input.slice(0, 57)}...` : input;
       process.stderr.write(`${prefix}Extracting: ${source}\n`);
-      const extraction = await extract(input);
+      const settings = await loadSettings();
+      const extraction = await extract(input, undefined, {
+        fallbackToJina: settings.fallbackToJina ?? true,
+      });
+
+      // Truncate long content and scale maxTokens (matches interactive mode)
+      const effectiveConfig = truncateAndScale(extraction, config);
 
       // Summarize (no-op chunk handler — no TUI to stream to)
       const title = extraction.title ?? extraction.source;
       process.stderr.write(
         `${prefix}Summarizing: "${title}" (${extraction.wordCount.toLocaleString()} words)\n`,
       );
-      const result = await summarize(extraction, config, () => {});
+      const result = await summarize(extraction, effectiveConfig, () => {});
 
       // Determine output directory
       const outputDir = options.outputDir ?? config.outputDir;
       const sessionPaths = getSessionPaths(outputDir, extraction, result.summary);
       const saved = await saveSummary(sessionPaths, result.summary);
 
-      // Audio (opt-in)
+      // Audio (opt-in) — isolated so TTS failure doesn't mark the URL as failed
       if (options.includeAudio) {
-        process.stderr.write(`${prefix}Generating audio...\n`);
-        const speechText = await rewriteForSpeech(result.summary, config);
-        const audioPath = await generateAudio(
-          speechText,
-          config.voice,
-          config.ttsSpeed,
-          config.pitch,
-          config.volume,
-          undefined,
-          config.ttsProvider,
-          config.ttsModel,
-        );
-        await saveAudioFile(saved, audioPath);
+        try {
+          process.stderr.write(`${prefix}Generating audio...\n`);
+          const speechText = await rewriteForSpeech(result.summary, config);
+          const audioPath = await generateAudio(
+            speechText,
+            config.voice,
+            config.ttsSpeed,
+            config.pitch,
+            config.volume,
+            undefined,
+            config.ttsProvider,
+            config.ttsModel,
+          );
+          await saveAudioFile(saved, audioPath);
+        } catch (audioErr) {
+          const audioMessage = audioErr instanceof Error ? audioErr.message : String(audioErr);
+          process.stderr.write(`${prefix}Audio failed: ${audioMessage}\n`);
+        }
       }
 
       // Add to history
