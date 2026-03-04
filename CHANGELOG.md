@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-03-04
+
 ### Added
 
 - Pretty-printed ANSI-formatted markdown output in batch mode when stdout is a TTY (colors, styled headings, bullets, tables) — raw markdown preserved when piped
