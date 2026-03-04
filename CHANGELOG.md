@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch mode now respects user `fallbackToJina` setting (previously ignored, always used default)
 - Batch mode now applies `truncateAndScale` for long documents, matching interactive mode behavior (prevents excessive tokens for 100k+ word content)
 - Audio generation failure in batch mode no longer marks the entire URL as failed — the summary is still saved and printed to stdout
+- DNS resolution failures now show a friendly message (`Could not resolve hostname "..."`) instead of the raw `getaddrinfo ENOTFOUND` error
 
 ## [2.4.0] - 2026-02-28
 

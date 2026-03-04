@@ -118,7 +118,15 @@ async function safeFetchOnce(
       );
     }
 
-    const ip = await resolveHostname(parsed.hostname);
+    let ip: string;
+    try {
+      ip = await resolveHostname(parsed.hostname);
+    } catch {
+      throw new FetchError(
+        `Could not resolve hostname "${parsed.hostname}" — check the URL and your connection`,
+        "NETWORK",
+      );
+    }
     if (isPrivateIp(ip)) {
       throw new FetchError(`Blocked request to private IP: ${ip}`, "SSRF");
     }

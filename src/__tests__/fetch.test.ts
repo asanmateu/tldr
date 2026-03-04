@@ -74,6 +74,23 @@ describe("safeFetch", () => {
     });
   });
 
+  describe("DNS resolution failure", () => {
+    it("throws a friendly NETWORK error when hostname cannot be resolved", async () => {
+      mockResolve.mockRejectedValue(
+        Object.assign(new Error("getaddrinfo ENOTFOUND no-such-host.example"), {
+          code: "ENOTFOUND",
+        }),
+      );
+
+      await expect(
+        safeFetch("https://no-such-host.example", { resolveHostname: mockResolve }),
+      ).rejects.toMatchObject({
+        code: "NETWORK",
+        message: expect.stringContaining('Could not resolve hostname "no-such-host.example"'),
+      });
+    });
+  });
+
   describe("scheme validation", () => {
     it("rejects file:// scheme", async () => {
       await expect(
