@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Pretty-printed ANSI-formatted markdown output in batch mode when stdout is a TTY (colors, styled headings, bullets, tables) — raw markdown preserved when piped
+- Interactive batch results viewer (`--batch --browse`): navigable list with success/fail status per URL, Enter to view individual summaries, replaces the previous full-history fallback
+- `--batch --browse` now skips dumping summaries to stdout — progress on stderr, then straight into the results viewer
+
+### Changed
+
+- `--batch --browse` opens a filtered results view showing only the current batch run instead of the full history
+
 ## [2.4.1] - 2026-03-04
 
 ### Fixed

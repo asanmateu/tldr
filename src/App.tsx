@@ -1,6 +1,8 @@
 import type { ChildProcess } from "node:child_process";
 import { Box, Static, Text, useApp, useInput, useStdout } from "ink";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { BatchResult } from "./batch.js";
+import { BatchResultsView } from "./components/BatchResultsView.js";
 import { ChatView } from "./components/ChatView.js";
 import { ConfigSetup } from "./components/ConfigSetup.js";
 import { ErrorView } from "./components/ErrorView.js";
@@ -124,6 +126,7 @@ interface AppProps {
   showHistory?: boolean | undefined;
   editProfile?: boolean | undefined;
   overrides?: ConfigOverrides | undefined;
+  batchResults?: BatchResult[] | undefined;
   onUpdate?: () => void;
 }
 
@@ -133,6 +136,7 @@ export function App({
   showHistory,
   editProfile,
   overrides,
+  batchResults: batchResultsProp,
   onUpdate,
 }: AppProps) {
   const { exit } = useApp();
@@ -143,7 +147,13 @@ export function App({
 
   // --- State ---
   const [state, setState] = useState<AppState>(
-    showConfig ? "config" : showHistory ? "history" : "idle",
+    showConfig
+      ? "config"
+      : showHistory && batchResultsProp
+        ? "batch-results"
+        : showHistory
+          ? "history"
+          : "idle",
   );
   const [config, setConfig] = useState<Config | undefined>(undefined);
   const [input, setInput] = useState(initialInput ?? "");
@@ -545,6 +555,17 @@ export function App({
     setState("result");
   }, []);
 
+  const handleBatchResultSelect = useCallback((result: TldrResult) => {
+    setExtraction(result.extraction);
+    setSummary(result.summary);
+    setInput(result.extraction.source);
+    setCurrentSession(undefined);
+    setPendingResult(undefined);
+    setSummaryPinned(false);
+    setPinnedSummaries([]);
+    setState("result");
+  }, []);
+
   const handleHistoryDelete = useCallback(
     async (entry: TldrResult) => {
       await removeEntry(entry.timestamp);
@@ -783,9 +804,13 @@ export function App({
           return;
         }
         if (state === "result" && !pendingResult) {
-          // Already saved — single tap exits
+          // Already saved — single tap exits (or returns to batch results)
           if (audioProcess) stopAudio(audioProcess);
           clearScreen();
+          if (batchResultsProp) {
+            setState("batch-results");
+            return;
+          }
           if (initialInput) {
             exit();
             return;
@@ -795,7 +820,7 @@ export function App({
         }
         if (state === "result") {
           if (discardPending) {
-            // Second press — discard and return to idle
+            // Second press — discard and return to idle (or batch results)
             if (discardTimerRef.current) {
               clearTimeout(discardTimerRef.current);
               discardTimerRef.current = null;
@@ -803,6 +828,10 @@ export function App({
             setDiscardPending(false);
             if (audioProcess) stopAudio(audioProcess);
             clearScreen();
+            if (batchResultsProp) {
+              setState("batch-results");
+              return;
+            }
             if (initialInput) {
               exit();
               return;
@@ -920,6 +949,7 @@ export function App({
             isSaved={!pendingResult}
             audioIsFallback={audioIsFallback}
             summaryPinned={summaryPinned}
+            quitLabel={batchResultsProp ? "back" : undefined}
           />
         )}
         {state === "chat" && config && (
@@ -947,6 +977,13 @@ export function App({
             profiles={profiles}
             onSwitch={handleProfileSwitch}
             onClose={() => setState("idle")}
+          />
+        )}
+        {state === "batch-results" && batchResultsProp && (
+          <BatchResultsView
+            results={batchResultsProp}
+            onSelect={handleBatchResultSelect}
+            onClose={() => exit()}
           />
         )}
         {state === "help" && <HelpView onClose={() => setState("idle")} />}

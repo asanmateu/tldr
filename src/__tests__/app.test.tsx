@@ -1858,4 +1858,123 @@ describe("App", () => {
       instance.unmount();
     });
   });
+
+  // -----------------------------------------------------------------------
+  // Group 13: Batch results view
+  // -----------------------------------------------------------------------
+  describe("batch results view", () => {
+    const BATCH_RESULTS = [
+      {
+        input: "https://example.com/success",
+        result: {
+          extraction: {
+            ...TEST_EXTRACTION,
+            title: "Success Article",
+            source: "https://example.com/success",
+          },
+          summary: "## Summary\nSuccess content.",
+          timestamp: Date.now(),
+        },
+        sessionDir: "/tmp/tldr-test/success",
+      },
+      {
+        input: "https://example.com/fail",
+        error: "Connection timeout",
+      },
+    ];
+
+    it("renders batch results view with success and fail counts", async () => {
+      const instance = render(<App showHistory batchResults={BATCH_RESULTS} />);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Batch Results");
+          expect(frame).toContain("1 succeeded");
+          expect(frame).toContain("1 failed");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows success and fail markers", async () => {
+      const instance = render(<App showHistory batchResults={BATCH_RESULTS} />);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("✓");
+          expect(frame).toContain("✗");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows error message for selected failed item", async () => {
+      const instance = render(<App showHistory batchResults={BATCH_RESULTS} />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Batch Results");
+        },
+        { timeout: 2000 },
+      );
+
+      // Navigate down to the failed item
+      instance.stdin.write("\x1B[B"); // down arrow
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Connection timeout");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("Enter on success item opens summary view", async () => {
+      const instance = render(<App showHistory batchResults={BATCH_RESULTS} />);
+
+      await vi.waitFor(
+        () => {
+          expect(instance.lastFrame()).toContain("Batch Results");
+        },
+        { timeout: 2000 },
+      );
+
+      // First item is selected by default (success), press Enter
+      instance.stdin.write("\r");
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("Summary");
+          expect(frame).toContain("Success content");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+
+    it("shows footer with navigation hints", async () => {
+      const instance = render(<App showHistory batchResults={BATCH_RESULTS} />);
+
+      await vi.waitFor(
+        () => {
+          const frame = instance.lastFrame();
+          expect(frame).toContain("[Enter] view summary");
+          expect(frame).toContain("[Esc/q] exit");
+        },
+        { timeout: 2000 },
+      );
+
+      instance.unmount();
+    });
+  });
 });

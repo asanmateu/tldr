@@ -41,6 +41,9 @@ vi.mock("../lib/tts.js", () => ({
 vi.mock("../lib/history.js", () => ({
   addEntry: mocks.addEntry,
 }));
+vi.mock("../lib/markdownFormatter.js", () => ({
+  formatMarkdown: (md: string) => `[FORMATTED]${md}[/FORMATTED]`,
+}));
 
 import { runBatch } from "../batch.js";
 
@@ -630,6 +633,91 @@ describe("runBatch", () => {
       expect(results[0]?.result).toBeDefined();
       expect(results[0]?.error).toBeUndefined();
       expect(stderrOutput).toContain("Audio failed: Speech rewrite failed");
+    });
+  });
+
+  describe("browse option", () => {
+    it("suppresses stdout when browse is true", async () => {
+      const results = await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: false,
+        browse: true,
+      });
+
+      expect(stdoutOutput).toBe("");
+      expect(results).toHaveLength(1);
+      expect(results[0]?.result).toBeDefined();
+    });
+
+    it("still writes progress to stderr when browse is true", async () => {
+      await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: false,
+        browse: true,
+      });
+
+      expect(stderrOutput).toContain("Extracting:");
+      expect(stderrOutput).toContain("Summarizing:");
+      expect(stderrOutput).toContain("Saved to");
+    });
+
+    it("returns results when browse is true", async () => {
+      const results = await runBatch({
+        inputs: ["https://techcrunch.com/article"],
+        overrides: {},
+        includeAudio: false,
+        browse: true,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0]?.result).toEqual(TEST_RESULT);
+      expect(results[0]?.sessionDir).toBe(TEST_SESSION.sessionDir);
+    });
+  });
+
+  describe("TTY formatting", () => {
+    it("outputs formatted markdown when stdout is a TTY", async () => {
+      const originalIsTTY = process.stdout.isTTY;
+      Object.defineProperty(process.stdout, "isTTY", { value: true, writable: true });
+
+      try {
+        await runBatch({
+          inputs: ["https://techcrunch.com/article"],
+          overrides: {},
+          includeAudio: false,
+        });
+
+        expect(stdoutOutput).toContain("[FORMATTED]");
+        expect(stdoutOutput).toContain(TEST_SUMMARY);
+      } finally {
+        Object.defineProperty(process.stdout, "isTTY", {
+          value: originalIsTTY,
+          writable: true,
+        });
+      }
+    });
+
+    it("outputs raw markdown when stdout is not a TTY", async () => {
+      const originalIsTTY = process.stdout.isTTY;
+      Object.defineProperty(process.stdout, "isTTY", { value: false, writable: true });
+
+      try {
+        await runBatch({
+          inputs: ["https://techcrunch.com/article"],
+          overrides: {},
+          includeAudio: false,
+        });
+
+        expect(stdoutOutput).toBe(TEST_SUMMARY);
+        expect(stdoutOutput).not.toContain("[FORMATTED]");
+      } finally {
+        Object.defineProperty(process.stdout, "isTTY", {
+          value: originalIsTTY,
+          writable: true,
+        });
+      }
     });
   });
 });

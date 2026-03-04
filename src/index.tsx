@@ -392,6 +392,7 @@ if (command === "config") {
       overrides,
       outputDir: outputFlag,
       includeAudio,
+      browse: browseAfterBatch,
     });
     const hasFailures = batchResults.some((r) => r.error);
 
@@ -400,6 +401,7 @@ if (command === "config") {
       const instance = render(
         <App
           showHistory={true}
+          batchResults={batchResults}
           overrides={overrides}
           onUpdate={() => {
             wantsUpdate = true;
