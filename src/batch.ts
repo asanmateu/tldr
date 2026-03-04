@@ -1,6 +1,7 @@
 import { loadConfig, loadSettings } from "./lib/config.js";
 import { truncateAndScale } from "./lib/content.js";
 import { addEntry } from "./lib/history.js";
+import { formatMarkdown } from "./lib/markdownFormatter.js";
 import { getSessionPaths, saveAudioFile, saveSummary } from "./lib/session.js";
 import { rewriteForSpeech, summarize } from "./lib/summarizer.js";
 import { generateAudio } from "./lib/tts.js";
@@ -19,6 +20,7 @@ export async function runBatch(options: {
   overrides: ConfigOverrides;
   outputDir?: string | undefined;
   includeAudio: boolean;
+  browse?: boolean | undefined;
 }): Promise<BatchResult[]> {
   const config = await loadConfig(options.overrides);
   const total = options.inputs.length;
@@ -77,11 +79,12 @@ export async function runBatch(options: {
       // Add to history
       await addEntry(result);
 
-      // Print summary to stdout (with separator between multiple results)
-      if (results.length > 0) {
-        process.stdout.write("\n---\n\n");
+      // Print summary to stdout (skip when --browse is set)
+      if (!options.browse) {
+        if (results.length > 0) process.stdout.write("\n---\n\n");
+        const output = process.stdout.isTTY ? formatMarkdown(result.summary) : result.summary;
+        process.stdout.write(output);
       }
-      process.stdout.write(result.summary);
 
       // Log saved location to stderr
       process.stderr.write(`${prefix}Saved to ${saved.sessionDir}/\n`);

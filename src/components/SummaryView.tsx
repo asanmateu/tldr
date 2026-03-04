@@ -20,6 +20,7 @@ interface SummaryViewProps {
   isSaved?: boolean | undefined;
   audioIsFallback?: boolean | undefined;
   summaryPinned?: boolean | undefined;
+  quitLabel?: string | undefined;
 }
 
 export function SummaryView({
@@ -38,6 +39,7 @@ export function SummaryView({
   isSaved,
   audioIsFallback,
   summaryPinned,
+  quitLabel,
 }: SummaryViewProps) {
   const theme = useTheme();
 
@@ -133,10 +135,13 @@ export function SummaryView({
         <Box>
           {isSaved ? (
             <Text dimColor>
-              <Text color={theme.success}>Saved</Text> · [c] copy · [r] re-summarize · [q] exit
+              <Text color={theme.success}>Saved</Text> · [c] copy · [r] re-summarize · [q]{" "}
+              {quitLabel ?? "exit"}
             </Text>
           ) : (
-            <Text dimColor>[Enter] save · [c] copy · [r] re-summarize · [q] discard</Text>
+            <Text dimColor>
+              [Enter] save · [c] copy · [r] re-summarize · [q] {quitLabel ?? "discard"}
+            </Text>
           )}
         </Box>
       </Box>

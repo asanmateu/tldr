@@ -46,7 +46,7 @@ tldr --batch --audio \
 
 The `morning-brief` preset uses the **briefing** audio mode (analyst persona with numbered facts), **quick** style, **professional** tone, and a slightly faster speed (1.15x). Each summary and its audio are saved to `~/Documents/tldr/`.
 
-Want to browse the results interactively after the batch finishes? Add `--browse`:
+Want to browse the results interactively after the batch finishes? Add `--browse`. This opens a results viewer showing success/fail status for each URL — press Enter to view any summary:
 
 ```bash
 tldr --batch --audio --browse \
@@ -149,7 +149,7 @@ tldr --batch \
   "./downloaded-paper.pdf"
 ```
 
-Add `--browse` to review each result interactively after the batch completes, chatting with the AI about individual papers.
+Add `--browse` to review each result in a navigable list after the batch completes, then chat with the AI about individual papers.
 
 ## Daily automated digest
 
